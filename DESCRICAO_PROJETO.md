@@ -88,3 +88,14 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Banco de Dados:** PostgreSQL (atualmente SQLite em desenvolvimento).
 *   **Integração:** API do Telegram.
 *   **Frontend:** Tecnologia a ser definida.
+
+### 8. Interface Web Básica para Testes (Frontend)
+
+*   **Funcionalidade:** Prover uma interface de usuário simples para testar as funcionalidades CRUD da API para Advogados, Clientes e Processos Jurídicos.
+*   **Tecnologias:** HTML, CSS e JavaScript puro.
+*   **Estrutura:**
+    *   `static_frontend/index.html`: Página principal com formulários e listas.
+    *   `static_frontend/style.css`: Estilos básicos para organização visual.
+    *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI (buscar dados, enviar formulários, deletar itens).
+*   **Servindo os arquivos:** A API FastAPI foi configurada para servir estes arquivos estáticos a partir do diretório `static_frontend` no endpoint `/frontend`.
+*   **Status Atual:** Implementado. Permite testar todas as operações CRUD do backend diretamente pelo navegador.
