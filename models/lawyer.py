@@ -10,10 +10,10 @@ class LawyerDB(Base):
     __tablename__ = "lawyers"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    oab = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    telegram_id = Column(String, nullable=True)
+    name = Column(String(100), index=True)  # Comprimento 100
+    oab = Column(String(20), unique=True, index=True) # Comprimento 20
+    email = Column(String(100), unique=True, index=True) # Comprimento 100
+    telegram_id = Column(String(50), nullable=True) # Comprimento 50
 
     processes = relationship("LegalProcessDB", back_populates="lawyer")
 
