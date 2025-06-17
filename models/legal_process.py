@@ -1,9 +1,30 @@
+from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy.orm import relationship
+from pydantic import BaseModel
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel
+from database import Base # Import Base from database.py
 
+# SQLAlchemy model
+class LegalProcessDB(Base):
+    __tablename__ = "legal_processes"
 
+    id = Column(Integer, primary_key=True, index=True)
+    process_number = Column(String, unique=True, index=True)
+    entry_date = Column(Date)
+    delivery_deadline = Column(Date)
+    fatal_deadline = Column(Date)
+    status = Column(String, default="ativo")
+    action_type = Column(String, nullable=True)
+
+    lawyer_id = Column(Integer, ForeignKey("lawyers.id"))
+    client_id = Column(Integer, ForeignKey("clients.id"))
+
+    lawyer = relationship("LawyerDB", back_populates="processes")
+    client = relationship("ClientDB", back_populates="processes")
+
+# Pydantic models for request/response validation
 class LegalProcessBase(BaseModel):
     process_number: str
     lawyer_id: int
@@ -14,13 +35,11 @@ class LegalProcessBase(BaseModel):
     status: Optional[str] = "ativo"
     action_type: Optional[str] = None
 
-
 class LegalProcessCreate(LegalProcessBase):
     pass
-
 
 class LegalProcess(LegalProcessBase):
     id: int
 
     class Config:
-        from_attributes = True
+        from_attributes = True # Changed from orm_mode = True for Pydantic v2
