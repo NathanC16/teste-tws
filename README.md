@@ -8,11 +8,11 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     *   Python 3.10+
     *   FastAPI: Framework web para construção da API.
     *   SQLAlchemy: ORM para interação com o banco de dados.
-    *   mysqlclient: Driver Python para MySQL.
+    *   PyMySQL: Driver Python puro para MySQL.
     *   Uvicorn: Servidor ASGI para FastAPI.
     *   Pydantic: Para validação de dados.
 *   **Banco de Dados:**
-    *   MySQL: Banco de dados padrão da aplicação (requer configuração via arquivo `.env` e driver `mysqlclient`).
+    *   MySQL: Banco de dados padrão da aplicação (requer configuração via arquivo `.env` e driver `PyMySQL`).
     *   SQLite: Pode ser usado como alternativa para desenvolvimento local rápido (requer modificação manual em `database.py` e instalação do driver apropriado se não for o `sqlite3` embutido).
 *   **Frontend (Interface de Teste):**
     *   HTML5
@@ -55,14 +55,6 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     ```bash
     pip install -r requirements.txt
     ```
-
-    **Nota sobre a instalação do `mysqlclient` em Linux:**
-    Se você encontrar erros durante a instalação do `mysqlclient` (que é uma dependência no `requirements.txt`), pode ser necessário instalar algumas bibliotecas de desenvolvimento do sistema. Para sistemas baseados em Debian/Ubuntu, tente:
-    ```bash
-    sudo apt update
-    sudo apt install python3-dev default-libmysqlclient-dev
-    ```
-    Para outras distribuições Linux ou macOS, você pode precisar de pacotes equivalentes (ex: `python3-devel`, `mysql-devel`, `mariadb-devel` ou `mariadb-connector-c-devel`). Consulte a documentação da sua distribuição ou do `mysqlclient` se o problema persistir.
 
 ## Configuração do Banco de Dados
 
@@ -161,10 +153,10 @@ Com o MySQL Server instalado e configurado conforme o guia acima, siga os próxi
 
 2.  **Configure a `DATABASE_URL` no arquivo `.env`:**
     Abra o arquivo `.env` e edite a variável `DATABASE_URL` com as credenciais do usuário e banco de dados que você criou no MySQL (conforme o "Guia Rápido" acima, por exemplo, `myuser`, `mypassword`, `mydatabase`).
-    O formato é: `mysql+mysqlclient://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO`
+    O formato é: `mysql+pymysql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO`
     Exemplo (usando os dados do guia):
     ```env
-    DATABASE_URL="mysql+mysqlclient://myuser:mypassword@localhost:3306/mydatabase"
+    DATABASE_URL="mysql+pymysql://myuser:mypassword@localhost:3306/mydatabase"
     ```
     A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
 
