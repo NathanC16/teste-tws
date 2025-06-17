@@ -99,3 +99,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI (buscar dados, enviar formulários, deletar itens).
 *   **Servindo os arquivos:** A API FastAPI foi configurada para servir estes arquivos estáticos a partir do diretório `static_frontend` no endpoint `/frontend`.
 *   **Status Atual:** Implementado. Permite testar todas as operações CRUD do backend diretamente pelo navegador.
+
+## Documentação Adicional
+
+*   **README.md:** Contém instruções detalhadas para configuração do ambiente, instalação de dependências, configuração do banco de dados, execução da aplicação e acesso à interface de teste.
