@@ -56,6 +56,14 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     pip install -r requirements.txt
     ```
 
+    **Nota sobre a instalação do `mysqlclient` em Linux:**
+    Se você encontrar erros durante a instalação do `mysqlclient` (que é uma dependência no `requirements.txt`), pode ser necessário instalar algumas bibliotecas de desenvolvimento do sistema. Para sistemas baseados em Debian/Ubuntu, tente:
+    ```bash
+    sudo apt update
+    sudo apt install python3-dev default-libmysqlclient-dev
+    ```
+    Para outras distribuições Linux ou macOS, você pode precisar de pacotes equivalentes (ex: `python3-devel`, `mysql-devel`, `mariadb-devel` ou `mariadb-connector-c-devel`). Consulte a documentação da sua distribuição ou do `mysqlclient` se o problema persistir.
+
 ## Configuração do Banco de Dados
 
 A aplicação utiliza MySQL como o banco de dados padrão.
