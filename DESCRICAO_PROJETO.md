@@ -85,7 +85,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 ### 7. Requisitos Técnicos da Versão Estável
 
 *   **Backend:** Python com FastAPI.
-*   **Banco de Dados:** PostgreSQL (Padrão). SQLite pode ser usado como alternativa para desenvolvimento local.
+*   **Banco de Dados:** MySQL (Padrão). SQLite pode ser usado como alternativa para desenvolvimento local.
 *   **Integração:** API do Telegram.
 *   **Frontend:** Tecnologia a ser definida.
 
