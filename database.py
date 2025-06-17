@@ -12,13 +12,13 @@ if DATABASE_URL is None:
     raise EnvironmentError(
         "Erro crítico: A variável de ambiente DATABASE_URL não está definida.\n"
         "Para configurar o MySQL, crie um arquivo '.env' na raiz do projeto "\
-        "e adicione a linha no formato: DATABASE_URL=\"mysql+mysqlclient://user:password@host:port/dbname\"\n"
+        "e adicione a linha no formato: DATABASE_URL=\"mysql+pymysql://user:password@host:port/dbname\"\n"
         "Substitua 'user', 'password', 'host', 'port', e 'dbname' com suas credenciais reais do MySQL.\n"
         "Consulte o README.md e o .env.example para mais detalhes."
     )
 
-# Para MySQL com mysqlclient, não são necessários connect_args especiais como o check_same_thread do SQLite.
-# A engine SQLAlchemy identificará o dialeto mysql+mysqlclient a partir da URL.
+# Para MySQL com PyMySQL, não são necessários connect_args especiais como o check_same_thread do SQLite.
+# A engine SQLAlchemy identificará o dialeto mysql+pymysql a partir da URL.
 engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
