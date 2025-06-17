@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Depends # Added Depends
+from fastapi.staticfiles import StaticFiles # Adicionado para arquivos estáticos
 from pydantic import EmailStr
 from datetime import date
 
@@ -18,6 +19,9 @@ from models import client as client_model
 from models import legal_process as process_model
 
 app = FastAPI()
+
+# Montar diretório de arquivos estáticos
+app.mount("/frontend", StaticFiles(directory="static_frontend"), name="frontend")
 
 # Criar tabelas do banco de dados
 lawyer_model.Base.metadata.create_all(bind=engine)
