@@ -11,8 +11,8 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     *   Uvicorn: Servidor ASGI para FastAPI.
     *   Pydantic: Para validação de dados.
 *   **Banco de Dados:**
-    *   SQLite: Utilizado por padrão para desenvolvimento e testes locais (configurado em `database.py`).
-    *   PostgreSQL: Suportado e recomendado para produção (requer configuração no arquivo `.env`).
+    *   PostgreSQL: Banco de dados padrão da aplicação (requer configuração via arquivo `.env`).
+    *   SQLite: Pode ser usado como alternativa para desenvolvimento local rápido (requer modificação manual em `database.py`).
 *   **Frontend (Interface de Teste):**
     *   HTML5
     *   CSS3
@@ -57,18 +57,48 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
 
 ## Configuração do Banco de Dados
 
-*   **SQLite (Padrão para Desenvolvimento):**
-    A aplicação está configurada por padrão para usar um banco de dados SQLite chamado `sql_app.db`, que será criado automaticamente na raiz do projeto na primeira execução. Esta configuração está em `database.py`.
+A aplicação utiliza PostgreSQL como o banco de dados padrão.
 
-*   **PostgreSQL (Recomendado para Produção):**
-    1.  Certifique-se de ter uma instância do PostgreSQL em execução.
-    2.  Crie um arquivo `.env` na raiz do projeto (este arquivo é ignorado pelo Git e não deve ser enviado ao repositório).
-    3.  Adicione a URL de conexão do seu banco PostgreSQL ao arquivo `.env`:
-        ```env
-        DATABASE_URL="postgresql://user:password@host:port/dbname"
-        ```
-        Substitua `user`, `password`, `host`, `port`, e `dbname` pelas suas credenciais.
-    4.  Em `database.py`, comente a linha referente ao `DATABASE_URL` do SQLite e descomente a linha que carrega a URL do `os.getenv("DATABASE_URL")`.
+1.  **Instale e configure o PostgreSQL:**
+    Certifique-se de ter uma instância do PostgreSQL em execução e acessível.
+
+2.  **Crie um arquivo `.env`:**
+    Na raiz do projeto, crie uma cópia do arquivo `.env.example` e renomeie-a para `.env`.
+    ```bash
+    cp .env.example .env
+    ```
+    O arquivo `.env.example` serve como um modelo. O arquivo `.env` é ignorado pelo Git e não deve ser versionado.
+
+3.  **Configure a `DATABASE_URL` no arquivo `.env`:**
+    Abra o arquivo `.env` e edite a variável `DATABASE_URL` com as suas credenciais de conexão do PostgreSQL.
+    O formato é: `postgresql://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO`
+    Exemplo:
+    ```env
+    DATABASE_URL="postgresql://user:password@localhost:5432/mydatabase"
+    ```
+    Substitua `user`, `password`, `localhost`, `5432`, e `mydatabase` pelos valores corretos da sua configuração do PostgreSQL. A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
+
+4.  **Criação das Tabelas:**
+    As tabelas do banco de dados são criadas automaticamente pela aplicação na primeira vez que ela é iniciada, com base nos modelos definidos em `models/`.
+
+### Alternativa para Desenvolvimento Local Rápido (SQLite)
+
+Se, para desenvolvimento local rápido ou testes, você preferir usar SQLite:
+
+1.  **Comente ou remova a variável `DATABASE_URL`** do seu arquivo `.env` (ou não crie o arquivo `.env`).
+2.  **Modifique o arquivo `database.py` temporariamente:**
+    Você precisaria alterar a lógica em `database.py` para definir uma `DATABASE_URL` para SQLite, por exemplo:
+    ```python
+    # DATABASE_URL = os.getenv("DATABASE_URL") # Comente esta linha
+    DATABASE_URL = "sqlite:///./sql_app.db" # Adicione esta para SQLite
+    # ...
+    # if DATABASE_URL is None: # Comente ou ajuste este bloco de erro
+    # ...
+    # engine_args = {} # Mantenha a lógica para connect_args se usar SQLite
+    # if DATABASE_URL.startswith("sqlite"):
+    #     engine_args["connect_args"] = {"check_same_thread": False}
+    ```
+    Lembre-se que esta não é a configuração padrão e é recomendada apenas para conveniência local temporária. **PostgreSQL é o padrão para esta aplicação.**
 
 ## Executando a Aplicação
 
