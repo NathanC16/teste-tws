@@ -43,7 +43,7 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     Para ativar o ambiente virtual:
     *   No Windows:
         ```bash
-        .env\Scriptsctivate
+        .venv\Scripts\activate
         ```
     *   No macOS/Linux:
         ```bash
@@ -60,26 +60,107 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
 
 A aplicação utiliza MySQL como o banco de dados padrão.
 
-1.  **Instale e configure o MySQL Server:**
-    Certifique-se de ter uma instância do MySQL Server em execução e acessível. Crie um banco de dados para a aplicação (ex: `mydatabase`).
+### Guia Rápido: Instalando e Configurando o MySQL Server
 
-2.  **Crie um arquivo `.env`:**
+Esta seção oferece um guia geral. Para instruções detalhadas e específicas do seu sistema operacional, consulte sempre a [documentação oficial do MySQL](https://dev.mysql.com/doc/refman/en/installing.html).
+
+**A. Instalação do MySQL Server:**
+
+*   **Windows:**
+    *   Baixe o MySQL Installer em [mysql.com/downloads/](https://dev.mysql.com/downloads/).
+    *   Execute o instalador e siga as instruções. Recomenda-se escolher a opção "Server only" (Apenas Servidor) ou "Developer Default" (Padrão do Desenvolvedor) que inclui o servidor.
+    *   Durante a instalação, você será solicitado a definir uma senha para o usuário `root` do MySQL. **Guarde esta senha com segurança.**
+*   **macOS:**
+    *   Usando [Homebrew](https://brew.sh/):
+        ```bash
+        brew update
+        brew install mysql
+        ```
+    *   Ou baixe o pacote `.dmg` de [mysql.com/downloads/](https://dev.mysql.com/downloads/).
+    *   Após a instalação, inicie o servidor MySQL e configure a senha do `root` se solicitado (`mysql_secure_installation` pode ser útil).
+*   **Linux (Exemplo com APT - Debian/Ubuntu):**
+    ```bash
+    sudo apt update
+    sudo apt install mysql-server
+    ```
+    *   Após a instalação, execute `sudo mysql_secure_installation` para configurar a senha do `root` e outras configurações de segurança.
+*   **Linux (Exemplo com YUM - CentOS/RHEL/Fedora):**
+    *   Consulte a documentação do MySQL para obter os repositórios corretos para sua versão.
+    *   Geralmente, os passos envolvem adicionar o repositório YUM do MySQL e depois instalar com `sudo yum install mysql-community-server`.
+    *   Após a instalação, inicie o serviço (`sudo systemctl start mysqld`) e configure a segurança (`sudo mysql_secure_installation`).
+
+**B. Criando Banco de Dados e Usuário para a Aplicação:**
+
+Após instalar e iniciar o MySQL Server, você precisará criar um banco de dados e um usuário para esta aplicação.
+
+1.  **Conecte-se ao servidor MySQL como `root`:**
+    Abra o terminal ou prompt de comando e use o cliente MySQL:
+    ```bash
+    mysql -u root -p
+    ```
+    Você será solicitado a inserir a senha do `root` que definiu durante a instalação.
+
+2.  **Crie um novo banco de dados para a aplicação:**
+    No prompt `mysql>`, execute (substitua `mydatabase` pelo nome que desejar):
+    ```sql
+    CREATE DATABASE mydatabase CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+    Usar `utf8mb4` é recomendado para suportar uma ampla gama de caracteres.
+
+3.  **Crie um novo usuário para a aplicação:**
+    Substitua `myuser` e `mypassword` pelo nome de usuário e senha que você deseja usar para a aplicação. **Use uma senha forte!**
+    ```sql
+    CREATE USER 'myuser'@'localhost' IDENTIFIED BY 'mypassword';
+    ```
+    Isso cria um usuário que só pode se conectar a partir de `localhost`. Se sua aplicação e banco de dados estiverem em máquinas diferentes, substitua `localhost` pelo IP ou hostname da máquina da aplicação, ou use `'%'` (geralmente não recomendado para produção sem firewall adequado) para permitir conexões de qualquer host.
+
+4.  **Conceda privilégios ao novo usuário no banco de dados criado:**
+    ```sql
+    GRANT ALL PRIVILEGES ON mydatabase.* TO 'myuser'@'localhost';
+    ```
+    Isso dá todas as permissões ao `myuser` apenas no banco de dados `mydatabase`.
+
+5.  **Aplique as alterações de privilégio:**
+    ```sql
+    FLUSH PRIVILEGES;
+    ```
+
+6.  **Saia do cliente MySQL:**
+    ```sql
+    EXIT;
+    ```
+
+**C. Verifique a Conexão (Opcional, mas Recomendado):**
+
+Você pode tentar se conectar ao MySQL com o novo usuário para verificar se tudo funcionou:
+```bash
+mysql -u myuser -p mydatabase
+```
+Insira a senha `mypassword` quando solicitado. Se você conseguir se conectar e ver o prompt `mysql>` dentro do `mydatabase`, a configuração básica está correta.
+
+Com esses passos concluídos, você terá um usuário (ex: `myuser`), uma senha (ex: `mypassword`) e um banco de dados (ex: `mydatabase`) prontos para serem usados na configuração `DATABASE_URL` do arquivo `.env` da sua aplicação.
+
+---
+
+Com o MySQL Server instalado e configurado conforme o guia acima, siga os próximos passos para conectar sua aplicação:
+
+1.  **Crie um arquivo `.env`:**
     Na raiz do projeto, se ainda não o fez, crie uma cópia do arquivo `.env.example` e renomeie-a para `.env`.
     ```bash
     cp .env.example .env
     ```
     O arquivo `.env` é ignorado pelo Git e não deve ser versionado.
 
-3.  **Configure a `DATABASE_URL` no arquivo `.env`:**
-    Abra o arquivo `.env` e edite a variável `DATABASE_URL` com as suas credenciais de conexão do MySQL.
+2.  **Configure a `DATABASE_URL` no arquivo `.env`:**
+    Abra o arquivo `.env` e edite a variável `DATABASE_URL` com as credenciais do usuário e banco de dados que você criou no MySQL (conforme o "Guia Rápido" acima, por exemplo, `myuser`, `mypassword`, `mydatabase`).
     O formato é: `mysql+mysqlclient://USUARIO:SENHA@HOST:PORTA/NOME_DO_BANCO`
-    Exemplo:
+    Exemplo (usando os dados do guia):
     ```env
-    DATABASE_URL="mysql+mysqlclient://user:password@localhost:3306/mydatabase"
+    DATABASE_URL="mysql+mysqlclient://myuser:mypassword@localhost:3306/mydatabase"
     ```
-    Substitua `user`, `password`, `localhost`, `3306` (porta padrão do MySQL), e `mydatabase` pelos valores corretos da sua configuração do MySQL. A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
+    A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
 
-4.  **Criação das Tabelas:**
+3.  **Criação das Tabelas:**
     As tabelas do banco de dados são criadas automaticamente pela aplicação na primeira vez que ela é iniciada, com base nos modelos definidos em `models/`.
 
 ### Alternativa para Desenvolvimento Local Rápido (SQLite)
@@ -127,7 +208,7 @@ A API estará disponível em `http://127.0.0.1:8000`.
 
 ```
 .
-├── .env                    # (Opcional, para variáveis de ambiente como DATABASE_URL para PostgreSQL)
+├── .env                    # (Não versionado. Usado para DATABASE_URL para MySQL. Copie de .env.example)
 ├── .gitignore              # Arquivos e pastas ignorados pelo Git
 ├── DESCRICAO_PROJETO.md    # Descrição detalhada do projeto, escopo e funcionalidades
 ├── README.md               # Este arquivo
