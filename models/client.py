@@ -9,8 +9,8 @@ class ClientDB(Base):
     __tablename__ = "clients"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    area_of_expertise = Column(String)
+    name = Column(String(150), index=True)  # Comprimento 150
+    area_of_expertise = Column(String(100)) # Comprimento 100
 
     processes = relationship("LegalProcessDB", back_populates="client")
 

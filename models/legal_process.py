@@ -11,12 +11,12 @@ class LegalProcessDB(Base):
     __tablename__ = "legal_processes"
 
     id = Column(Integer, primary_key=True, index=True)
-    process_number = Column(String, unique=True, index=True)
+    process_number = Column(String(50), unique=True, index=True) # Comprimento 50
     entry_date = Column(Date)
     delivery_deadline = Column(Date)
     fatal_deadline = Column(Date)
-    status = Column(String, default="ativo")
-    action_type = Column(String, nullable=True)
+    status = Column(String(30), default="ativo") # Comprimento 30
+    action_type = Column(String(100), nullable=True) # Comprimento 100
 
     lawyer_id = Column(Integer, ForeignKey("lawyers.id"))
     client_id = Column(Integer, ForeignKey("clients.id"))
