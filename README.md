@@ -204,6 +204,14 @@ A API estará disponível em `http://127.0.0.1:8000`.
     Uma interface básica para testar as funcionalidades CRUD está disponível em:
     `http://127.0.0.1:8000/frontend/index.html`
 
+## Compatibilidade de Navegador
+
+A interface web da aplicação (tanto a de teste em `index.html` quanto o painel em `dashboard.html`) foi desenvolvida e testada primariamente utilizando o navegador **Mozilla Firefox**.
+
+A escolha pelo Firefox deveu-se à sua reconhecida leveza e bom desempenho em comparação com outros navegadores populares, como o Google Chrome, o que pode ser vantajoso em ambientes com recursos limitados.
+
+Embora a aplicação utilize tecnologias web padrão (HTML, CSS, JavaScript) e bibliotecas populares (Bootstrap, Chart.js) que geralmente garantem boa compatibilidade, o funcionamento em outros navegadores (como Chrome, Edge, Safari, etc.) não foi extensivamente verificado. Espera-se que funcione corretamente na maioria dos navegadores modernos, mas podem existir pequenas diferenças visuais ou de comportamento.
+
 ## Estrutura do Projeto
 
 ```
