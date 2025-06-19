@@ -11,61 +11,51 @@ Este documento detalha as funcionalidades implementadas, pendentes para a Versã
 
 ## I. Versão Estável
 
-O objetivo desta versão é fornecer um sistema central robusto e confiável com as funcionalidades essenciais.
+O objetivo desta versão é fornecer um sistema central robusto e confiável com as funcionalidades essenciais, conforme listado abaixo.
 
-### A. Funcionalidades Implementadas na Versão Estável
+### 1. Cadastro de Cliente e Processo
 
-*   ✅ **Backend API (FastAPI):**
-    *   Endpoints CRUD completos para Advogados, Clientes e Processos Jurídicos.
-    *   Validações de dados de entrada (Pydantic).
-    *   Lógica de negócios básica (ex: impedir exclusão de advogados/clientes com processos ativos).
-    *   Filtros para listagem de advogados e processos.
-*   ✅ **Banco de Dados (MySQL com PyMySQL):**
-    *   Configuração para uso do MySQL como banco de dados padrão.
-    *   Modelos de dados SQLAlchemy (`LawyerDB`, `ClientDB`, `LegalProcessDB`) com relacionamentos e tipos de dados definidos (incluindo comprimento para `VARCHAR`).
-    *   Criação automática de tabelas.
-*   ✅ **Frontend - Interface de Gerenciamento de Dados (`index.html`):**
-    *   Interface para operações CRUD diretas em Advogados, Clientes e Processos.
-    *   Layout modernizado com Bootstrap e Font Awesome.
-    *   Funcionalidade de exclusão em massa para processos.
-    *   Tratamento de erros da API com mensagens (algumas personalizadas).
-*   ✅ **Frontend - Painel Home/Dashboard (`dashboard.html`):**
-    *   Estrutura inicial com Bootstrap e Chart.js.
-    *   Exibição de cards de resumo (Processos Ativos, Prazos Próximos, Total Advogados, Total Clientes).
-    *   Tabela de listagem de processos com dados da API.
-    *   Filtros funcionais para a tabela de processos (por status, advogado, cliente).
-    *   Gráficos dinâmicos (Processos por Status, por Advogado, por Tipo de Ação) baseados nos dados totais.
-    *   Seção de Alertas de Prazos (processos com prazo fatal nos próximos 7 dias).
-*   ✅ **Navegação Global:**
-    *   Barra de navegação consistente (Bootstrap) em `index.html` e `dashboard.html` permitindo alternar entre as duas interfaces.
-*   ✅ **Geração de Dados Sintéticos:**
-    *   Script `seed_db.py` utilizando Faker para popular o banco de dados com dados de teste.
-*   ✅ **Documentação Inicial:**
-    *   `README.md` com instruções de configuração, execução, tecnologias, etc.
-    *   `DESCRICAO_PROJETO.md` com o escopo geral do projeto.
-    *   `COMMITS_A_TRADUZIR.md` para referência de histórico.
+*   ✅ **ID único do cliente:** Implementado (gerado automaticamente pelo banco de dados).
+*   ✅ **Nome completo / Razão social (Cliente):** Implementado (campo `name` no modelo `ClientDB`).
+*   ⏳ **Área de atuação (selecionável entre as listadas) (Cliente):** Parcialmente implementado. Atualmente é um campo de texto livre (`area_of_expertise`). A funcionalidade de ser "selecionável entre as listadas" requer desenvolvimento adicional para gerenciar as opções e mudar o tipo de campo no frontend/backend.
+*   ✅ **Número do processo:** Implementado (campo `process_number` no modelo `LegalProcessDB`, com constraint `unique`).
+*   ✅ **Advogado responsável (selecionar de lista cadastrada) (Processo):** Implementado (campo `lawyer_id` no modelo `LegalProcessDB`, associado a `LawyerDB`; frontend `index.html` e `dashboard.html` populam select).
+*   ✅ **Data de entrada do processo:** Implementado (campo `entry_date` no modelo `LegalProcessDB`).
+*   ✅ **Prazo para entrega (Processo):** Implementado (campo `delivery_deadline` no modelo `LegalProcessDB`).
+*   ✅ **Prazo fatal (Processo):** Implementado (campo `fatal_deadline` no modelo `LegalProcessDB`).
+*   ✅ **Cliente associado ao processo (selecionar de lista cadastrada):** Implementado (campo `client_id` no modelo `LegalProcessDB`, associado a `ClientDB`; frontend `index.html` e `dashboard.html` populam select). (Inferido da necessidade de associar processo a cliente).
+*   ✅ **CRUD para Clientes:** Implementado (API e interface de gerenciamento de dados).
+*   ✅ **CRUD para Processos:** Implementado (API e interface de gerenciamento de dados, incluindo exclusão em massa).
 
-### B. Funcionalidades Pendentes para a Versão Estável
+### 2. Cadastro de Advogados
 
-*   ⏳ **Integração com Telegram (Notificações Essenciais):**
-    *   Configuração do Bot do Telegram.
-    *   Armazenamento seguro do Token do Bot.
-    *   Desenvolvimento da lógica no backend para:
-        *   Enviar notificações diárias sobre prazos do dia.
-        *   Enviar notificações antecipadas (ex: 5 dias antes de um prazo fatal).
-*   ⏳ **Automação Mínima com Inteligência Artificial (IA) - Uma Funcionalidade Obrigatória:**
-    *   Escolha definitiva e implementação de *uma* das opções:
-        *   Opção A: Modelo simples para prever possíveis atrasos em processos.
-        *   Opção B: Ferramenta que gera um resumo automático ou classifica o tipo de ação com base no nome/descrição do processo.
-    *   Integração da funcionalidade de IA escolhida ao backend e, se aplicável, ao frontend.
-*   ⏳ **Testes Automatizados:**
-    *   **Backend:** Implementação de testes unitários e de integração para os endpoints da API e lógica de negócios (ex: usando `pytest` e `TestClient` do FastAPI).
-    *   **(Opcional, mas recomendado) Frontend:** Testes básicos para as interações mais críticas das interfaces.
-*   ⏳ **Documentação e Planejamento de Deployment:**
-    *   Detalhar o processo de deployment da aplicação em um ambiente de produção.
-    *   Considerar configurações de servidor web (Nginx), gerenciamento de processos (Gunicorn), segurança do banco de dados em produção, HTTPS.
-*   **(Opcional/Refinamento) Melhoria no Feedback ao Usuário no `index.html`:**
-    *   Substituir os `alert()`s JavaScript por componentes de alerta/toast do Bootstrap para uma experiência de usuário mais integrada e moderna.
+*   O sistema deve permitir cadastro de novos advogados, com os seguintes dados:
+    *   ✅ **Nome completo:** Implementado (campo `name` no modelo `LawyerDB`).
+    *   ✅ **Número da OAB:** Implementado (campo `oab` no modelo `LawyerDB`, com constraint `unique`).
+    *   ✅ **E-mail:** Implementado (campo `email` no modelo `LawyerDB`, com constraint `unique`).
+    *   ✅ **ID do Telegram (para notificações):** Implementado (campo `telegram_id`, opcional, no modelo `LawyerDB`).
+*   ✅ **Edição dos dados (ex: troca de e-mail, alteração de Telegram ID):** Implementado (API e interface de gerenciamento de dados).
+*   ✅ **Exclusão de advogados, com verificação se estão vinculados a processos (evitar exclusão direta se houver vínculos):** Implementado (API e interface de gerenciamento de dados com feedback).
+*   ✅ **Consulta de advogados via listagem com filtros por nome, OAB:** Implementado (API `GET /lawyers/` com filtros por nome e OAB; interface de gerenciamento de dados lista todos; Painel Home não possui filtro específico de advogados para visualização geral ainda, mas a API suporta). (Considerando "etc." como os filtros já implementados).
+
+### 3. Painel Home / Resumo Gerencial
+
+*   ✅ **Lista de processos com status (ativos, concluídos, vencidos):** Implementado no `dashboard.html` (tabela de processos exibe status; filtros permitem selecionar por status).
+*   ✅ **Gráficos de acompanhamento (por tipo de ação, por advogado, por status):** Implementado no `dashboard.html` (gráficos Chart.js para estas três dimensões, baseados nos dados totais).
+*   ✅ **Alertas de prazos próximos (até 7 dias):** Implementado no `dashboard.html` (seção "Alertas de Prazos Importantes").
+*   ✅ **Busca e filtros por cliente, tipo de ação, advogado, prazo:** Parcialmente implementado.
+    *   ✅ Filtros por cliente, advogado, status (e tipo de ação implicitamente via dados para gráfico) estão disponíveis no `dashboard.html` para a tabela de processos.
+    *   ⏳ Filtro por intervalo de "prazo" específico na tabela não está implementado.
+
+### 4. Integração com Telegram
+
+*   ⏳ **Notificações diárias com prazos do dia:** Pendente.
+*   ⏳ **Notificação antecipada (ex: 5 dias antes do prazo fatal):** Pendente.
+*   ⏳ **Possibilidade de envio automático de movimentações de processo (mock, simulação ou integração real com IA se possível):** Pendente.
+
+### 5. Automação com IA (mínimo viável)
+
+*   ⏳ **Proposta: usar IA para prever possíveis atrasos com base em histórico de prazos (simples modelo estatístico ou análise básica); Ou: Geração de resumo automático do tipo de ação com base no nome (classificação ou agrupamento):** Pendente (escolha da abordagem e implementação).
 
 ---
 
