@@ -131,7 +131,11 @@ async function deleteLawyer(id) {
         alert('Advogado excluído com sucesso!');
     } catch (error) {
         console.error('Falha ao excluir advogado:', error);
-        alert(`Erro ao excluir advogado: ${error.message}`);
+        if (error.message && error.message.includes('Lawyer cannot be deleted as they are associated with one or more legal processes')) {
+            alert(`Advogado não pode ser excluído, pois está associado a um ou mais processos. Detalhes: ${error.message}`);
+        } else {
+            alert(`Erro ao excluir advogado: ${error.message}`);
+        }
     }
 }
 
@@ -258,7 +262,11 @@ async function deleteClient(id) {
         alert('Cliente excluído com sucesso!');
     } catch (error) {
         console.error('Falha ao excluir cliente:', error);
-        alert(`Erro ao excluir cliente: ${error.message}`);
+        if (error.message && error.message.includes('Client cannot be deleted as they are associated with one or more legal processes')) {
+            alert(`Cliente não pode ser excluído, pois está associado a um ou mais processos. Detalhes: ${error.message}`);
+        } else {
+            alert(`Erro ao excluir cliente: ${error.message}`);
+        }
     }
 }
 
