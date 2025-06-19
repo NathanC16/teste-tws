@@ -25,11 +25,23 @@ async function fetchLawyers() {
         ul.className = 'item-list';
         lawyers.forEach(lawyer => {
             const li = document.createElement('li');
+            // Escape quotes for data attributes if names/emails etc. might contain them
+            const escapedName = lawyer.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedOab = lawyer.oab.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedEmail = lawyer.email.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedTelegramId = (lawyer.telegram_id || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
             li.innerHTML = `
                 <span>${lawyer.name} (OAB: ${lawyer.oab}, Email: ${lawyer.email}, Telegram: ${lawyer.telegram_id || 'N/A'})</span>
                 <span class="item-actions">
-                    <button onclick="editLawyer(${lawyer.id}, '${lawyer.name}', '${lawyer.oab}', '${lawyer.email}', '${lawyer.telegram_id || ''}')">Editar</button>
-                    <button class="delete-btn" onclick="deleteLawyer(${lawyer.id})">Excluir</button>
+                    <button class="btn-edit-lawyer"
+                            data-id="${lawyer.id}"
+                            data-name="${escapedName}"
+                            data-oab="${escapedOab}"
+                            data-email="${escapedEmail}"
+                            data-telegram="${escapedTelegramId}">Editar</button>
+                    <button class="btn-delete-lawyer delete-btn"
+                            data-id="${lawyer.id}">Excluir</button>
                 </span>
             `;
             ul.appendChild(li);
@@ -148,11 +160,19 @@ async function fetchClients() {
         ul.className = 'item-list';
         clients.forEach(client => {
             const li = document.createElement('li');
+            // Escape quotes for data attributes
+            const escapedClientName = client.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedArea = client.area_of_expertise.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
             li.innerHTML = `
                 <span>${client.name} (Área: ${client.area_of_expertise})</span>
                 <span class="item-actions">
-                    <button onclick="editClient(${client.id}, '${client.name}', '${client.area_of_expertise}')">Editar</button>
-                    <button class="delete-btn" onclick="deleteClient(${client.id})">Excluir</button>
+                    <button class="btn-edit-client"
+                            data-id="${client.id}"
+                            data-name="${escapedClientName}"
+                            data-area="${escapedArea}">Editar</button>
+                    <button class="btn-delete-client delete-btn"
+                            data-id="${client.id}">Excluir</button>
                 </span>
             `;
             ul.appendChild(li);
@@ -316,22 +336,27 @@ async function fetchProcesses() {
 
         processes.forEach(process => {
             const li = document.createElement('li');
+            // Escape quotes for data attributes
+            const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
             li.innerHTML = `
                 <span>Nº: ${process.process_number} (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})</span>
-                <span>Status: ${process.status}, Prazo Fatal: ${process.fatal_deadline}</span>
+                <span>Status: ${process.status}, Prazo Fatal: ${formatDate(process.fatal_deadline)}</span>
                 <span class="item-actions">
-                    <button onclick="editProcess(
-                        ${process.id},
-                        '${process.process_number}',
-                        ${process.lawyer_id},
-                        ${process.client_id},
-                        '${process.entry_date}',
-                        '${process.delivery_deadline}',
-                        '${process.fatal_deadline}',
-                        '${process.status}',
-                        '${process.action_type || ''}'
-                    )">Editar</button>
-                    <button class="delete-btn" onclick="deleteProcess(${process.id})">Excluir</button>
+                    <button class="btn-edit-process"
+                            data-id="${process.id}"
+                            data-number="${escapedProcessNumber}"
+                            data-lawyerid="${process.lawyer_id}"
+                            data-clientid="${process.client_id}"
+                            data-entrydate="${process.entry_date}"
+                            data-deliverydeadline="${process.delivery_deadline}"
+                            data-fataldeadline="${process.fatal_deadline}"
+                            data-status="${escapedStatus}"
+                            data-actiontype="${escapedActionType}">Editar</button>
+                    <button class="btn-delete-process delete-btn"
+                            data-id="${process.id}">Excluir</button>
                 </span>
             `;
             ul.appendChild(li);
@@ -449,4 +474,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchLawyers(); // Busca e exibe a lista de advogados
     fetchClients(); // Busca e exibe a lista de clientes
     fetchProcesses(); // Busca e exibe a lista de processos
+
+    // Delegação de Eventos para a lista de Advogados
+    lawyersListDiv.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (target.classList.contains('btn-edit-lawyer')) {
+            const id = target.dataset.id;
+            const name = target.dataset.name;
+            const oab = target.dataset.oab;
+            const email = target.dataset.email;
+            const telegram = target.dataset.telegram;
+            editLawyer(id, name, oab, email, telegram);
+        } else if (target.classList.contains('btn-delete-lawyer')) {
+            const id = target.dataset.id;
+            deleteLawyer(id);
+        }
+    });
+
+    // Delegação de Eventos para a lista de Clientes
+    clientsListDiv.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (target.classList.contains('btn-edit-client')) {
+            const id = target.dataset.id;
+            const name = target.dataset.name;
+            const area = target.dataset.area;
+            editClient(id, name, area);
+        } else if (target.classList.contains('btn-delete-client')) {
+            const id = target.dataset.id;
+            deleteClient(id);
+        }
+    });
+
+    // Delegação de Eventos para a lista de Processos
+    processesListDiv.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (target.classList.contains('btn-edit-process')) {
+            const id = target.dataset.id;
+            const number = target.dataset.number;
+            const lawyerId = target.dataset.lawyerid;
+            const clientId = target.dataset.clientid;
+            const entryDate = target.dataset.entrydate;
+            const deliveryDeadline = target.dataset.deliverydeadline;
+            const fatalDeadline = target.dataset.fataldeadline;
+            const status = target.dataset.status;
+            const actionType = target.dataset.actiontype;
+
+            editProcess(id, number, lawyerId, clientId, entryDate, deliveryDeadline, fatalDeadline, status, actionType);
+        } else if (target.classList.contains('btn-delete-process')) {
+            const id = target.dataset.id;
+            deleteProcess(id);
+        }
+    });
 });
