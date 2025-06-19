@@ -261,6 +261,8 @@ Embora a aplicação utilize tecnologias web padrão (HTML, CSS, JavaScript) e b
     └── style.css
 ```
 
+Para referência sobre o histórico de commits e a tradução de prefixos de mensagens ou nomes de branch que foram feitos em inglês no início do projeto, consulte o arquivo `COMMITS_A_TRADUZIR.md`.
+
 ## Próximos Passos (Visão Geral da Versão Estável)
 
 Consulte o `DESCRICAO_PROJETO.md` para o detalhamento completo. As próximas grandes funcionalidades incluem:
