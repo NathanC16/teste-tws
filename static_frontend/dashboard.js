@@ -34,11 +34,40 @@ const clientMap = {}; // Para mapear ID -> Nome
 
 // --- Funções Utilitárias ---
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    // Adiciona 1 dia porque o input date e o new Date() podem ter problemas com timezone/UTC
-    date.setDate(date.getDate() + 1);
-    return date.toLocaleDateString('pt-BR');
+    if (!dateString) return 'N/A'; // Retorna N/A se a string de data for nula ou vazia
+
+    // As datas da API vêm como YYYY-MM-DD.
+    // new Date('YYYY-MM-DD') trata a string como UTC.
+    // Para evitar problemas de fuso horário que mostram o dia anterior,
+    // parseamos os componentes e criamos a data como local.
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Mês em JavaScript é 0-indexado (0-11)
+        const day = parseInt(parts[2], 10);
+
+        // Cria o objeto Date usando os componentes, interpretados como data local
+        const date = new Date(year, month, day);
+
+        // Formata para o padrão pt-BR (DD/MM/YYYY)
+        return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Adicionado timeZone: 'UTC' para consistência
+                                                                    // na formatação, já que a data foi criada
+                                                                    // com componentes que implicitamente são locais
+                                                                    // mas representam uma data "pura" sem hora.
+                                                                    // Ou, se quiser forçar o fuso do usuário, pode omitir timeZone.
+                                                                    // Para datas "puras" (sem hora), 'UTC' na formatação
+                                                                    // garante que a data não "pule" por causa do fuso do navegador.
+    } else {
+        // Se a string de data não estiver no formato esperado, retorna a string original ou um aviso.
+        // Ou tenta uma conversão direta, mas pode ser arriscado.
+        console.warn(`Formato de data inesperado: ${dateString}. Tentando conversão direta.`);
+        const date = new Date(dateString); // Tentativa de fallback
+        // Verifica se a data é válida após a tentativa de fallback
+        if (isNaN(date.getTime())) {
+            return 'Data Inválida';
+        }
+        return date.toLocaleDateString('pt-BR'); // Formatação padrão se o fallback funcionar
+    }
 }
 
 // --- Funções de Busca de Dados ---
