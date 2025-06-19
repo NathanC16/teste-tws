@@ -1,97 +1,67 @@
-body {
-    font-family: sans-serif;
-    line-height: 1.6;
+/* style.css - Revisado para Bootstrap */
+
+/* Estilos gerais do corpo - Bootstrap já define a fonte base.
+   A cor de fundo e margens podem ser ajustadas aqui se o padrão do Bootstrap
+   ou o que foi definido no HTML (ex: através de classes de container) não for suficiente.
+   Por ora, vamos confiar no Bootstrap e nas classes de container. */
+/* body {
     margin: 20px;
     background-color: #f4f4f4;
     color: #333;
-}
+} */
 
-h1 {
-    text-align: center;
-    color: #2c3e50;
-}
-
-h2 {
+/* Títulos H2 e H3 - Bootstrap tem estilos base.
+   As classes de texto (ex: text-primary) ou customizações mais específicas podem ser usadas.
+   Se houver necessidade de um estilo global não coberto, pode ser adicionado aqui. */
+/* h2 {
     color: #3498db;
     border-bottom: 2px solid #3498db;
     padding-bottom: 5px;
-}
+} */
 
-h3 {
+/* h3 {
     color: #2980b9;
-}
+} */
 
-section {
+/* Seções - Classes como .mb-5, .p-4, .border, .rounded, .shadow-sm no HTML já fazem o trabalho.
+   Removendo a regra genérica de 'section'. */
+/* section {
     background-color: #fff;
     margin-bottom: 20px;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
+} */
 
-hr {
+/* HR - A classe my-5 no HTML já cuida do espaçamento.
+   Bootstrap tem sua própria estilização para HR. */
+/* hr {
     margin: 30px 0;
     border: 0;
     border-top: 1px solid #ddd;
-}
+} */
 
-form div {
-    margin-bottom: 10px;
-}
+/* Estilos de Formulário - Cobertos por form-label, form-control, mb-3, btn no HTML. */
+/* form div { ... } */
+/* label { ... } */
+/* input[type="text"], input[type="email"], input[type="date"], select { ... } */
+/* button[type="submit"], button[type="button"] { ... } */
+/* button[type="submit"]:hover, button[type="button"]:hover { ... } */
 
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
+/* Botões de Cancelar Específicos - Agora usamos btn-secondary do Bootstrap.
+   Se cores específicas forem desejadas, classes customizadas ou sobrescrita de .btn-secondary seria melhor. */
+/* button#cancel-lawyer-update, ... { ... } */
+/* button#cancel-lawyer-update:hover, ... { ... } */
 
-input[type="text"],
-input[type="email"],
-input[type="date"],
-select {
-    width: calc(100% - 22px);
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box; /* Important for consistent width */
-}
 
-button[type="submit"],
-button[type="button"] {
-    background-color: #3498db;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
-}
+/* A classe .item-list (para ul) não é mais usada no JS. */
+/* .item-list { ... } */
 
-button[type="submit"]:hover,
-button[type="button"]:hover {
-    background-color: #2980b9;
-}
-
-button#cancel-lawyer-update,
-button#cancel-client-update,
-button#cancel-process-update {
-    background-color: #e74c3c;
-}
-
-button#cancel-lawyer-update:hover,
-button#cancel-client-update:hover,
-button#cancel-process-update:hover {
-    background-color: #c0392b;
-}
-
-/* Styling for lists/tables that will be populated by JS */
-.item-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-.item-list li {
+/* Estilos para .item-list li - Agora usamos .list-group-item do Bootstrap.
+   Se precisarmos de customizações específicas para os itens da lista que
+   o Bootstrap não cobre ou que queremos sobrescrever, podemos adicionar
+   regras para .list-group-item aqui. */
+/* .item-list li {
     background-color: #ecf0f1;
     border: 1px solid #bdc3c7;
     padding: 10px;
@@ -100,21 +70,37 @@ button#cancel-process-update:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
+} */
 
+
+/* Item Actions - Os botões agora têm classes Bootstrap btn-sm btn-outline-*.
+   A div que os envolve tem 'ms-3'. O 'margin-left: 5px' pode ser redundante ou
+   pode ser mantido se um espaçamento adicional for desejado entre os botões em si. */
 .item-actions button {
-    background-color: #e67e22;
-    padding: 5px 10px;
-    font-size: 14px;
-    margin-left: 5px;
-}
-.item-actions button.delete-btn {
-    background-color: #c0392b;
+    /* Exemplo: se for necessário um espaçamento extra entre os botões de editar/excluir */
+    /* margin-left: 4px; */
 }
 
-.item-actions button:hover {
-    opacity: 0.8;
+/* A classe .delete-btn ainda é usada, mas a cor principal é definida por .btn-outline-danger.
+   Esta regra para .item-actions button.delete-btn pode não ser mais necessária
+   a menos que queira sobrescrever algo específico do .btn-outline-danger. */
+/* .item-actions button.delete-btn {
+    background-color: #c0392b;
+} */
+
+/* .item-actions button:hover { ... } */
+/* .item-actions button.delete-btn:hover { ... } */
+
+/* Estilos para a checkbox dentro dos itens da lista de processos, se necessário.
+   O Bootstrap pode já lidar bem com isso, ou podemos adicionar classes específicas. */
+.process-checkbox {
+    /* Exemplo: se precisar de um ajuste de margem ou tamanho específico */
+    /* margin-right: 0.75rem; */
 }
-.item-actions button.delete-btn:hover {
-    background-color: #a5281b;
-}
+
+/* Adicionando um estilo para o container principal se quisermos um max-width
+   ou algum padding global não coberto pela navbar.
+   No entanto, a classe .container do Bootstrap no HTML já faz isso. */
+/* .container {
+    padding-top: 20px;
+} */
