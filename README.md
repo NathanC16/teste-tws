@@ -195,6 +195,33 @@ uvicorn main:app --reload
 
 A API estará disponível em `http://127.0.0.1:8000`.
 
+## Populando o Banco de Dados com Dados de Teste (Opcional)
+
+Para facilitar os testes e a demonstração da aplicação, foi incluído um script (`seed_db.py`) que utiliza a biblioteca Faker para popular o banco de dados com dados sintéticos (advogados, clientes e processos).
+
+**Pré-requisitos:**
+*   Certifique-se de que as dependências do projeto estão instaladas, incluindo `Faker` (conforme `requirements.txt`).
+*   O arquivo `.env` deve estar configurado corretamente com a `DATABASE_URL` apontando para o seu banco de dados MySQL, pois o script usará esta configuração.
+
+**Executando o Script:**
+
+1.  Certifique-se de que seu ambiente virtual está ativado.
+2.  Na raiz do projeto, execute o seguinte comando no terminal:
+    ```bash
+    python seed_db.py
+    ```
+3.  O script irá criar as tabelas (se ainda não existirem) e depois inserir os dados. Você verá mensagens de progresso no console.
+
+**Configuração do Volume de Dados:**
+Você pode ajustar o número de advogados, clientes e processos a serem gerados editando as seguintes constantes no topo do arquivo `seed_db.py`:
+```python
+NUM_LAWYERS = 10
+NUM_CLIENTS = 20
+NUM_PROCESSES = 50
+```
+
+**Importante:** Executar o script múltiplas vezes pode gerar dados duplicados se os seus modelos não tiverem constraints `unique` em campos que deveriam ser únicos (como email do advogado ou número do processo, que já possuem). Se precisar recomeçar com um banco limpo, você pode precisar deletar as tabelas ou o banco de dados manualmente antes de executar o script novamente.
+
 ## Acessando a Aplicação
 
 *   **Documentação Interativa da API (Swagger UI):**

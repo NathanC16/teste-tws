@@ -6,3 +6,4 @@ python-dotenv==1.0.0
 email-validator==2.1.0.post1
 sqlalchemy==2.0.25
 PyMySQL==1.1.0
+Faker==20.1.0
