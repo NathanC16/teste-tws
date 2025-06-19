@@ -477,6 +477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Delegação de Eventos para a lista de Advogados
     lawyersListDiv.addEventListener('click', (event) => {
+        console.log("Clique detectado em lawyersListDiv. Elemento clicado:", event.target); // <--- ADICIONADO
         const target = event.target;
 
         if (target.classList.contains('btn-edit-lawyer')) {
@@ -485,30 +486,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             const oab = target.dataset.oab;
             const email = target.dataset.email;
             const telegram = target.dataset.telegram;
+            // console.log(`Editando advogado ID: ${id}`); // Log para edição, se quiser adicionar
             editLawyer(id, name, oab, email, telegram);
         } else if (target.classList.contains('btn-delete-lawyer')) {
+            console.log("Botão 'btn-delete-lawyer' identificado. Elemento:", target); // <--- ADICIONADO e melhorado
             const id = target.dataset.id;
+            console.log("ID extraído para deleteLawyer:", id); // <--- ADICIONADO
             deleteLawyer(id);
         }
     });
 
     // Delegação de Eventos para a lista de Clientes
     clientsListDiv.addEventListener('click', (event) => {
+        console.log("Clique detectado em clientsListDiv. Elemento clicado:", event.target); // <--- ADICIONADO
         const target = event.target;
 
         if (target.classList.contains('btn-edit-client')) {
             const id = target.dataset.id;
             const name = target.dataset.name;
             const area = target.dataset.area;
+            // console.log(`Editando cliente ID: ${target.dataset.id}`);
             editClient(id, name, area);
         } else if (target.classList.contains('btn-delete-client')) {
+            console.log("Botão 'btn-delete-client' identificado. Elemento:", target); // <--- ADICIONADO
             const id = target.dataset.id;
+            console.log("ID extraído para deleteClient:", id); // <--- ADICIONADO
             deleteClient(id);
         }
     });
 
     // Delegação de Eventos para a lista de Processos
     processesListDiv.addEventListener('click', (event) => {
+        console.log("Clique detectado em processesListDiv. Elemento clicado:", event.target); // <--- ADICIONADO
         const target = event.target;
 
         if (target.classList.contains('btn-edit-process')) {
@@ -521,10 +530,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const fatalDeadline = target.dataset.fataldeadline;
             const status = target.dataset.status;
             const actionType = target.dataset.actiontype;
-
+            // console.log(`Editando processo ID: ${target.dataset.id}`);
             editProcess(id, number, lawyerId, clientId, entryDate, deliveryDeadline, fatalDeadline, status, actionType);
         } else if (target.classList.contains('btn-delete-process')) {
+            console.log("Botão 'btn-delete-process' identificado. Elemento:", target); // <--- ADICIONADO
             const id = target.dataset.id;
+            console.log("ID extraído para deleteProcess:", id); // <--- ADICIONADO
             deleteProcess(id);
         }
     });
