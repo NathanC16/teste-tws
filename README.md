@@ -241,6 +241,13 @@ A escolha pelo Firefox deveu-se à sua reconhecida leveza e bom desempenho em co
 
 Embora a aplicação utilize tecnologias web padrão (HTML, CSS, JavaScript) e bibliotecas populares (Bootstrap, Chart.js) que geralmente garantem boa compatibilidade, o funcionamento em outros navegadores (como Chrome, Edge, Safari, etc.) não foi extensivamente verificado. Espera-se que funcione corretamente na maioria dos navegadores modernos, mas podem existir pequenas diferenças visuais ou de comportamento.
 
+## Planejamento e Acompanhamento do Projeto
+
+Para uma visão detalhada do escopo completo do projeto, suas diferentes versões (Estável e Teste), e o status atual das funcionalidades (implementadas, pendentes e planejadas), consulte os seguintes documentos:
+
+*   `DESCRICAO_PROJETO.md`: Fornece uma descrição narrativa completa do projeto e seus objetivos.
+*   `FUNCIONALIDADES_PROJETO.md`: Apresenta uma lista estruturada das funcionalidades, divididas por status e versão.
+
 ## Estrutura do Projeto
 
 ```
@@ -248,6 +255,7 @@ Embora a aplicação utilize tecnologias web padrão (HTML, CSS, JavaScript) e b
 ├── .env                    # (Não versionado. Usado para DATABASE_URL para MySQL. Copie de .env.example)
 ├── .gitignore              # Arquivos e pastas ignorados pelo Git
 ├── DESCRICAO_PROJETO.md    # Descrição detalhada do projeto, escopo e funcionalidades
+├── FUNCIONALIDADES_PROJETO.md # Lista de funcionalidades implementadas, pendentes e planejadas
 ├── README.md               # Este arquivo
 ├── database.py             # Configuração do banco de dados SQLAlchemy
 ├── main.py                 # Ponto de entrada da aplicação FastAPI, endpoints da API
