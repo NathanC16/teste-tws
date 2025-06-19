@@ -14,10 +14,12 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
 *   **Banco de Dados:**
     *   MySQL: Banco de dados padrão da aplicação (requer configuração via arquivo `.env` e driver `PyMySQL`).
     *   SQLite: Pode ser usado como alternativa para desenvolvimento local rápido (requer modificação manual em `database.py` e instalação do driver apropriado se não for o `sqlite3` embutido).
-*   **Frontend (Interface de Teste):**
+*   **Frontend (Gerenciamento de Dados - `index.html` e Painel - `dashboard.html`):**
     *   HTML5
-    *   CSS3
-    *   JavaScript (Vanilla)
+    *   CSS3 (customizado e Bootstrap 5.3)
+    *   JavaScript (Vanilla JS)
+    *   Font Awesome 6.5 (para iconografia)
+    *   Chart.js 3.7 (para gráficos no painel)
 *   **Documentação:**
     *   Markdown (`DESCRICAO_PROJETO.md`, `README.md`)
 
@@ -227,8 +229,8 @@ NUM_PROCESSES = 50
 *   **Documentação Interativa da API (Swagger UI):**
     Após iniciar o servidor, acesse: `http://127.0.0.1:8000/docs`
 
-*   **Interface Web de Teste:**
-    Uma interface básica para testar as funcionalidades CRUD está disponível em:
+*   **Gerenciamento de Dados:**
+    Uma interface para gerenciamento direto das entidades (Advogados, Clientes, Processos) está disponível em:
     `http://127.0.0.1:8000/frontend/index.html`
 
 ## Compatibilidade de Navegador

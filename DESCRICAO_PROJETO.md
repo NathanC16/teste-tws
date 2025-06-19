@@ -103,17 +103,18 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Integração:** API do Telegram.
 *   **Frontend:** Tecnologia a ser definida.
 
-### 8. Interface Web Básica para Testes (Frontend - `index.html`)
+### 8. Gerenciamento de Dados (Frontend - `index.html`)
 
-*   **Funcionalidade:** Prover uma interface de usuário para testar as funcionalidades CRUD da API para Advogados, Clientes e Processos Jurídicos. Permite listagem, criação, edição, exclusão individual e exclusão em massa de processos.
+*   **Funcionalidade:** Prover uma interface de usuário para gerenciamento direto (CRUD) das entidades base: Advogados, Clientes e Processos Jurídicos. Permite listagem, criação, edição, exclusão individual e exclusão em massa de processos.
 *   **Tecnologias:**
     *   HTML5, CSS3 (customizado e Bootstrap 5.3).
     *   JavaScript (Vanilla JS).
+    *   Font Awesome 6.5 (para iconografia).
 *   **Estrutura e Design:**
     *   `static_frontend/index.html`: Página principal.
     *   Layout aprimorado com Bootstrap, utilizando sistema de grid para organizar as seções de Advogados, Clientes e Processos em colunas.
-    *   Formulários e listas estilizados com componentes Bootstrap (`form-control`, `list-group`, `btn`, etc.) para uma aparência mais moderna e consistente.
-    *   Navegação global implementada através de uma barra de navegação (navbar) Bootstrap no topo da página, com links para a "Interface de Teste API" e para o "Painel Home".
+    *   Formulários e listas estilizados com componentes Bootstrap (`form-control`, `list-group`, `btn`, etc.) e ícones Font Awesome para uma aparência mais moderna e consistente.
+    *   Navegação global implementada através de uma barra de navegação (navbar) Bootstrap no topo da página, com links para "Gerenciamento de Dados" e para o "Painel Home".
     *   `static_frontend/style.css`: CSS customizado para complementar e ajustar estilos do Bootstrap.
     *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI e manipular o DOM.
 *   **Servindo os arquivos:** A API FastAPI serve esta interface em `/frontend/index.html`.

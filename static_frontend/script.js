@@ -345,7 +345,7 @@ async function fetchProcesses() {
 
         processes.forEach(process => {
             const li = document.createElement('li');
-            // Escape quotes for data attributes (já existente)
+            // Escape quotes for data attributes
             const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
@@ -353,10 +353,6 @@ async function fetchProcesses() {
             // A classe list-group-item já tem display:flex por padrão se for um flex container,
             // mas para garantir o alinhamento vertical da checkbox com o texto, podemos manter.
             li.className = 'list-group-item d-flex align-items-center';
-
-            const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
             li.innerHTML = `
                 <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">

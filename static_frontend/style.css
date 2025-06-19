@@ -104,3 +104,32 @@
 /* .container {
     padding-top: 20px;
 } */
+
+/* Estilização para Títulos das Seções no index.html */
+#lawyers-section h2,
+#clients-section h2,
+#processes-section h2 {
+    color: #0d6efd; /* Cor primária do Bootstrap (azul) */
+    border-bottom: 2px solid #dee2e6; /* Borda inferior sutil, como nos títulos de cards */
+    padding-bottom: 0.5rem; /* Espaçamento interno inferior */
+    margin-bottom: 1.5rem; /* Espaçamento externo inferior aumentado */
+    font-weight: 500; /* Um pouco mais de peso na fonte */
+}
+
+#lawyers-section h3,
+#clients-section h3,
+#processes-section h3 {
+    color: #495057; /* Cinza escuro, para subtítulos */
+    margin-top: 1.5rem; /* Espaçamento externo superior (para separar de listas/elementos acima) */
+    margin-bottom: 1rem; /* Espaçamento externo inferior */
+    font-size: 1.25rem; /* Tamanho um pouco maior para h3 */
+    font-weight: 500;
+}
+
+/* Ajuste para o primeiro h3 de cada coluna não ter margem superior excessiva
+   se ele for o primeiro elemento após o h2 da seção.
+*/
+.col-md-7 > h3:first-child,
+.col-md-5 > h3:first-child {
+    margin-top: 0.5rem; /* Reduz a margem superior para o primeiro h3 na coluna */
+}
