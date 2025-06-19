@@ -50,9 +50,11 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   `status`: Status atual (ex: "ativo", "concluído", "suspenso", "vencido"; padrão: "ativo").
     *   `action_type`: Tipo de ação do processo (categorização textual).
 *   **Operações CRUD:** Endpoints API para Criar, Ler (com filtros), Atualizar e Deletar processos.
+*   **Exclusão em Massa (Interface de Teste):** A interface de teste (`index.html`) permite selecionar múltiplos processos através de checkboxes e excluí-los em uma única operação.
 *   **Regra de Negócio:** `lawyer_id` e `client_id` devem existir ao criar/atualizar.
 *   **Status Atual (Backend):** CRUD básico e validações implementados.
-*   **Status Atual (Frontend):** A ser desenvolvido.
+*   **Status Atual (Frontend de Teste `index.html`):** CRUD completo, incluindo listagem, adição, edição, exclusão individual e exclusão em massa de processos.
+*   **Status Atual (Frontend do Painel `dashboard.html`):** Visualização e filtros implementados.
 
 ### 4. Painel Home / Resumo Gerencial (Frontend)
 

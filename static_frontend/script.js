@@ -285,6 +285,7 @@ const processStatusInput = document.getElementById('process-status');
 const processActionTypeInput = document.getElementById('process-action-type');
 const processesListDiv = document.getElementById('processes-list');
 const cancelProcessUpdateBtn = document.getElementById('cancel-process-update');
+    const deleteSelectedProcessesBtn = document.getElementById('delete-selected-processes-btn'); // <-- Adicionar esta linha
 
 let allLawyers = []; // Para armazenar advogados para o select
 let allClients = []; // Para armazenar clientes para o select
@@ -344,15 +345,22 @@ async function fetchProcesses() {
 
         processes.forEach(process => {
             const li = document.createElement('li');
-            // Escape quotes for data attributes
+            // Escape quotes for data attributes (já existente)
             const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
+            // Usar um container flex para o item da lista para melhor alinhamento da checkbox
+            li.style.display = 'flex'; // Adiciona estilo flex diretamente ou via CSS
+            li.style.alignItems = 'center';
+
             li.innerHTML = `
-                <span>Nº: ${process.process_number} (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})</span>
-                <span>Status: ${process.status}, Prazo Fatal: ${formatDate(process.fatal_deadline)}</span>
-                <span class="item-actions">
+                <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">
+                <div style="flex-grow: 1;">
+                    <span>Nº: ${process.process_number} (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})</span><br>
+                    <span>Status: ${process.status}, Prazo Fatal: ${formatDate(process.fatal_deadline)}</span>
+                </div>
+                <span class="item-actions" style="flex-shrink: 0; margin-left: auto;">
                     <button class="btn-edit-process"
                             data-id="${process.id}"
                             data-number="${escapedProcessNumber}"
@@ -473,6 +481,85 @@ async function deleteProcess(id) {
 
 // --- Fim das Funções para Processos Jurídicos ---
 
+async function handleDeleteSelectedProcesses() {
+    const selectedCheckboxes = document.querySelectorAll('.process-checkbox:checked');
+
+    if (selectedCheckboxes.length === 0) {
+        alert('Nenhum processo selecionado para exclusão.');
+        return;
+    }
+
+    const processIdsToDelete = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+
+    if (!confirm(`Tem certeza que deseja excluir ${processIdsToDelete.length} processo(s) selecionado(s)?`)) {
+        return;
+    }
+
+    // Mostra um feedback de carregamento (opcional, mas bom para UX)
+    // Poderia ser um spinner ou desabilitar o botão
+    console.log(`Iniciando exclusão de ${processIdsToDelete.length} processos...`);
+    // deleteSelectedProcessesBtn.disabled = true; // Exemplo de desabilitar botão
+
+    const deletePromises = processIdsToDelete.map(id => {
+        return fetch(`${API_BASE_URL}/processes/${id}`, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Tenta pegar o detalhe do erro do backend
+                return response.json().then(errorData => {
+                    return { id: id, success: false, status: response.status, detail: errorData.detail || `Erro HTTP ${response.status}` };
+                }).catch(() => {
+                    // Se o corpo não for JSON ou estiver vazio
+                    return { id: id, success: false, status: response.status, detail: `Erro HTTP ${response.status}` };
+                });
+            }
+            return { id: id, success: true, status: response.status };
+        })
+        .catch(error => {
+            console.error(`Erro de rede ou fetch ao excluir processo ID ${id}:`, error);
+            return { id: id, success: false, status: 'NetworkError', detail: error.message };
+        });
+    });
+
+    const results = await Promise.allSettled(deletePromises);
+
+    let successCount = 0;
+    let failureCount = 0;
+    const errorMessages = [];
+
+    results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.success) {
+            successCount++;
+        } else if (result.status === 'fulfilled' && !result.value.success) {
+            failureCount++;
+            errorMessages.push(`Falha ao excluir Processo ID ${result.value.id}: ${result.value.detail} (Status: ${result.value.status})`);
+        } else if (result.status === 'rejected') { // Erro na promise em si, não na requisição HTTP
+            failureCount++;
+            // O 'result.reason' pode não ter a estrutura que esperamos, então tratamos com cuidado
+            const id = result.reason && result.reason.id ? result.reason.id : 'Desconhecido';
+            const detail = result.reason && result.reason.detail ? result.reason.detail : result.reason;
+            errorMessages.push(`Erro crítico ao tentar excluir Processo ID ${id}: ${detail}`);
+        }
+    });
+
+    let finalMessage = '';
+    if (successCount > 0) {
+        finalMessage += `${successCount} processo(s) excluído(s) com sucesso.\n`;
+    }
+    if (failureCount > 0) {
+        finalMessage += `${failureCount} processo(s) não puderam ser excluídos.\n`;
+        finalMessage += "Detalhes dos erros:\n" + errorMessages.join("\n");
+    }
+
+    if (finalMessage) {
+        alert(finalMessage);
+    }
+
+    // deleteSelectedProcessesBtn.disabled = false; // Reabilitar botão
+    fetchProcesses(); // Atualizar a lista de processos
+}
+
 // Inicializar: Buscar dados ao carregar a página
 document.addEventListener('DOMContentLoaded', async () => {
     // Populando selects primeiro é importante para que a lista de processos possa mostrar nomes
@@ -535,4 +622,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             deleteProcess(id);
         }
     });
+
+    if (deleteSelectedProcessesBtn) { // Adiciona verificação, pois este botão só existe no index.html
+        deleteSelectedProcessesBtn.addEventListener('click', handleDeleteSelectedProcesses);
+    }
 });
