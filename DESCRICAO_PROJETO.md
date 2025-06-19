@@ -77,6 +77,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   Renderiza os cards de resumo, a tabela de processos (com filtros funcionais) e os alertas de prazo.
     *   Exibe os gráficos de Processos por Status, por Advogado e por Tipo de Ação com base no conjunto total de processos.
     *   A interface é servida em `/frontend/dashboard.html`.
+*   **Navegação:** Inclui a mesma barra de navegação global presente na "Interface de Teste API" para navegação consistente entre as páginas.
 
 ### 5. Integração com Telegram (Notificações Essenciais)
 
@@ -102,16 +103,21 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Integração:** API do Telegram.
 *   **Frontend:** Tecnologia a ser definida.
 
-### 8. Interface Web Básica para Testes (Frontend)
+### 8. Interface Web Básica para Testes (Frontend - `index.html`)
 
-*   **Funcionalidade:** Prover uma interface de usuário simples para testar as funcionalidades CRUD da API para Advogados, Clientes e Processos Jurídicos.
-*   **Tecnologias:** HTML, CSS e JavaScript puro.
-*   **Estrutura:**
-    *   `static_frontend/index.html`: Página principal com formulários e listas.
-    *   `static_frontend/style.css`: Estilos básicos para organização visual.
-    *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI (buscar dados, enviar formulários, deletar itens).
-*   **Servindo os arquivos:** A API FastAPI foi configurada para servir estes arquivos estáticos a partir do diretório `static_frontend` no endpoint `/frontend`.
-*   **Status Atual:** Implementado. Permite testar todas as operações CRUD do backend diretamente pelo navegador.
+*   **Funcionalidade:** Prover uma interface de usuário para testar as funcionalidades CRUD da API para Advogados, Clientes e Processos Jurídicos. Permite listagem, criação, edição, exclusão individual e exclusão em massa de processos.
+*   **Tecnologias:**
+    *   HTML5, CSS3 (customizado e Bootstrap 5.3).
+    *   JavaScript (Vanilla JS).
+*   **Estrutura e Design:**
+    *   `static_frontend/index.html`: Página principal.
+    *   Layout aprimorado com Bootstrap, utilizando sistema de grid para organizar as seções de Advogados, Clientes e Processos em colunas.
+    *   Formulários e listas estilizados com componentes Bootstrap (`form-control`, `list-group`, `btn`, etc.) para uma aparência mais moderna e consistente.
+    *   Navegação global implementada através de uma barra de navegação (navbar) Bootstrap no topo da página, com links para a "Interface de Teste API" e para o "Painel Home".
+    *   `static_frontend/style.css`: CSS customizado para complementar e ajustar estilos do Bootstrap.
+    *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI e manipular o DOM.
+*   **Servindo os arquivos:** A API FastAPI serve esta interface em `/frontend/index.html`.
+*   **Status Atual:** Implementada e funcional, com layout e navegação aprimorados.
 
 ## Documentação Adicional
 

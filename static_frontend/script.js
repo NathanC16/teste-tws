@@ -20,33 +20,34 @@ async function fetchLawyers() {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
         const lawyers = await response.json();
-        lawyersListDiv.innerHTML = ''; // Limpar lista antiga
-        const ul = document.createElement('ul');
-        ul.className = 'item-list';
+        lawyersListDiv.innerHTML = ''; // Limpar lista antiga (a div pai já é o list-group)
         lawyers.forEach(lawyer => {
             const li = document.createElement('li');
-            // Escape quotes for data attributes if names/emails etc. might contain them
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
             const escapedName = lawyer.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedOab = lawyer.oab.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedEmail = lawyer.email.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedTelegramId = (lawyer.telegram_id || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
             li.innerHTML = `
-                <span>${lawyer.name} (OAB: ${lawyer.oab}, Email: ${lawyer.email}, Telegram: ${lawyer.telegram_id || 'N/A'})</span>
-                <span class="item-actions">
-                    <button class="btn-edit-lawyer"
+                <div class="flex-grow-1"> <!-- Ocupa espaço, empurrando botões para a direita -->
+                    <strong>${lawyer.name}</strong><br>
+                    <small>OAB: ${lawyer.oab} | Email: ${lawyer.email} | Telegram: ${lawyer.telegram_id || 'N/A'}</small>
+                </div>
+                <div class="item-actions ms-3"> <!-- ms-3 para margem à esquerda dos botões -->
+                    <button class="btn btn-sm btn-outline-primary btn-edit-lawyer"
                             data-id="${lawyer.id}"
                             data-name="${escapedName}"
                             data-oab="${escapedOab}"
                             data-email="${escapedEmail}"
                             data-telegram="${escapedTelegramId}">Editar</button>
-                    <button class="btn-delete-lawyer delete-btn"
+                    <button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn"
                             data-id="${lawyer.id}">Excluir</button>
-                </span>
+                </div>
             `;
-            ul.appendChild(li);
+            lawyersListDiv.appendChild(li);
         });
-        lawyersListDiv.appendChild(ul);
     } catch (error) {
         console.error('Falha ao buscar advogados:', error);
         lawyersListDiv.innerHTML = '<p>Erro ao carregar advogados.</p>';
@@ -160,28 +161,29 @@ async function fetchClients() {
         }
         const clients = await response.json();
         clientsListDiv.innerHTML = ''; // Limpar lista antiga
-        const ul = document.createElement('ul');
-        ul.className = 'item-list';
         clients.forEach(client => {
             const li = document.createElement('li');
-            // Escape quotes for data attributes
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
             const escapedClientName = client.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedArea = client.area_of_expertise.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
             li.innerHTML = `
-                <span>${client.name} (Área: ${client.area_of_expertise})</span>
-                <span class="item-actions">
-                    <button class="btn-edit-client"
+                <div class="flex-grow-1">
+                    <strong>${client.name}</strong><br>
+                    <small>Área: ${client.area_of_expertise}</small>
+                </div>
+                <div class="item-actions ms-3">
+                    <button class="btn btn-sm btn-outline-primary btn-edit-client"
                             data-id="${client.id}"
                             data-name="${escapedClientName}"
                             data-area="${escapedArea}">Editar</button>
-                    <button class="btn-delete-client delete-btn"
+                    <button class="btn btn-sm btn-outline-danger btn-delete-client delete-btn"
                             data-id="${client.id}">Excluir</button>
-                </span>
+                </div>
             `;
-            ul.appendChild(li);
+            clientsListDiv.appendChild(li);
         });
-        clientsListDiv.appendChild(ul);
     } catch (error) {
         console.error('Falha ao buscar clientes:', error);
         clientsListDiv.innerHTML = '<p>Erro ao carregar clientes.</p>';
@@ -336,8 +338,6 @@ async function fetchProcesses() {
         }
         const processes = await response.json();
         processesListDiv.innerHTML = ''; // Limpar lista antiga
-        const ul = document.createElement('ul');
-        ul.className = 'item-list';
 
         // Para exibir nomes em vez de IDs
         const lawyerMap = allLawyers.reduce((map, lawyer) => { map[lawyer.id] = lawyer.name; return map; }, {});
@@ -350,18 +350,22 @@ async function fetchProcesses() {
             const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
-            // Usar um container flex para o item da lista para melhor alinhamento da checkbox
-            li.style.display = 'flex'; // Adiciona estilo flex diretamente ou via CSS
-            li.style.alignItems = 'center';
+            // A classe list-group-item já tem display:flex por padrão se for um flex container,
+            // mas para garantir o alinhamento vertical da checkbox com o texto, podemos manter.
+            li.className = 'list-group-item d-flex align-items-center';
+
+            const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
             li.innerHTML = `
                 <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">
-                <div style="flex-grow: 1;">
-                    <span>Nº: ${process.process_number} (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})</span><br>
-                    <span>Status: ${process.status}, Prazo Fatal: ${formatDate(process.fatal_deadline)}</span>
+                <div class="flex-grow-1">
+                    <strong>Nº: ${process.process_number}</strong> (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})<br>
+                    <small>Status: ${process.status} | Prazo Fatal: ${formatDate(process.fatal_deadline)} | Tipo: ${process.action_type || 'N/A'}</small>
                 </div>
-                <span class="item-actions" style="flex-shrink: 0; margin-left: auto;">
-                    <button class="btn-edit-process"
+                <div class="item-actions ms-3" style="flex-shrink: 0;">
+                    <button class="btn btn-sm btn-outline-primary btn-edit-process"
                             data-id="${process.id}"
                             data-number="${escapedProcessNumber}"
                             data-lawyerid="${process.lawyer_id}"
@@ -371,13 +375,12 @@ async function fetchProcesses() {
                             data-fataldeadline="${process.fatal_deadline}"
                             data-status="${escapedStatus}"
                             data-actiontype="${escapedActionType}">Editar</button>
-                    <button class="btn-delete-process delete-btn"
+                    <button class="btn btn-sm btn-outline-danger btn-delete-process delete-btn"
                             data-id="${process.id}">Excluir</button>
-                </span>
+                </div>
             `;
-            ul.appendChild(li);
+            processesListDiv.appendChild(li);
         });
-        processesListDiv.appendChild(ul);
     } catch (error) {
         console.error('Falha ao buscar processos:', error);
         processesListDiv.innerHTML = '<p>Erro ao carregar processos. Certifique-se que advogados e clientes foram carregados primeiro.</p>';

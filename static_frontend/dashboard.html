@@ -11,15 +11,22 @@
     <link rel="stylesheet" href="style.css"> <!-- Opcional: Reutilizar alguns estilos gerais se aplicável -->
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Painel Jurídico</a>
-            <!-- Poderíamos adicionar um botão para voltar à interface de teste ou outras seções -->
-             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/frontend/index.html">API Test Interface</a>
-                </li>
-            </ul>
+            <a class="navbar-brand" href="#">Gestão Jurídica</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/frontend/index.html">Interface de Teste API</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/frontend/dashboard.html">Painel Home</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
