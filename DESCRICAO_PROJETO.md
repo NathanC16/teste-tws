@@ -58,12 +58,23 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 
 *   **Funcionalidade:** Apresentar uma visão geral e facilitar o acompanhamento dos processos.
 *   **Componentes:**
-    *   Listagem de Processos (com informações chave).
-    *   Gráficos: Processos por Tipo de Ação, por Advogado, por Status.
-    *   Alertas visuais para prazos próximos (ex: 7 dias do vencimento).
-    *   Busca e Filtros (por cliente, tipo de ação, advogado, prazo).
-*   **Status Atual (Backend):** API fornece os dados.
-*   **Status Atual (Frontend):** A ser desenvolvido.
+    *   **Cards de Resumo:** Exibição de totais (Processos Ativos, Prazos Fatais Próximos, Total de Advogados, Total de Clientes).
+    *   **Alertas de Prazos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias, com indicação visual de urgência.
+    *   **Filtros de Processos:** Permite filtrar a lista de processos por Status, Advogado e Cliente.
+    *   **Tabela de Processos:** Listagem dos processos com informações chave (Nº Processo, Cliente, Advogado Resp., Datas, Status, Tipo Ação).
+    *   **Gráficos para Acompanhamento:**
+        *   Processos por Status (Gráfico de Pizza).
+        *   Processos por Advogado (Gráfico de Barras).
+        *   Processos por Tipo de Ação (Gráfico de Barras).
+*   **Tecnologias Utilizadas (Frontend do Painel):**
+    *   HTML5, CSS3, JavaScript (Vanilla JS).
+    *   Bootstrap 5.3 (para layout e componentes).
+    *   Chart.js 3.7 (para renderização dos gráficos).
+*   **Status Atual:** Implementado (`static_frontend/dashboard.html`, `dashboard.js`, `dashboard.css`).
+    *   Busca dados da API para processos, advogados e clientes.
+    *   Renderiza os cards de resumo, a tabela de processos (com filtros funcionais) e os alertas de prazo.
+    *   Exibe os gráficos de Processos por Status, por Advogado e por Tipo de Ação com base no conjunto total de processos.
+    *   A interface é servida em `/frontend/dashboard.html`.
 
 ### 5. Integração com Telegram (Notificações Essenciais)
 

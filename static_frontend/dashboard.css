@@ -1,0 +1,77 @@
+body {
+    background-color: #f8f9fa; /* Um cinza um pouco mais claro que o padrão do Bootstrap */
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Estilos para os Cards de Resumo */
+.card.border-left-primary { border-left: .25rem solid #4e73df!important; }
+.card.border-left-success { border-left: .25rem solid #1cc88a!important; }
+.card.border-left-info   { border-left: .25rem solid #36b9cc!important; }
+.card.border-left-warning { border-left: .25rem solid #f6c23e!important; }
+
+.card .card-body .text-xs {
+    font-size: .8rem; /* Ligeiramente maior para legibilidade */
+}
+
+.card .card-body .no-gutters { /* Para alinhar ícone e texto nos cards */
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.card .card-body i { /* Estilo para ícones nos cards, se usados */
+    color: #dddfeb!important;
+}
+
+
+/* Tabela de Processos */
+.table-responsive {
+    margin-top: 1rem;
+}
+.table thead.table-dark th { /* Cabeçalho da tabela mais escuro */
+    background-color: #343a40; /* Cor escura padrão do Bootstrap */
+    color: #fff;
+    border-color: #454d55; /* Um pouco mais claro que o fundo para a borda */
+}
+
+/* Alertas de Prazos */
+#deadline-alerts-list .list-group-item {
+    border-left-width: .25rem;
+    margin-bottom: 0.5rem;
+}
+#deadline-alerts-list .list-group-item-warning { /* Para prazos muito próximos */
+    border-left-color: #f6c23e; /* Amarelo do Bootstrap */
+}
+#deadline-alerts-list .list-group-item-danger { /* Para prazos vencidos ou hoje */
+    border-left-color: #e74c3c; /* Vermelho */
+}
+
+
+/* Estilo para os Gráficos (Canvas) */
+.card .card-body canvas {
+    max-width: 100%; /* Garante que o gráfico não estoure o card */
+    height: auto !important; /* Permite que Chart.js controle a altura responsivamente */
+}
+
+/* Ajustes gerais para espaçamento e seções */
+h4 {
+    margin-bottom: 1rem;
+    color: #495057; /* Um cinza mais escuro para os títulos das seções */
+}
+
+.container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Um estilo sutil para os cards de gráficos */
+.card.shadow {
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15)!important;
+}
+
+.card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e3e6f0;
+}
