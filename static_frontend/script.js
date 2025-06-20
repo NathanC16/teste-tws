@@ -589,19 +589,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // --- Lógica de Busca ao Vivo ---
-        // Função genérica para filtrar listas (conforme especificação da tarefa)
+        // Função genérica para filtrar listas (com logs de depuração)
         function setupLiveSearch(inputId, listSelector) {
             const searchInput = document.getElementById(inputId);
             if (!searchInput) {
-                console.warn(`Elemento de busca não encontrado: ${inputId}`);
+                console.warn(`[Debug Pesquisa] Elemento de busca não encontrado: ${inputId}`); // Adicionado [Debug Pesquisa]
                 return;
             }
+            console.log(`[Debug Pesquisa] Configurando listener para input: ${inputId}`); // Adicionado [Debug Pesquisa]
+
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
+                console.log(`[Debug Pesquisa] Termo da busca (${inputId}):`, searchTerm); // Adicionado [Debug Pesquisa]
+
                 const items = document.querySelectorAll(listSelector);
-                items.forEach(item => {
-                    const itemText = item.textContent.toLowerCase(); // Usando itemText conforme especificação
-                    if (itemText.includes(searchTerm)) {
+                console.log(`[Debug Pesquisa] Número de itens encontrados na lista (${listSelector}):`, items.length); // Adicionado [Debug Pesquisa]
+
+                if (items.length === 0) {
+                    console.warn(`[Debug Pesquisa] Nenhum item encontrado com o seletor: ${listSelector}`);
+                }
+
+                items.forEach((item, index) => { // Adicionado index para log
+                    const itemText = item.textContent.toLowerCase();
+                    const isMatch = itemText.includes(searchTerm);
+
+                    // Log detalhado para o primeiro item da lista para evitar spam excessivo no console
+                    // Ou logar todos se a lista for pequena, mas vamos ser cautelosos.
+                    if (index < 5 || items.length <= 5) { // Log detalhado para os primeiros 5 itens ou todos se a lista for pequena
+                         console.log(`[Debug Pesquisa] Item ${index}: '${itemText.substring(0, 50)}...' -> Inclui termo '${searchTerm}'?: ${isMatch}`);
+                    }
+
+                    if (isMatch) {
                         item.style.display = ''; // Mostra o item
                     } else {
                         item.style.display = 'none'; // Esconde o item
@@ -609,11 +627,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            // Adiciona listener para a tecla "Enter"
+            // Adicionar listener para keydown (Enter) como antes
             searchInput.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
-                    event.preventDefault(); // Previne o comportamento padrão (ex: submissão de formulário)
-                    searchInput.blur(); // Remove o foco do campo de input
+                    console.log(`[Debug Pesquisa] Enter pressionado no campo ${inputId}`); // Adicionado [Debug Pesquisa]
+                    event.preventDefault();
+                    searchInput.blur();
                 }
             });
         }
