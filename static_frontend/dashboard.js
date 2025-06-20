@@ -357,7 +357,24 @@ function renderCharts() {
             data: statusData.data,
             backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d', '#adb5bd'], // Cores Bootstrap
         }]
-    }, { responsive: true, maintainAspectRatio: false });
+    }, {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        const dataset = tooltipItem.dataset;
+                        const currentValue = dataset.data[tooltipItem.dataIndex];
+                        const total = dataset.data.reduce((acc, value) => acc + value, 0);
+                        const percentage = ((currentValue / total) * 100).toFixed(2);
+                        // tooltipItem.label é o nome da fatia (e.g., 'Ativo')
+                        return `${tooltipItem.label}: ${currentValue} (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    });
 
     // Gráfico de Advogados
     const lawyerData = processDataForLawyerChart(allProcesses, lawyerMap);
