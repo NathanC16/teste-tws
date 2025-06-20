@@ -31,6 +31,7 @@ def create_synthetic_data(db: Session):
         hashed_admin_password = get_password_hash(ADMIN_PASSWORD)
         new_admin = LawyerDB(
             name="Admin User",
+            username="admin", # Adicionado username para o admin
             oab=ADMIN_OAB,
             email=ADMIN_EMAIL,
             hashed_password=hashed_admin_password,
@@ -40,9 +41,17 @@ def create_synthetic_data(db: Session):
         db.add(new_admin)
         db.commit()
         db.refresh(new_admin)
-        print(f"Usuário Admin '{new_admin.oab}' criado.")
+        print(f"Usuário Admin criado. Login com username 'admin' ou OAB '{new_admin.oab}'.")
     else:
-        print(f"Usuário Admin '{admin_user.oab}' já existe.")
+        # Se o admin já existe, verificar se o campo username está preenchido
+        # Esta é uma adição para garantir que admins antigos sejam atualizados se o script rodar novamente
+        if not admin_user.username:
+            admin_user.username = "admin"
+            db.commit()
+            db.refresh(admin_user)
+            print(f"Usuário Admin '{admin_user.oab}' atualizado com username 'admin'.")
+        else:
+            print(f"Usuário Admin '{admin_user.oab}' (username: '{admin_user.username}') já existe.")
 
     # --- Standard Lawyer Creation Removed ---
     # STD_LAWYER_OAB = "00002RJ"
