@@ -163,6 +163,12 @@
             <div class="row mb-4">
                 <div class="col-md-12">
                     <h4>Lista de Processos</h4>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="search-dashboard-processes-icon">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="search-dashboard-processes" class="form-control" placeholder="Buscar na lista de processos exibida (Nº, Cliente, Advogado, Status, Tipo...)">
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead class="table-dark">
@@ -186,35 +192,50 @@
                 </div>
             </div>
 
-            <!-- Linha para Gráficos -->
-            <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Processos por Status</h6>
+            <!-- Linha para Abas de Gráficos -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <ul class="nav nav-tabs" id="graphicTabsNav" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="status-chart-tab-button" data-bs-toggle="tab" data-bs-target="#status-chart-pane" type="button" role="tab" aria-controls="status-chart-pane" aria-selected="true">Por Status</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="lawyer-chart-tab-button" data-bs-toggle="tab" data-bs-target="#lawyer-chart-pane" type="button" role="tab" aria-controls="lawyer-chart-pane" aria-selected="false">Por Advogado</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="action-type-chart-tab-button" data-bs-toggle="tab" data-bs-target="#action-type-chart-pane" type="button" role="tab" aria-controls="action-type-chart-pane" aria-selected="false">Por Tipo de Ação</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="graphicTabsContent">
+                        <div class="tab-pane fade show active" id="status-chart-pane" role="tabpanel" aria-labelledby="status-chart-tab-button">
+                            <div class="card shadow mt-3">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Processos por Status</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="status-chart"></canvas>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <canvas id="status-chart"></canvas>
+                        <div class="tab-pane fade" id="lawyer-chart-pane" role="tabpanel" aria-labelledby="lawyer-chart-tab-button">
+                            <div class="card shadow mt-3">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Processos por Advogado</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="lawyer-chart"></canvas>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Processos por Advogado</h6>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="lawyer-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Processos por Tipo de Ação</h6>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="action-type-chart"></canvas>
+                        <div class="tab-pane fade" id="action-type-chart-pane" role="tabpanel" aria-labelledby="action-type-chart-tab-button">
+                            <div class="card shadow mt-3">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">Processos por Tipo de Ação</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="action-type-chart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -351,24 +351,16 @@ function createChart(canvasElement, existingChartInstance, chartType, data, opti
     });
 }
 
-function renderCharts() {
-    console.log('[Dashboard Debug] Iniciando renderCharts...');
-    if (!allProcesses.length) return; // Não renderizar se não houver dados
-
-    // Gráfico de Status
+// Funções de renderização específicas para cada gráfico
+function renderStatusChart() {
+    if (!allProcesses.length && !statusChartInstance) return; // Evita renderizar se não há dados e gráfico não existe
+    console.log('[Dashboard Debug] Renderizando/Atualizando Status Chart...');
     const statusData = processDataForStatusChart(allProcesses);
-    statusChartInstance = createChart(statusChartCanvas, statusChartInstance, 'pie', {
-        labels: statusData.labels,
-        datasets: [{
-            label: 'Processos por Status',
-            data: statusData.data,
-            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d', '#adb5bd'], // Cores Bootstrap
-        }]
-    }, {
+    const options = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            tooltip: { // Configuração de tooltip existente mantida
+            tooltip: {
                 callbacks: {
                     label: function(tooltipItem) {
                         const dataset = tooltipItem.dataset;
@@ -379,23 +371,46 @@ function renderCharts() {
                     }
                 }
             },
-            datalabels: { // Nova configuração para exibir porcentagens nas fatias
+            datalabels: {
                 formatter: (value, ctx) => {
                     let sum = 0;
                     let dataArr = ctx.chart.data.datasets[0].data;
-                    dataArr.map(data => {
-                        sum += data;
-                    });
+                    dataArr.map(data => { sum += data; });
+                    if (sum === 0) return '0.0%'; // Evita divisão por zero se não houver dados
                     let percentage = ((value * 100) / sum).toFixed(1) + "%";
                     return percentage;
                 },
-                color: '#fff', // Cor do texto do rótulo de dados
+                color: '#fff',
             }
         }
-    });
+    };
+    statusChartInstance = createChart(statusChartCanvas, statusChartInstance, 'pie', {
+        labels: statusData.labels,
+        datasets: [{
+            label: 'Processos por Status',
+            data: statusData.data,
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d', '#adb5bd'],
+        }]
+    }, options);
+}
 
-    // Gráfico de Advogados
+function renderLawyerChart() {
+    if (!allProcesses.length && !lawyerChartInstance) return;
+    console.log('[Dashboard Debug] Renderizando/Atualizando Lawyer Chart...');
     const lawyerData = processDataForLawyerChart(allProcesses, lawyerMap);
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: {
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                formatter: (value, ctx) => value,
+                color: '#333'
+            }
+        }
+    };
     lawyerChartInstance = createChart(lawyerChartCanvas, lawyerChartInstance, 'bar', {
         labels: lawyerData.labels,
         datasets: [{
@@ -403,46 +418,40 @@ function renderCharts() {
             data: lawyerData.data,
             backgroundColor: '#0d6efd',
         }]
-    }, {
+    }, options);
+}
+
+function renderActionTypeChart() {
+    if (!allProcesses.length && !actionTypeChartInstance) return;
+    console.log('[Dashboard Debug] Renderizando/Atualizando Action Type Chart...');
+    const actionTypeData = processDataForActionTypeChart(allProcesses);
+    const options = {
         responsive: true,
         maintainAspectRatio: false,
         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-        plugins: { // Adicionando datalabels para o gráfico de advogados
+        plugins: {
             datalabels: {
                 anchor: 'end',
                 align: 'top',
-                formatter: (value, ctx) => {
-                    return value;
-                },
+                formatter: (value, ctx) => value,
                 color: '#333'
             }
         }
-    });
-
-    // Gráfico de Tipos de Ação
-    const actionTypeData = processDataForActionTypeChart(allProcesses);
-    actionTypeChartInstance = createChart(actionTypeChartCanvas, actionTypeChartInstance, 'bar', { // Pode ser 'pie' também
+    };
+    actionTypeChartInstance = createChart(actionTypeChartCanvas, actionTypeChartInstance, 'bar', {
         labels: actionTypeData.labels,
         datasets: [{
             label: 'Nº de Processos por Tipo de Ação',
             data: actionTypeData.data,
             backgroundColor: '#198754',
         }]
-    }, {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-        plugins: { // Adicionando datalabels para o gráfico de tipos de ação
-            datalabels: {
-                anchor: 'end',
-                align: 'top',
-                formatter: (value, ctx) => {
-                    return value;
-                },
-                color: '#333'
-            }
-        }
-    });
+    }, options);
+}
+
+function renderCharts() { // Chamada principal modificada
+    console.log('[Dashboard Debug] Iniciando renderCharts (principal) - renderizando gráfico de status...');
+    renderStatusChart(); // Renderiza o gráfico da aba ativa (status) imediatamente
+    // Os outros gráficos serão renderizados quando suas abas forem mostradas pela primeira vez
 }
 
 // --- Inicialização ---
@@ -478,4 +487,82 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("[Dashboard Debug] Botão logout-button-dashboard não encontrado.");
     }
+
+    // Listeners para abas de gráficos para renderizar sob demanda
+    const lawyerChartTabButton = document.getElementById('lawyer-chart-tab-button');
+    if (lawyerChartTabButton) {
+        lawyerChartTabButton.addEventListener('shown.bs.tab', function (event) {
+            console.log('[Dashboard Debug] Aba do gráfico de Advogados mostrada.');
+            renderLawyerChart();
+        });
+    } else {
+        console.warn("[Dashboard Debug] Botão da aba do gráfico de Advogados (lawyer-chart-tab-button) não encontrado.");
+    }
+
+    const actionTypeChartTabButton = document.getElementById('action-type-chart-tab-button');
+    if (actionTypeChartTabButton) {
+        actionTypeChartTabButton.addEventListener('shown.bs.tab', function (event) {
+            console.log('[Dashboard Debug] Aba do gráfico de Tipo de Ação mostrada.');
+            renderActionTypeChart();
+        });
+    } else {
+        console.warn("[Dashboard Debug] Botão da aba do gráfico de Tipos de Ação (action-type-chart-tab-button) não encontrado.");
+    }
+
+    // --- Lógica de Pesquisa para a Tabela de Processos do Dashboard ---
+    function setupDashboardTableSearch(inputId, tableBodyId) {
+        const searchInput = document.getElementById(inputId);
+        const tableBody = document.getElementById(tableBodyId);
+
+        if (!searchInput) {
+            console.warn(`[Dashboard Debug] Elemento de input de busca da tabela não encontrado: ${inputId}`);
+            return;
+        }
+        if (!tableBody) {
+            console.warn(`[Dashboard Debug] Corpo da tabela não encontrado: ${tableBodyId}`);
+            return;
+        }
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = tableBody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(searchTerm)) {
+                    row.classList.remove('d-none');
+                } else {
+                    row.classList.add('d-none');
+                }
+            }
+        });
+
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchInput.blur();
+            }
+        });
+    }
+
+    // Função para configurar o clique no ícone de busca para focar no input (específico do Dashboard)
+    function setupDashboardSearchIconClick(iconId, inputId) {
+        const iconElement = document.getElementById(iconId);
+        const inputElement = document.getElementById(inputId);
+
+        if (iconElement && inputElement) {
+            iconElement.addEventListener('click', function() {
+                inputElement.focus();
+            });
+        } else {
+            if (!iconElement) console.warn(`[Dashboard Debug] Elemento do ícone de busca da tabela não encontrado: ${iconId}`);
+            if (!inputElement) console.warn(`[Dashboard Debug] Elemento de input de busca da tabela não encontrado: ${inputId}`);
+        }
+    }
+
+    // Configurar a pesquisa para a tabela de processos no dashboard
+    setupDashboardTableSearch('search-dashboard-processes', 'processes-table-body');
+    setupDashboardSearchIconClick('search-dashboard-processes-icon', 'search-dashboard-processes');
+
 });
