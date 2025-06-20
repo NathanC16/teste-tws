@@ -1,5 +1,32 @@
 const API_BASE_URL = ''; // Usaremos caminhos relativos para a API
 
+// --- Token Management & Auth Header (Adaptado de script.js) ---
+function saveToken(token) { // Provavelmente não usada diretamente no dashboard.js
+    localStorage.setItem('authToken', token);
+}
+function getToken() {
+    return localStorage.getItem('authToken');
+}
+function removeToken() {
+    localStorage.removeItem('authToken');
+}
+function getAuthHeaders(isFormData = false) {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
+function logout() {
+    removeToken();
+    console.log("[Dashboard Debug] Logout chamado. Token removido. Redirecionando para login.html.");
+    window.location.href = 'login.html'; // Redirecionamento imediato
+}
+
 // --- Elementos do DOM ---
 // Cards de Resumo
 const totalActiveProcessesEl = document.getElementById('total-active-processes');
@@ -72,39 +99,62 @@ function formatDate(dateString) {
 
 // --- Funções de Busca de Dados ---
 async function fetchData(url) {
+    console.log(`[Dashboard Debug] Tentando buscar dados de: ${url}`);
     try {
-        const response = await fetch(`${API_BASE_URL}${url}`);
+        const response = await fetch(`${API_BASE_URL}${url}`, { headers: getAuthHeaders() }); // Adicionado headers
         if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                console.error(`[Dashboard Debug] Erro ${response.status} (Autenticação/Autorização) ao buscar ${url}.`);
+                // Não chamar logout() diretamente aqui para evitar múltiplos alertas/redirecionamentos.
+                // O erro será lançado e tratado no chamador (ex: fetchAllData).
+            }
             throw new Error(`Erro HTTP: ${response.status} ao buscar ${url}`);
         }
-        return await response.json();
+        const data = await response.json();
+        console.log(`[Dashboard Debug] Dados recebidos com sucesso de ${url}:`, data);
+        return data;
     } catch (error) {
-        console.error(`Falha ao buscar dados de ${url}:`, error);
-        return []; // Retorna array vazio em caso de erro para não quebrar outras partes
+        console.error(`[Dashboard Debug] Erro final em fetchData para ${url}:`, error);
+        // Relançar o erro para que possa ser tratado por quem chamou, especialmente se for um erro de autenticação.
+        throw error;
     }
 }
 
 async function fetchAllData() {
-    const processesPromise = fetchData('/processes/');
-    const lawyersPromise = fetchData('/lawyers/');
-    const clientsPromise = fetchData('/clients/');
+    console.log('[Dashboard Debug] Iniciando fetchAllData...');
+    try {
+        const processesPromise = fetchData('/processes/');
+        const lawyersPromise = fetchData('/lawyers/');
+        const clientsPromise = fetchData('/clients/');
 
-    // Espera todas as promises resolverem
-    [allProcesses, allLawyers, allClients] = await Promise.all([processesPromise, lawyersPromise, clientsPromise]);
+        // Espera todas as promises resolverem
+        [allProcesses, allLawyers, allClients] = await Promise.all([processesPromise, lawyersPromise, clientsPromise]);
+        console.log('[Dashboard Debug] Dados brutos recebidos de Promise.all:', { processes: allProcesses, lawyers: allLawyers, clients: allClients });
+    } catch (error) {
+        console.error('[Dashboard Debug] Erro durante Promise.all em fetchAllData. Provável erro de autenticação ou rede.', error);
+        logout(); // Se qualquer uma das chamadas principais falhar (ex: 401), faz logout.
+        return; // Interrompe a execução adicional de fetchAllData
+    }
 
     // Criar mapas para fácil acesso a nomes
     allLawyers.forEach(lawyer => lawyerMap[lawyer.id] = lawyer.name);
     allClients.forEach(client => clientMap[client.id] = client.name);
+    console.log('[Dashboard Debug] Mapas populados:', { lawyerMap, clientMap });
 
     // Popular selects de advogados e clientes para filtros
     populateFilterOptions(filterLawyerEl, allLawyers, 'Todos os Advogados');
     populateFilterOptions(filterClientEl, allClients, 'Todos os Clientes');
 
     // Após buscar todos os dados, renderiza os componentes do dashboard
+    console.log('[Dashboard Debug] Chamando renderSummaryCards...');
     renderSummaryCards();
+    console.log('[Dashboard Debug] Chamando renderProcessTable com processos:', allProcesses);
     renderProcessTable(allProcesses); // Renderiza a tabela com todos os processos inicialmente
+    console.log('[Dashboard Debug] Chamando renderDeadlineAlerts...');
     renderDeadlineAlerts();
-    renderCharts(); // Adicionar esta chamada
+    console.log('[Dashboard Debug] Chamando renderCharts...');
+    renderCharts();
+    console.log('[Dashboard Debug] fetchAllData concluído.');
 }
 
 function populateFilterOptions(selectElement, items, defaultOptionText) {
@@ -121,6 +171,7 @@ function populateFilterOptions(selectElement, items, defaultOptionText) {
 // --- Funções de Renderização ---
 
 function renderSummaryCards() {
+    console.log('[Dashboard Debug] Iniciando renderSummaryCards...');
     const activeProcesses = allProcesses.filter(p => p.status && p.status.toLowerCase() === 'ativo').length;
     totalActiveProcessesEl.textContent = activeProcesses;
 
@@ -143,6 +194,7 @@ function renderSummaryCards() {
 }
 
 function renderProcessTable(processesToRender) {
+    console.log('[Dashboard Debug] Iniciando renderProcessTable...');
     processesTableBodyEl.innerHTML = ''; // Limpar tabela
 
     if (processesToRender.length === 0) {
@@ -164,6 +216,7 @@ function renderProcessTable(processesToRender) {
 }
 
 function renderDeadlineAlerts() {
+    console.log('[Dashboard Debug] Iniciando renderDeadlineAlerts...');
     deadlineAlertsListEl.innerHTML = ''; // Limpar alertas antigos
 
     const today = new Date();
@@ -210,6 +263,7 @@ function renderDeadlineAlerts() {
 
 // --- Lógica de Filtros ---
 async function filterProcesses(status, lawyerId, clientId) {
+    console.log(`[Dashboard Debug] Filtrando processos com: status=${status}, lawyerId=${lawyerId}, clientId=${clientId}`);
     let queryString = '/processes/?';
     const params = [];
 
@@ -224,6 +278,7 @@ async function filterProcesses(status, lawyerId, clientId) {
     }
 
     queryString += params.join('&');
+    console.log(`[Dashboard Debug] Query string para filtro: ${queryString}`);
 
     // Mostra um feedback de carregamento na tabela
     processesTableBodyEl.innerHTML = '<tr><td colspan="8" class="text-center">Filtrando processos...</td></tr>';
@@ -290,6 +345,7 @@ function createChart(canvasElement, existingChartInstance, chartType, data, opti
 }
 
 function renderCharts() {
+    console.log('[Dashboard Debug] Iniciando renderCharts...');
     if (!allProcesses.length) return; // Não renderizar se não houver dados
 
     // Gráfico de Status
@@ -328,9 +384,27 @@ function renderCharts() {
 
 // --- Inicialização ---
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Dashboard Debug] DOMContentLoaded - Verificando token...');
+    if (!getToken()) {
+        console.log('[Dashboard Debug] Nenhum token encontrado. Redirecionando para login.html.');
+        window.location.href = 'login.html';
+        return; // Impede a execução de fetchAllData se não houver token
+    }
+
+    console.log('[Dashboard Debug] Token encontrado. Chamando fetchAllData...');
     fetchAllData();
 
-    applyFiltersBtn.addEventListener('click', () => {
+    if(applyFiltersBtn) { // Adicionada verificação de existência do botão
+        applyFiltersBtn.addEventListener('click', () => {
+            const status = filterStatusEl.value;
+            const lawyerId = filterLawyerEl.value;
+            const clientId = filterClientEl.value;
+            filterProcesses(status, lawyerId, clientId);
+        });
+    } else {
+        console.warn("[Dashboard Debug] Botão apply-filters-btn não encontrado.");
+    }
+});
         const status = filterStatusEl.value;
         const lawyerId = filterLawyerEl.value;
         const clientId = filterClientEl.value;
