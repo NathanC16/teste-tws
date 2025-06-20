@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError # <-- Adicionar esta linha
 
 # Model imports
 from models.lawyer import Lawyer, LawyerCreate # Pydantic models
-from models.client import Client, ClientCreate # Pydantic models
+from models.client import Client, ClientCreate, AreaOfExpertiseEnum # Pydantic models
 from models.legal_process import LegalProcess, LegalProcessCreate, LegalProcessBase # Pydantic models
 
 from models import lawyer as lawyer_model
@@ -32,6 +32,10 @@ process_model.Base.metadata.create_all(bind=engine)
 # As funções auxiliares get_lawyer_by_id e get_client_by_id foram removidas.
 # A lógica de verificação de existência de advogado/cliente
 # já está integrada nos endpoints de LegalProcess.
+
+@app.get("/areas-of-expertise/", response_model=List[str])
+def get_areas_of_expertise():
+    return [area.value for area in AreaOfExpertiseEnum]
 
 @app.post("/lawyers/", response_model=Lawyer)
 def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db)):
