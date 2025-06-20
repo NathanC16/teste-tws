@@ -167,6 +167,14 @@ async function fetchLawyers() {
             const escapedOab = lawyer.oab.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedEmail = lawyer.email.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedTelegramId = (lawyer.telegram_id || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
+            let deleteButtonHtml = '';
+            if (lawyer.oab === "00001SP") { // Verifica se é o admin principal pela OAB
+                deleteButtonHtml = `<button class="btn btn-sm btn-outline-secondary delete-btn" data-id="${lawyer.id}" disabled title="O admin principal não pode ser excluído">Excluir</button>`;
+            } else {
+                deleteButtonHtml = `<button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn" data-id="${lawyer.id}">Excluir</button>`;
+            }
+
             li.innerHTML = `
                 <div class="flex-grow-1">
                     <strong>${lawyer.name}</strong><br>
@@ -174,7 +182,7 @@ async function fetchLawyers() {
                 </div>
                 <div class="item-actions ms-3">
                     <button class="btn btn-sm btn-outline-primary btn-edit-lawyer" data-id="${lawyer.id}" data-name="${escapedName}" data-oab="${escapedOab}" data-email="${escapedEmail}" data-telegram="${escapedTelegramId}">Editar</button>
-                    <button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn" data-id="${lawyer.id}">Excluir</button>
+                    ${deleteButtonHtml}
                 </div>`;
             lawyersListDiv.appendChild(li);
         });
@@ -658,6 +666,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupSearchIconClick('search-lawyers-icon', 'search-lawyers');
         setupSearchIconClick('search-clients-icon', 'search-clients');
         setupSearchIconClick('search-processes-icon', 'search-processes');
+
+        // Configurar botão de logout para index.html (na navbar)
+        const logoutButtonIndex = document.getElementById('logout-button-index');
+        if (logoutButtonIndex) {
+            logoutButtonIndex.addEventListener('click', () => {
+                if (confirm('Tem certeza que deseja sair?')) {
+                    logout();
+                }
+            });
+        } else {
+            console.warn("[Main App Debug] Botão logout-button-index não encontrado no index.html.");
+        }
     }
 });
 
