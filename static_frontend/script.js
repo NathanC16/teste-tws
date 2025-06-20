@@ -589,23 +589,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // --- Lógica de Busca ao Vivo ---
-        // Função genérica para filtrar listas
+        // Função genérica para filtrar listas (conforme especificação da tarefa)
         function setupLiveSearch(inputId, listSelector) {
             const searchInput = document.getElementById(inputId);
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const items = document.querySelectorAll(listSelector);
-                    items.forEach(item => {
-                        const textContent = item.textContent.toLowerCase();
-                        if (textContent.includes(searchTerm)) {
-                            item.style.display = ''; // Mostra o item
-                        } else {
-                            item.style.display = 'none'; // Esconde o item
-                        }
-                    });
-                });
+            if (!searchInput) {
+                console.warn(`Elemento de busca não encontrado: ${inputId}`);
+                return;
             }
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const items = document.querySelectorAll(listSelector);
+                items.forEach(item => {
+                    const itemText = item.textContent.toLowerCase(); // Usando itemText conforme especificação
+                    if (itemText.includes(searchTerm)) {
+                        item.style.display = ''; // Mostra o item
+                    } else {
+                        item.style.display = 'none'; // Esconde o item
+                    }
+                });
+            });
         }
 
         // Configurar busca para cada seção
