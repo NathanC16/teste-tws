@@ -4,13 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
-import models.lawyer as lawyer_models # Alias to avoid Pydantic model name conflict
-from core.security import get_password_hash, verify_password, create_access_token, get_current_user # Added get_current_user
+import models.lawyer as lawyer_models # Alias para evitar conflito de nome com modelo Pydantic
+from core.security import get_password_hash, verify_password, create_access_token, get_current_user # Adicionado get_current_user
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Autenticação"]) # Tag traduzida
 
-# Registration endpoint removed for Admin-only login system.
-# Users (lawyers) will be created by an existing admin via the /lawyers/ endpoint or directly in the DB.
+# Endpoint de registro removido para sistema de login exclusivo de Admin.
+# Usuários (advogados) serão criados por um admin existente através do endpoint /lawyers/ ou diretamente no BD.
 
 @router.post("/token", response_model=dict)
 def login_for_access_token(
@@ -37,9 +37,9 @@ def login_for_access_token(
 
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/users/me", response_model=lawyer_models.Lawyer) # Using Lawyer Pydantic model for response
+@router.get("/users/me", response_model=lawyer_models.Lawyer) # Usando modelo Pydantic Lawyer para a resposta
 async def read_users_me(current_user: lawyer_models.LawyerDB = Depends(get_current_user)):
-    # current_user is an instance of the SQLAlchemy model LawyerDB,
-    # as returned by get_current_user.
-    # FastAPI will automatically convert it to the Pydantic model LawyerResponse (aliased as lawyer_models.Lawyer).
+    # current_user é uma instância do modelo SQLAlchemy LawyerDB,
+    # conforme retornado por get_current_user.
+    # FastAPI o converterá automaticamente para o modelo Pydantic Lawyer (com alias lawyer_models.Lawyer).
     return current_user

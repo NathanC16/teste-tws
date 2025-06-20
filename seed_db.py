@@ -1,12 +1,12 @@
 from faker import Faker
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
-from sqlalchemy.exc import IntegrityError # Import for error handling
+from sqlalchemy.exc import IntegrityError # Import para tratamento de erros
 # Importe seus modelos DB SQLAlchemy aqui
 from models.lawyer import LawyerDB
 from models.client import ClientDB, AreaOfExpertiseEnum
 from models.legal_process import LegalProcessDB
-from core.security import get_password_hash # Import for hashing passwords
+from core.security import get_password_hash # Import para hashear senhas
 import random
 from datetime import datetime, timedelta
 
@@ -19,11 +19,16 @@ NUM_PROCESSES = 50
 fake = Faker('pt_BR')
 
 def create_synthetic_data(db: Session):
-    print("Criando tabelas (se não existirem)...")
-    Base.metadata.create_all(bind=engine) # Garante que as tabelas existam
+    # Apaga todas as tabelas existentes que são gerenciadas pelo Base.metadata
+    print("Limpando tabelas existentes...")
+    Base.metadata.drop_all(bind=engine)
+
+    # Cria as tabelas novamente
+    print("Criando tabelas...")
+    Base.metadata.create_all(bind=engine)
 
     # --- Criação/Verificação do Usuário Admin ---
-    ADMIN_OAB = "00001SP" # Changed to valid format
+    ADMIN_OAB = "00001SP" # Alterado para formato válido
     ADMIN_EMAIL = "admin@example.com"
     ADMIN_PASSWORD = "admin"
     admin_user = db.query(LawyerDB).filter(LawyerDB.oab == ADMIN_OAB).first()
@@ -35,7 +40,7 @@ def create_synthetic_data(db: Session):
             oab=ADMIN_OAB,
             email=ADMIN_EMAIL,
             hashed_password=hashed_admin_password,
-            # is_admin=True, # Field removed
+            # is_admin=True, # Campo removido
             telegram_id="@admin_user_tg"
         )
         db.add(new_admin)
@@ -53,7 +58,7 @@ def create_synthetic_data(db: Session):
         else:
             print(f"Usuário Admin '{admin_user.oab}' (username: '{admin_user.username}') já existe.")
 
-    # --- Standard Lawyer Creation Removed ---
+    # --- Criação de Advogado Padrão Removida ---
     # STD_LAWYER_OAB = "00002RJ"
     # STD_LAWYER_EMAIL = "advogado@example.com"
     # STD_LAWYER_PASSWORD = "advogado"
@@ -73,12 +78,12 @@ def create_synthetic_data(db: Session):
     #     db.refresh(new_std_lawyer)
     #     print(f"Usuário Advogado Padrão '{new_std_lawyer.oab}' criado.")
     # else:
-    #     print(f"Usuário Advogado Padrão '{STD_LAWYER_OAB}' já existe.") # Use constant here
+    #     print(f"Usuário Advogado Padrão '{STD_LAWYER_OAB}' já existe.") # Usar constante aqui
 
     created_lawyers = []
     # Adicionar admin à lista se foi criado ou já existia e é necessário para processos
     if admin_user: created_lawyers.append(admin_user)
-    # std_lawyer removed from this list
+    # std_lawyer removido desta lista
 
     created_clients = []
 
@@ -90,12 +95,12 @@ def create_synthetic_data(db: Session):
             oab_number_part = str(random.randint(1, 999999)).zfill(random.randint(3,6))
             oab_uf_part = random.choice(ufs)
             generated_oab = f"{oab_number_part}{oab_uf_part}"
-            if generated_oab.upper() != ADMIN_OAB: # Only check against ADMIN_OAB
+            if generated_oab.upper() != ADMIN_OAB: # Verificar apenas contra ADMIN_OAB
                 break
 
         # Gerar um email único que não seja dos usuários padrão
         generated_email = fake.unique.email()
-        while generated_email == ADMIN_EMAIL: # Only check against ADMIN_EMAIL
+        while generated_email == ADMIN_EMAIL: # Verificar apenas contra ADMIN_EMAIL
             generated_email = fake.unique.email()
 
         # Gerar senha aleatória para advogados aleatórios
@@ -108,7 +113,7 @@ def create_synthetic_data(db: Session):
             "email": generated_email,
             "telegram_id": f"@{fake.user_name().lower().replace('.', '').replace('-', '')}" if random.choice([True, False, False]) else None,
             "hashed_password": hashed_random_password
-            # is_admin field removed
+            # campo is_admin removido
         }
 
         temp_lawyer = LawyerDB(**lawyer_data)
@@ -126,11 +131,11 @@ def create_synthetic_data(db: Session):
             print(f"Erro inesperado ao criar advogado {temp_lawyer.oab}: {e}. Pulando.")
 
     # Não precisamos mais do commit em lote e refresh para advogados aleatórios aqui
-    # Adjust count based on whether admin_user was pre-existing or added now.
-    # The created_lawyers list will contain admin_user + new random ones.
+    # Ajustar contagem com base se admin_user era pré-existente ou adicionado agora.
+    # A lista created_lawyers conterá admin_user + novos aleatórios.
     num_random_lawyers_actually_created = 0
     for lawyer_obj in created_lawyers:
-        if lawyer_obj.oab != ADMIN_OAB : # Assuming admin_user object was appended
+        if lawyer_obj.oab != ADMIN_OAB : # Assumindo que o objeto admin_user foi anexado
              num_random_lawyers_actually_created +=1
     print(f"{num_random_lawyers_actually_created} advogados aleatórios adicionados à lista created_lawyers.")
     print("Geração de advogados concluída.")
