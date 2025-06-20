@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/auth/users/me`, { headers: getAuthHeaders() });
                 if (response.ok) {
-                    window.location.href = 'index.html';
+                    window.location.href = 'dashboard.html'; // Changed to dashboard.html
                     return; // Stop further execution on login page
                 } else {
                     removeToken(); // Invalid token, remove it
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     const data = await response.json();
                     saveToken(data.access_token);
-                    window.location.href = 'index.html';
+                    window.location.href = 'dashboard.html'; // Changed to dashboard.html
                 } catch (error) {
                     console.error('Erro no login:', error);
                     if(loginGeneralErrorEl && !loginGeneralErrorEl.textContent) {
@@ -520,6 +520,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (deleteSelectedProcessesBtnEl) {
             deleteSelectedProcessesBtnEl.addEventListener('click', handleDeleteSelectedProcesses);
         }
+
+        // --- Lógica de Busca ao Vivo ---
+        // Função genérica para filtrar listas
+        function setupLiveSearch(inputId, listSelector) {
+            const searchInput = document.getElementById(inputId);
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const items = document.querySelectorAll(listSelector);
+                    items.forEach(item => {
+                        const textContent = item.textContent.toLowerCase();
+                        if (textContent.includes(searchTerm)) {
+                            item.style.display = ''; // Mostra o item
+                        } else {
+                            item.style.display = 'none'; // Esconde o item
+                        }
+                    });
+                });
+            }
+        }
+
+        // Configurar busca para cada seção
+        setupLiveSearch('search-lawyers', '#lawyers-list .list-group-item');
+        setupLiveSearch('search-clients', '#clients-list .list-group-item');
+        setupLiveSearch('search-processes', '#processes-list .list-group-item');
     }
 });
 
