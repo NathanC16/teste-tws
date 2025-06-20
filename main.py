@@ -22,7 +22,7 @@ from routers import auth as auth_router # Import the auth router
 from core.security import get_current_user # get_current_admin_user removed
 from core.security import get_password_hash # For placeholder password in create_lawyer
 
-app = FastAPI()
+app = FastAPI(title="Gerenciador de Processos Jurídicos")
 
 # Include routers
 app.include_router(auth_router.router)

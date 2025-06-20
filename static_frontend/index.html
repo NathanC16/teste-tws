@@ -50,6 +50,9 @@
                 <div class="row">
                     <div class="col-md-8"> <!-- Coluna para a lista -->
                         <h3>Lista de Advogados</h3>
+                        <div class="mb-3">
+                            <input type="text" id="search-lawyers" class="form-control" placeholder="Buscar advogados por nome, OAB, email...">
+                        </div>
                         <div id="lawyers-list" class="list-group">
                             <!-- Lista de advogados será populada aqui com classes de list-group-item -->
                         </div>
@@ -93,6 +96,9 @@
                 <div class="row">
                     <div class="col-md-8"> <!-- Coluna para a lista -->
                         <h3>Lista de Clientes</h3>
+                        <div class="mb-3">
+                            <input type="text" id="search-clients" class="form-control" placeholder="Buscar clientes por nome/razão social, área...">
+                        </div>
                         <div id="clients-list" class="list-group">
                             <!-- Lista de clientes será populada aqui -->
                         </div>
@@ -128,6 +134,9 @@
                 <div class="row">
                     <div class="col-md-8"> <!-- Coluna para a lista e botão de exclusão -->
                         <h3>Lista de Processos</h3>
+                        <div class="mb-3">
+                            <input type="text" id="search-processes" class="form-control" placeholder="Buscar processos por número, status, tipo, nome do advogado/cliente...">
+                        </div>
                         <div style="margin-bottom: 10px;">
                             <button type="button" id="delete-selected-processes-btn" class="btn btn-danger mt-3"><i class="fas fa-trash-alt me-2"></i>Excluir Processos Selecionados</button>
                         </div>

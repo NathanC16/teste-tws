@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
-from datetime import date
-from typing import Optional
+from pydantic import BaseModel, field_validator
+from datetime import date, datetime # Adicionado datetime para strptime
+from typing import Any, Union # Union para o tipo de retorno do validador
 
-from database import Base # Import Base from database.py
+from database import Base # Importa Base de database.py
 
 # SQLAlchemy model
 class LegalProcessDB(Base):
@@ -25,6 +25,7 @@ class LegalProcessDB(Base):
     client = relationship("ClientDB", back_populates="processes")
 
 # Pydantic models for request/response validation
+# Modelos Pydantic para validação de requisição/resposta
 class LegalProcessBase(BaseModel):
     process_number: str
     lawyer_id: int
@@ -35,6 +36,23 @@ class LegalProcessBase(BaseModel):
     status: Optional[str] = "ativo"
     action_type: Optional[str] = None
 
+    # Validador para converter datas de string "dd/mm/aaaa" para objetos date
+    @field_validator('entry_date', 'delivery_deadline', 'fatal_deadline', pre=True)
+    @classmethod
+    def parse_date_format(cls, value: Any) -> Union[date, Any]:
+        # Verifica se o valor é uma string no formato "dd/mm/aaaa"
+        if isinstance(value, str):
+            try:
+                # Converte a string para um objeto date
+                return datetime.strptime(value, "%d/%m/%Y").date()
+            except ValueError:
+                # Se a conversão falhar, retorna o valor original para que
+                # a validação padrão do Pydantic possa lidar com ele ou falhar.
+                # Isso permite que formatos ISO padrão ainda sejam aceitos.
+                pass
+        # Se não for uma string ou a conversão falhou, retorna o valor como está
+        return value
+
 class LegalProcessCreate(LegalProcessBase):
     pass
 
@@ -42,4 +60,4 @@ class LegalProcess(LegalProcessBase):
     id: int
 
     class Config:
-        from_attributes = True # Changed from orm_mode = True for Pydantic v2
+        from_attributes = True # Alterado de orm_mode = True para Pydantic v2
