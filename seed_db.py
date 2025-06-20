@@ -23,7 +23,7 @@ def create_synthetic_data(db: Session):
     Base.metadata.create_all(bind=engine) # Garante que as tabelas existam
 
     # --- Criação/Verificação do Usuário Admin ---
-    ADMIN_OAB = "ADMIN"
+    ADMIN_OAB = "00001SP" # Changed to valid format
     ADMIN_EMAIL = "admin@example.com"
     ADMIN_PASSWORD = "admin"
     admin_user = db.query(LawyerDB).filter(LawyerDB.oab == ADMIN_OAB).first()
@@ -45,7 +45,7 @@ def create_synthetic_data(db: Session):
         print(f"Usuário Admin '{admin_user.oab}' já existe.")
 
     # --- Criação/Verificação do Usuário Advogado Padrão ---
-    STD_LAWYER_OAB = "ADVOGADO"
+    STD_LAWYER_OAB = "00002RJ" # Changed to valid format
     STD_LAWYER_EMAIL = "advogado@example.com"
     STD_LAWYER_PASSWORD = "advogado"
     std_lawyer = db.query(LawyerDB).filter(LawyerDB.oab == STD_LAWYER_OAB).first()
