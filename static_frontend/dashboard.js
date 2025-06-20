@@ -404,10 +404,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("[Dashboard Debug] Botão apply-filters-btn não encontrado.");
     }
-});
-        const status = filterStatusEl.value;
-        const lawyerId = filterLawyerEl.value;
-        const clientId = filterClientEl.value;
-        filterProcesses(status, lawyerId, clientId);
-    });
+
+    const logoutButtonDashboard = document.getElementById('logout-button-dashboard');
+    if (logoutButtonDashboard) {
+        logoutButtonDashboard.addEventListener('click', () => {
+            if (confirm('Tem certeza que deseja sair?')) { // Adiciona uma confirmação
+                logout();
+            }
+        });
+    } else {
+        console.warn("[Dashboard Debug] Botão logout-button-dashboard não encontrado.");
+    }
 });
