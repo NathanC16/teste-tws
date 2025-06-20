@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import enum
+import logging
 
 from database import Base # Import Base from database.py
 
@@ -27,6 +28,17 @@ class ClientDB(Base):
 class ClientBase(BaseModel):
     name: str
     area_of_expertise: AreaOfExpertiseEnum
+
+    @field_validator('area_of_expertise', mode='before')
+    @classmethod
+    def validate_area_of_expertise_enum(cls, value):
+        if value is None: # Allow None if the field is Optional, though current model is not Optional
+            return None
+        try:
+            return AreaOfExpertiseEnum(value)
+        except ValueError:
+            logging.warning(f"Invalid area_of_expertise value found: '{value}'. Returning None instead for diagnosis.")
+            return None
 
 class ClientCreate(ClientBase):
     pass
