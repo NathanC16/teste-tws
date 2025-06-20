@@ -68,6 +68,24 @@ function formatDate(dateString) {
     }
 }
 
+// Função para converter data de "dd/mm/aaaa" para "yyyy-mm-dd"
+function parseDisplayDate(dateString_ddmmyyyy) {
+    if (!dateString_ddmmyyyy) return ''; // Retorna vazio se a string for vazia
+    const parts = dateString_ddmmyyyy.split('/');
+    if (parts.length === 3) {
+        const day = parts[0];
+        const month = parts[1];
+        const year = parts[2];
+        // Validação básica do formato (não checa validade da data em si, como dia 32)
+        if (day.length === 2 && month.length === 2 && year.length === 4 &&
+            /^\d+$/.test(day) && /^\d+$/.test(month) && /^\d+$/.test(year)) {
+            return `${year}-${month}-${day}`;
+        }
+    }
+    console.warn(`Formato de data para parseDisplayDate inválido: ${dateString_ddmmyyyy}. Esperado dd/mm/aaaa.`);
+    return dateString_ddmmyyyy; // Retorna original se o formato for inesperado, para validação no backend
+}
+
 // --- Lógica de Autenticação e UI ---
 function logout() {
     removeToken();
@@ -468,20 +486,68 @@ document.addEventListener('DOMContentLoaded', async () => {
          if (processFormEl) processFormEl.addEventListener('submit', async (event) => {
             event.preventDefault(); clearAllFormErrors(processFormEl);
             const id = processIdInputEl.value;
-            const processNumberValue = processNumberInputEl.value.trim(); const lawyerIdValue = processLawyerSelectEl.value; const clientIdValue = processClientSelectEl.value;
-            const entryDateValue = processEntryDateInputEl.value; const deliveryDeadlineValue = processDeliveryDeadlineInputEl.value; const fatalDeadlineValue = processFatalDeadlineInputEl.value;
-            const statusValue = processStatusInputEl.value.trim(); let hasError = false;
+            let hasError = false; // Flag para rastrear erros de validação
+
+            // Limpar erros de validação anteriores para campos de data
+            clearFieldError('process-entry-date');
+            clearFieldError('process-delivery-deadline');
+            clearFieldError('process-fatal-deadline');
+
+            const processNumberValue = processNumberInputEl.value.trim();
+            const lawyerIdValue = processLawyerSelectEl.value;
+            const clientIdValue = processClientSelectEl.value;
+            const statusValue = processStatusInputEl.value.trim();
+
+            // Validação e obtenção dos valores de data
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+            let entryDateValue_display = processEntryDateInputEl.value.trim();
+            let deliveryDeadlineValue_display = processDeliveryDeadlineInputEl.value.trim();
+            let fatalDeadlineValue_display = processFatalDeadlineInputEl.value.trim();
+
             if (!processNumberValue) { showFieldError('process-number', "Número é obrigatório."); hasError = true; }
-            if (!lawyerIdValue) { showFieldError('process-lawyer', "Advogado é obrigatório."); if(!hasError)processLawyerSelectEl.focus(); hasError = true; }
-            if (!clientIdValue) { showFieldError('process-client', "Cliente é obrigatório."); if(!hasError)processClientSelectEl.focus(); hasError = true; }
-            if (!entryDateValue) { showFieldError('process-entry-date', "Data de Entrada é obrigatória."); if(!hasError)processEntryDateInputEl.focus(); hasError = true; }
-            if (!deliveryDeadlineValue) { showFieldError('process-delivery-deadline', "Prazo de Entrega é obrigatório."); if(!hasError)processDeliveryDeadlineInputEl.focus(); hasError = true; }
-            if (!fatalDeadlineValue) { showFieldError('process-fatal-deadline', "Prazo Fatal é obrigatório."); if(!hasError)processFatalDeadlineInputEl.focus(); hasError = true; }
-            if (!statusValue) { showFieldError('process-status', "Status é obrigatório."); if(!hasError)processStatusInputEl.focus(); hasError = true; }
-            if (entryDateValue && deliveryDeadlineValue && new Date(deliveryDeadlineValue) < new Date(entryDateValue)) { showFieldError('process-delivery-deadline', "Prazo Entrega >= Data Entrada."); if(!hasError)processDeliveryDeadlineInputEl.focus(); hasError = true; }
-            if (deliveryDeadlineValue && fatalDeadlineValue && new Date(fatalDeadlineValue) < new Date(deliveryDeadlineValue)) { showFieldError('process-fatal-deadline', "Prazo Fatal >= Prazo Entrega."); if(!hasError)processFatalDeadlineInputEl.focus(); hasError = true; }
-            if (hasError) return;
-            const processData = { process_number: processNumberValue, lawyer_id: parseInt(lawyerIdValue), client_id: parseInt(clientIdValue), entry_date: entryDateValue, delivery_deadline: deliveryDeadlineValue, fatal_deadline: fatalDeadlineValue, status: statusValue, action_type: processActionTypeInputEl.value.trim() || null };
+            if (!lawyerIdValue) { showFieldError('process-lawyer', "Advogado é obrigatório."); if(!hasError) processLawyerSelectEl.focus(); hasError = true; }
+            if (!clientIdValue) { showFieldError('process-client', "Cliente é obrigatório."); if(!hasError) processClientSelectEl.focus(); hasError = true; }
+
+            if (!entryDateValue_display) { showFieldError('process-entry-date', "Data de Entrada é obrigatória."); if(!hasError) processEntryDateInputEl.focus(); hasError = true; }
+            else if (!dateRegex.test(entryDateValue_display)) { showFieldError('process-entry-date', "Formato de data deve ser dd/mm/aaaa."); if(!hasError) processEntryDateInputEl.focus(); hasError = true; }
+
+            if (!deliveryDeadlineValue_display) { showFieldError('process-delivery-deadline', "Prazo de Entrega é obrigatório."); if(!hasError) processDeliveryDeadlineInputEl.focus(); hasError = true; }
+            else if (!dateRegex.test(deliveryDeadlineValue_display)) { showFieldError('process-delivery-deadline', "Formato de data deve ser dd/mm/aaaa."); if(!hasError) processDeliveryDeadlineInputEl.focus(); hasError = true; }
+
+            if (!fatalDeadlineValue_display) { showFieldError('process-fatal-deadline', "Prazo Fatal é obrigatório."); if(!hasError) processFatalDeadlineInputEl.focus(); hasError = true; }
+            else if (!dateRegex.test(fatalDeadlineValue_display)) { showFieldError('process-fatal-deadline', "Formato de data deve ser dd/mm/aaaa."); if(!hasError) processFatalDeadlineInputEl.focus(); hasError = true; }
+
+            if (!statusValue) { showFieldError('process-status', "Status é obrigatório."); if(!hasError) processStatusInputEl.focus(); hasError = true; }
+
+            if (hasError) return; // Interrompe se houver erro de validação básico ou de formato
+
+            // Converter datas para ISO "yyyy-mm-dd" para envio e validação de precedência
+            const entryDate_iso = parseDisplayDate(entryDateValue_display);
+            const deliveryDeadline_iso = parseDisplayDate(deliveryDeadlineValue_display);
+            const fatalDeadline_iso = parseDisplayDate(fatalDeadlineValue_display);
+
+            // Validação de datas (após conversão para ISO para facilitar a comparação)
+            // É importante que parseDisplayDate retorne algo que Date() consiga interpretar ou que a comparação falhe de forma previsível
+            if (entryDate_iso && deliveryDeadline_iso && new Date(deliveryDeadline_iso) < new Date(entryDate_iso)) {
+                showFieldError('process-delivery-deadline', "Prazo Entrega deve ser >= Data Entrada."); hasError = true;
+            }
+            if (deliveryDeadline_iso && fatalDeadline_iso && new Date(fatalDeadline_iso) < new Date(deliveryDeadline_iso)) {
+                showFieldError('process-fatal-deadline', "Prazo Fatal deve ser >= Prazo Entrega."); hasError = true;
+            }
+
+            if (hasError) return; // Interrompe se houver erro de precedência de datas
+
+            const processData = {
+                process_number: processNumberValue,
+                lawyer_id: parseInt(lawyerIdValue),
+                client_id: parseInt(clientIdValue),
+                entry_date: entryDate_iso, // Enviar em formato ISO
+                delivery_deadline: deliveryDeadline_iso, // Enviar em formato ISO
+                fatal_deadline: fatalDeadline_iso, // Enviar em formato ISO
+                status: statusValue,
+                action_type: processActionTypeInputEl.value.trim() || null
+            };
+
             try {
                 let response; const headers = getAuthHeaders();
                 if (id) { response = await fetch(`${API_BASE_URL}/processes/${id}`, { method: 'PUT', headers: headers, body: JSON.stringify(processData) }); }
@@ -504,9 +570,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('process-number').value = target.dataset.number;
                 document.getElementById('process-lawyer').value = target.dataset.lawyerid;
                 document.getElementById('process-client').value = target.dataset.clientid;
-                document.getElementById('process-entry-date').value = target.dataset.entrydate;
-                document.getElementById('process-delivery-deadline').value = target.dataset.deliverydeadline;
-                document.getElementById('process-fatal-deadline').value = target.dataset.fataldeadline;
+                // Formatar datas do dataset (yyyy-mm-dd) para exibição (dd/mm/aaaa)
+                document.getElementById('process-entry-date').value = formatDate(target.dataset.entrydate);
+                document.getElementById('process-delivery-deadline').value = formatDate(target.dataset.deliverydeadline);
+                document.getElementById('process-fatal-deadline').value = formatDate(target.dataset.fataldeadline);
                 document.getElementById('process-status').value = target.dataset.status;
                 document.getElementById('process-action-type').value = target.dataset.actiontype;
                 if(cancelProcessUpdateBtnEl) cancelProcessUpdateBtnEl.style.display = 'inline-block';
