@@ -287,11 +287,33 @@ async function deleteLawyer(id) {
 const clientForm = document.getElementById('client-form');
 const clientIdInput = document.getElementById('client-id');
 const clientNameInput = document.getElementById('client-name');
-const clientAreaInput = document.getElementById('client-area');
+// const clientAreaInput = document.getElementById('client-area'); // Alterado para select
+const clientAreaOfExpertiseSelect = document.getElementById('clientAreaOfExpertiseSelect');
 const clientsListDiv = document.getElementById('clients-list');
 const cancelClientUpdateBtn = document.getElementById('cancel-client-update');
 
 // --- Funções para Clientes ---
+
+// Carregar Áreas de Atuação para o Select
+async function loadAreasOfExpertise() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/areas-of-expertise/`);
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        const areas = await response.json();
+        clientAreaOfExpertiseSelect.innerHTML = '<option value="">Selecione uma área</option>'; // Limpar e adicionar placeholder
+        areas.forEach(area => {
+            const option = document.createElement('option');
+            option.value = area;
+            option.textContent = area;
+            clientAreaOfExpertiseSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Falha ao buscar áreas de atuação:', error);
+        clientAreaOfExpertiseSelect.innerHTML = '<option value="">Erro ao carregar áreas</option>';
+    }
+}
 
 // Listar Clientes
 async function fetchClients() {
@@ -340,22 +362,22 @@ clientForm.addEventListener('submit', async (event) => {
 
     // Validação dos campos de Cliente
     const clientNameValue = clientNameInput.value.trim();
-    const clientAreaValue = clientAreaInput.value.trim();
+    const clientAreaValue = clientAreaOfExpertiseSelect.value; // Alterado para select
 
     let hasError = false;
     if (!clientNameValue) {
         showFieldError('client-name', "O campo Nome/Razão Social é obrigatório.");
         hasError = true;
     }
-    if (!clientAreaValue) {
-        showFieldError('client-area', "O campo Área de Atuação é obrigatório.");
+    if (!clientAreaValue) { // O select terá value="" se "Selecione..." estiver marcado
+        showFieldError('clientAreaOfExpertiseSelect', "O campo Área de Atuação é obrigatório."); // ID do select para erro
         hasError = true;
     }
 
     if (hasError) {
         // Focar no primeiro campo com erro, se houver
         if (!clientNameValue) clientNameInput.focus();
-        else if (!clientAreaValue) clientAreaInput.focus();
+        else if (!clientAreaValue) clientAreaOfExpertiseSelect.focus(); // Focar no select
         return;
     }
 
@@ -385,15 +407,15 @@ clientForm.addEventListener('submit', async (event) => {
             // Tenta exibir o erro da API no campo mais relevante ou um erro geral
             if (errorData.detail && errorData.detail.toLowerCase().includes("nome") || errorData.detail.toLowerCase().includes("name")) {
                 showFieldError('client-name', errorData.detail);
-            } else if (errorData.detail && errorData.detail.toLowerCase().includes("area") || errorData.detail.toLowerCase().includes("área")) {
-                showFieldError('client-area', errorData.detail);
+            } else if (errorData.detail && (errorData.detail.toLowerCase().includes("area") || errorData.detail.toLowerCase().includes("área") || errorData.detail.toLowerCase().includes("area_of_expertise"))) {
+                showFieldError('clientAreaOfExpertiseSelect', errorData.detail); // ID do select para erro
             } else {
                 alert(`Erro ao salvar cliente: ${errorData.detail || `Erro HTTP ${response.status}`}`);
             }
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
         }
 
-        clientForm.reset();
+        clientForm.reset(); // Isso também deve resetar o select para a primeira opção
         clearAllFormErrors(clientForm); // Limpar após reset bem sucedido
         clientIdInput.value = '';
         cancelClientUpdateBtn.style.display = 'none';
@@ -411,15 +433,15 @@ clientForm.addEventListener('submit', async (event) => {
 function editClient(id, name, area) {
     clientIdInput.value = id;
     clientNameInput.value = name;
-    clientAreaInput.value = area;
+    clientAreaOfExpertiseSelect.value = area; // Alterado para select
     cancelClientUpdateBtn.style.display = 'inline-block';
     clientNameInput.focus();
 }
 
 // Cancelar Atualização de Cliente
 cancelClientUpdateBtn.addEventListener('click', () => {
-    clientForm.reset();
-    clearAllFormErrors(clientForm); // Adicionar esta linha
+    clientForm.reset(); // Isso também deve resetar o select
+    clearAllFormErrors(clientForm);
     clientIdInput.value = '';
     cancelClientUpdateBtn.style.display = 'none';
 });
@@ -475,6 +497,9 @@ let allClients = []; // Para armazenar clientes para o select
 async function populateLawyerOptions() {
     try {
         const response = await fetch(`${API_BASE_URL}/lawyers/`);
+        if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
         allLawyers = await response.json();
         processLawyerSelect.innerHTML = '<option value="">Selecione um Advogado</option>'; // Opção padrão
         allLawyers.forEach(lawyer => {
@@ -825,7 +850,8 @@ async function handleDeleteSelectedProcesses() {
 document.addEventListener('DOMContentLoaded', async () => {
     // Populando selects primeiro é importante para que a lista de processos possa mostrar nomes
     await populateLawyerOptions();
-    await populateClientOptions();
+    await populateClientOptions(); // Mantido para o formulário de processos
+    await loadAreasOfExpertise(); // Carrega as áreas de atuação para o formulário de clientes
 
     fetchLawyers(); // Busca e exibe a lista de advogados
     fetchClients(); // Busca e exibe a lista de clientes

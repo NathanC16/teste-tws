@@ -97,9 +97,11 @@
                         <div class="invalid-feedback" id="client-name-error"></div>
                     </div>
                     <div class="mb-3">
-                        <label for="client-area" class="form-label">Área de Atuação:</label>
-                        <input type="text" class="form-control" id="client-area" required>
-                        <div class="invalid-feedback" id="client-area-error"></div>
+                        <label for="clientAreaOfExpertiseSelect" class="form-label">Área de Atuação:</label>
+                        <select class="form-select" id="clientAreaOfExpertiseSelect" required>
+                            <option value="">Selecione uma área</option>
+                        </select>
+                        <div class="invalid-feedback" id="client-area-error"></div> <!-- Mantendo o div de erro, pode ser útil -->
                     </div>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Cliente</button>
                         <button type="button" id="cancel-client-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
