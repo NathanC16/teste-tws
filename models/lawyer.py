@@ -32,8 +32,10 @@ class LawyerBase(BaseModel):
         if value is None:
             return value
         if not re.match(r"^@[a-zA-Z0-9_]{3,31}$", value): # Usernames 3-31 chars after @
-            logging.warning(f"Invalid telegram_id format found: '{value}'. Returning None instead.")
-            return None
+            raise ValueError(
+                "ID do Telegram inválido. Deve começar com '@' seguido por 3 a 31 "
+                "caracteres alfanuméricos ou underscores (ex: @usuario123)."
+            )
         return value
 
     @field_validator('oab')
@@ -55,8 +57,9 @@ class LawyerBase(BaseModel):
         value_upper = value.upper()
 
         if not (re.match(pattern_num_uf, value_upper) or re.match(pattern_num_barra_uf, value_upper)):
-            logging.warning(f"Invalid OAB format found: '{value}'. Returning original value for diagnosis.")
-            return value # Returning original value 'value' as per instruction, or value_upper
+            raise ValueError(
+                "Formato da OAB inválido. Use formatos como '12345SP', '123.456SP', ou '12345/SP'."
+            )
 
         # Normaliza removendo o ponto para armazenamento, se presente no primeiro padrão
         if '.' in value_upper and '/' not in value_upper:
