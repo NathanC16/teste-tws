@@ -1,10 +1,12 @@
 from faker import Faker
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
+from sqlalchemy.exc import IntegrityError # Import for error handling
 # Importe seus modelos DB SQLAlchemy aqui
 from models.lawyer import LawyerDB
-from models.client import ClientDB, AreaOfExpertiseEnum # AreaOfExpertiseEnum adicionado
+from models.client import ClientDB, AreaOfExpertiseEnum
 from models.legal_process import LegalProcessDB
+from core.security import get_password_hash # Import for hashing passwords
 import random
 from datetime import datetime, timedelta
 
@@ -20,27 +22,107 @@ def create_synthetic_data(db: Session):
     print("Criando tabelas (se não existirem)...")
     Base.metadata.create_all(bind=engine) # Garante que as tabelas existam
 
+    # --- Criação/Verificação do Usuário Admin ---
+    ADMIN_OAB = "ADMIN"
+    ADMIN_EMAIL = "admin@example.com"
+    ADMIN_PASSWORD = "admin"
+    admin_user = db.query(LawyerDB).filter(LawyerDB.oab == ADMIN_OAB).first()
+    if not admin_user:
+        hashed_admin_password = get_password_hash(ADMIN_PASSWORD)
+        new_admin = LawyerDB(
+            name="Admin User",
+            oab=ADMIN_OAB,
+            email=ADMIN_EMAIL,
+            hashed_password=hashed_admin_password,
+            is_admin=True,
+            telegram_id="@admin_user_tg"
+        )
+        db.add(new_admin)
+        db.commit()
+        db.refresh(new_admin)
+        print(f"Usuário Admin '{new_admin.oab}' criado.")
+    else:
+        print(f"Usuário Admin '{admin_user.oab}' já existe.")
+
+    # --- Criação/Verificação do Usuário Advogado Padrão ---
+    STD_LAWYER_OAB = "ADVOGADO"
+    STD_LAWYER_EMAIL = "advogado@example.com"
+    STD_LAWYER_PASSWORD = "advogado"
+    std_lawyer = db.query(LawyerDB).filter(LawyerDB.oab == STD_LAWYER_OAB).first()
+    if not std_lawyer:
+        hashed_std_lawyer_password = get_password_hash(STD_LAWYER_PASSWORD)
+        new_std_lawyer = LawyerDB(
+            name="Advogado Padrão",
+            oab=STD_LAWYER_OAB,
+            email=STD_LAWYER_EMAIL,
+            hashed_password=hashed_std_lawyer_password,
+            is_admin=False,
+            telegram_id="@advogado_padrao_tg"
+        )
+        db.add(new_std_lawyer)
+        db.commit()
+        db.refresh(new_std_lawyer)
+        print(f"Usuário Advogado Padrão '{new_std_lawyer.oab}' criado.")
+    else:
+        print(f"Usuário Advogado Padrão '{std_lawyer.oab}' já existe.")
+
     created_lawyers = []
+    # Adicionar admin e advogado padrão à lista se foram criados ou já existiam e são necessários para processos
+    if admin_user: created_lawyers.append(admin_user)
+    if std_lawyer: created_lawyers.append(std_lawyer)
+    # Se não quiser que admin/advogado padrão participem da criação de processos aleatórios,
+    # pode-se manter a lista `created_lawyers` apenas para os aleatórios.
+    # Para este exemplo, vou assumir que eles podem ter processos.
+
     created_clients = []
 
-    print(f"Gerando {NUM_LAWYERS} advogados...")
+    print(f"Gerando {NUM_LAWYERS} advogados aleatórios...")
     for i in range(NUM_LAWYERS):
         ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
-        oab_number_part = str(random.randint(1, 999999)).zfill(random.randint(3,6)) # Número de 3 a 6 dígitos, preenchido com zeros à esquerda se necessário
-        oab_uf_part = random.choice(ufs)
+        # Gerar uma OAB que não seja ADMIN ou ADVOGADO
+        while True:
+            oab_number_part = str(random.randint(1, 999999)).zfill(random.randint(3,6))
+            oab_uf_part = random.choice(ufs)
+            generated_oab = f"{oab_number_part}{oab_uf_part}"
+            if generated_oab.upper() not in [ADMIN_OAB, STD_LAWYER_OAB]:
+                break
 
-        lawyer = LawyerDB(
-            name=fake.name(),
-            oab=f"{oab_number_part}{oab_uf_part}", # ALTERADO para NNNNNUF
-            email=fake.unique.email(),
-            telegram_id=f"@{fake.user_name().lower().replace('.', '').replace('-', '')}" if random.choice([True, False, False]) else None
-        )
-        db.add(lawyer)
-        created_lawyers.append(lawyer)
-    db.commit()
-    for lawyer in created_lawyers: # Atualiza a lista com os IDs gerados pelo DB
-        db.refresh(lawyer)
-    print("Advogados gerados.")
+        # Gerar um email único que não seja dos usuários padrão
+        generated_email = fake.unique.email()
+        while generated_email in [ADMIN_EMAIL, STD_LAWYER_EMAIL]:
+            generated_email = fake.unique.email()
+
+        # Gerar senha aleatória para advogados aleatórios
+        random_password = fake.password(length=12)
+        hashed_random_password = get_password_hash(random_password)
+
+        lawyer_data = {
+            "name": fake.name(),
+            "oab": generated_oab,
+            "email": generated_email,
+            "telegram_id": f"@{fake.user_name().lower().replace('.', '').replace('-', '')}" if random.choice([True, False, False]) else None,
+            "hashed_password": hashed_random_password,
+            "is_admin": False # Advogados aleatórios não são admins
+        }
+
+        temp_lawyer = LawyerDB(**lawyer_data)
+        try:
+            db.add(temp_lawyer)
+            db.commit()
+            db.refresh(temp_lawyer)
+            created_lawyers.append(temp_lawyer)
+            # print(f"Advogado aleatório {temp_lawyer.oab} criado com senha: {random_password}") # Log para teste
+        except IntegrityError:
+            db.rollback()
+            print(f"Aviso: Não foi possível criar advogado com OAB {temp_lawyer.oab} ou Email {temp_lawyer.email} (provavelmente duplicado ou outro erro de integridade). Pulando.")
+        except Exception as e:
+            db.rollback()
+            print(f"Erro inesperado ao criar advogado {temp_lawyer.oab}: {e}. Pulando.")
+
+    # Não precisamos mais do commit em lote e refresh para advogados aleatórios aqui
+    print(f"{len(created_lawyers) - (1 if admin_user else 0) - (1 if std_lawyer else 0)} advogados aleatórios adicionados à lista created_lawyers.")
+    print("Geração de advogados concluída.")
+
 
     print(f"Gerando {NUM_CLIENTS} clientes...")
     # client_areas = ['Energia Renovável', 'Petróleo e Gás', 'Direito Ambiental Energético',
