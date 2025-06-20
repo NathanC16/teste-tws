@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Depends # Added Depends
+from fastapi import FastAPI, HTTPException, Depends, status # Adicionado status
 from fastapi.staticfiles import StaticFiles # Adicionado para arquivos estáticos
 from pydantic import EmailStr
 from datetime import date
@@ -132,13 +132,20 @@ def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Dep
 def delete_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
     db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
     if db_lawyer is None:
-        raise HTTPException(status_code=404, detail="Lawyer not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lawyer not found")
+
+    # Adicionar esta verificação:
+    if db_lawyer.oab == "00001SP" or db_lawyer.username == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="O usuário admin principal não pode ser excluído."
+        )
 
     # Verificar processos associados
     associated_processes = db.query(process_model.LegalProcessDB).filter(process_model.LegalProcessDB.lawyer_id == lawyer_id).count()
     if associated_processes > 0:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST, # Usar status
             detail="Lawyer cannot be deleted as they are associated with one or more legal processes."
         )
 

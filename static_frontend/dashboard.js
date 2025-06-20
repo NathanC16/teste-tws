@@ -1,5 +1,12 @@
 const API_BASE_URL = ''; // Usaremos caminhos relativos para a API
 
+// Registrar o plugin datalabels globalmente para todos os gráficos
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+} else {
+    console.error('[Dashboard Debug] chartjs-plugin-datalabels não foi carregado corretamente.');
+}
+
 // --- Token Management & Auth Header (Adaptado de script.js) ---
 function saveToken(token) { // Provavelmente não usada diretamente no dashboard.js
     localStorage.setItem('authToken', token);
@@ -361,17 +368,28 @@ function renderCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            tooltip: {
+            tooltip: { // Configuração de tooltip existente mantida
                 callbacks: {
                     label: function(tooltipItem) {
                         const dataset = tooltipItem.dataset;
                         const currentValue = dataset.data[tooltipItem.dataIndex];
                         const total = dataset.data.reduce((acc, value) => acc + value, 0);
                         const percentage = ((currentValue / total) * 100).toFixed(2);
-                        // tooltipItem.label é o nome da fatia (e.g., 'Ativo')
                         return `${tooltipItem.label}: ${currentValue} (${percentage}%)`;
                     }
                 }
+            },
+            datalabels: { // Nova configuração para exibir porcentagens nas fatias
+                formatter: (value, ctx) => {
+                    let sum = 0;
+                    let dataArr = ctx.chart.data.datasets[0].data;
+                    dataArr.map(data => {
+                        sum += data;
+                    });
+                    let percentage = ((value * 100) / sum).toFixed(1) + "%";
+                    return percentage;
+                },
+                color: '#fff', // Cor do texto do rótulo de dados
             }
         }
     });
@@ -385,7 +403,21 @@ function renderCharts() {
             data: lawyerData.data,
             backgroundColor: '#0d6efd',
         }]
-    }, { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } });
+    }, {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: { // Adicionando datalabels para o gráfico de advogados
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                formatter: (value, ctx) => {
+                    return value;
+                },
+                color: '#333'
+            }
+        }
+    });
 
     // Gráfico de Tipos de Ação
     const actionTypeData = processDataForActionTypeChart(allProcesses);
@@ -396,7 +428,21 @@ function renderCharts() {
             data: actionTypeData.data,
             backgroundColor: '#198754',
         }]
-    }, { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } });
+    }, {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: { // Adicionando datalabels para o gráfico de tipos de ação
+            datalabels: {
+                anchor: 'end',
+                align: 'top',
+                formatter: (value, ctx) => {
+                    return value;
+                },
+                color: '#333'
+            }
+        }
+    });
 }
 
 // --- Inicialização ---
