@@ -1,13 +1,13 @@
-from sqlalchemy import Column, Integer, String # Boolean removed
+from sqlalchemy import Column, Integer, String # Booleano removido
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr, field_validator # Adicionar field_validator
 from typing import Optional
 import re # Importar re para regex
 import logging # Adicionar import de logging
 
-from database import Base # Import Base from database.py
+from database import Base # Importa Base de database.py
 
-# SQLAlchemy model
+# Modelo SQLAlchemy
 class LawyerDB(Base):
     __tablename__ = "lawyers"
 
@@ -15,14 +15,14 @@ class LawyerDB(Base):
     name = Column(String(100), index=True)  # Comprimento 100
     oab = Column(String(20), unique=True, index=True) # Comprimento 20
     email = Column(String(100), unique=True, index=True) # Comprimento 100
-    username = Column(String(50), unique=True, index=True, nullable=True)
+    username = Column(String(50), unique=True, index=True, nullable=True) # Campo username adicionado na task anterior
     telegram_id = Column(String(50), nullable=True) # Comprimento 50
     hashed_password = Column(String(255), nullable=False)
-    # is_admin column removed
+    # Coluna is_admin removida
 
     processes = relationship("LegalProcessDB", back_populates="lawyer")
 
-# Pydantic models for request/response validation
+# Modelos Pydantic para validação de requisição/resposta
 class LawyerBase(BaseModel):
     name: str
     oab: str
@@ -48,7 +48,7 @@ class LawyerBase(BaseModel):
     def validate_telegram_id(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        if not re.match(r"^@[a-zA-Z0-9_]{3,31}$", value): # Usernames 3-31 chars after @
+        if not re.match(r"^@[a-zA-Z0-9_]{3,31}$", value): # Usernames de 3 a 31 caracteres após @
             raise ValueError(
                 "ID do Telegram inválido. Deve começar com '@' seguido por 3 a 31 "
                 "caracteres alfanuméricos ou underscores (ex: @usuario123)."
@@ -85,15 +85,15 @@ class LawyerBase(BaseModel):
         return value_upper
 
 
-class LawyerCreate(LawyerBase): # This is used for PUT updates, typically without password change here
+class LawyerCreate(LawyerBase): # Usado para atualizações PUT, geralmente sem alteração de senha aqui
     pass
 
-class LawyerCreateRequest(LawyerBase): # New model for registration
+class LawyerCreateRequest(LawyerBase): # Novo modelo para registro
     password: str
 
 class Lawyer(LawyerBase):
     id: int
-    # is_admin field removed
+    # Campo is_admin removido
 
     class Config:
-        from_attributes = True # Changed from orm_mode = True for Pydantic v2
+        from_attributes = True # Alterado de orm_mode = True para Pydantic v2
