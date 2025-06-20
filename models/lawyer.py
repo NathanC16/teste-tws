@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String # Boolean removed
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr, field_validator # Adicionar field_validator
 from typing import Optional
@@ -17,7 +17,7 @@ class LawyerDB(Base):
     email = Column(String(100), unique=True, index=True) # Comprimento 100
     telegram_id = Column(String(50), nullable=True) # Comprimento 50
     hashed_password = Column(String(255), nullable=False)
-    is_admin = Column(Boolean, default=False, nullable=False)
+    # is_admin column removed
 
     processes = relationship("LegalProcessDB", back_populates="lawyer")
 
@@ -78,7 +78,7 @@ class LawyerCreateRequest(LawyerBase): # New model for registration
 
 class Lawyer(LawyerBase):
     id: int
-    is_admin: bool # Added is_admin
+    # is_admin field removed
 
     class Config:
         from_attributes = True # Changed from orm_mode = True for Pydantic v2

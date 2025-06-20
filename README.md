@@ -198,9 +198,24 @@ uvicorn main:app --reload
 
 A API estará disponível em `http://127.0.0.1:8000`.
 
+## Autenticação e Acesso
+
+O sistema utiliza um mecanismo de login para acesso às funcionalidades de gerenciamento de dados. Não há funcionalidade de registro público de usuários; as contas de usuário (advogados) são gerenciadas internamente.
+
+**Credenciais de Acesso Padrão (Administrador):**
+
+Para acessar o sistema, utilize as seguintes credenciais, que são criadas automaticamente pelo script `seed_db.py`:
+
+*   **OAB (Login):** `00001SP`
+*   **Senha:** `admin`
+
+Recomenda-se fortemente alterar a senha padrão do usuário "ADMIN" (OAB `00001SP`) se esta aplicação for utilizada em um ambiente mais sério ou de produção. Atualmente, a funcionalidade de alteração de senha não está implementada na interface, mas a senha pode ser alterada diretamente no banco de dados ou por meio de um script de gerenciamento.
+
+O script `seed_db.py` também cria outros advogados com senhas aleatórias para fins de preenchimento de dados de exemplo. Estes usuários não são destinados a login no sistema na configuração atual, mas podem ser usados para testar listagens e associações de processos.
+
 ## Populando o Banco de Dados com Dados de Teste (Opcional)
 
-Para facilitar os testes e a demonstração da aplicação, foi incluído um script (`seed_db.py`) que utiliza a biblioteca Faker para popular o banco de dados com dados sintéticos (advogados, clientes e processos).
+Para facilitar os testes e a demonstração da aplicação, foi incluído um script (`seed_db.py`) que utiliza a biblioteca Faker para popular o banco de dados com dados sintéticos (advogados, clientes e processos). Este script também cria o usuário administrador padrão mencionado acima.
 
 **Pré-requisitos:**
 *   Certifique-se de que as dependências do projeto estão instaladas, incluindo `Faker` (conforme `requirements.txt`).
@@ -215,7 +230,12 @@ Para facilitar os testes e a demonstração da aplicação, foi incluído um scr
     ```
 3.  O script irá criar as tabelas (se ainda não existirem) e depois inserir os dados. Você verá mensagens de progresso no console.
 
-    **Nota Importante Pós-Correções:** Após recentes atualizações nos modelos de dados e validadores (especialmente para `area_of_expertise` de Clientes e `oab`/`telegram_id` de Advogados), é crucial garantir que o banco de dados esteja limpo (sem dados antigos nessas tabelas) ou que os dados existentes sejam compatíveis antes de executar `python seed_db.py`. O script `seed_db.py` foi atualizado para gerar dados consistentes com as definições atuais do modelo (ex: usando valores válidos do `AreaOfExpertiseEnum`). Se encontrar erros, experimente limpar as tabelas `clients` e `lawyers` ou o banco de dados inteiro e executar o script de povoamento novamente.
+    **Nota Importante Pós-Correções:** É crucial garantir que o banco de dados esteja limpo (sem dados antigos, especialmente na tabela de advogados) ou que os dados existentes sejam compatíveis antes de executar `python seed_db.py`. O script `seed_db.py` foi atualizado para:
+    *   Criar um usuário administrador padrão (OAB: `00001SP`, Senha: `admin`).
+    *   Não criar mais um usuário "ADVOGADO" padrão separado.
+    *   Gerar advogados aleatórios sem o campo `is_admin` (que foi removido do modelo).
+    *   Utilizar valores válidos do `AreaOfExpertiseEnum` para clientes.
+    Se encontrar erros durante o povoamento, experimente limpar as tabelas relevantes (especialmente `lawyers`, `clients`, `legal_processes`) ou o banco de dados inteiro e executar o script novamente.
 
 **Configuração do Volume de Dados:**
 Você pode ajustar o número de advogados, clientes e processos a serem gerados editando as seguintes constantes no topo do arquivo `seed_db.py`:
@@ -263,14 +283,17 @@ Para uma visão detalhada do escopo completo do projeto, suas diferentes versõe
 ├── FUNCIONALIDADES_PROJETO.md # Lista de funcionalidades implementadas, pendentes e planejadas
 ├── README.md               # Este arquivo
 ├── database.py             # Configuração do banco de dados SQLAlchemy
-├── main.py                 # Ponto de entrada da aplicação FastAPI, endpoints da API
+├── main.py                 # Ponto de entrada da aplicação FastAPI, endpoints da API (incluindo CRUD de Advogados, Clientes, Processos)
 ├── models/                 # Modelos de dados
 │   ├── __init__.py
-│   ├── client.py           # Modelo Cliente (Pydantic e SQLAlchemy)
-│   ├── lawyer.py           # Modelo Advogado (Pydantic e SQLAlchemy)
+│   ├── client.py           # Modelo Cliente (Pydantic e SQLAlchemy, `AreaOfExpertiseEnum`)
+│   ├── lawyer.py           # Modelo Advogado (Pydantic e SQLAlchemy, campo `is_admin` removido)
 │   └── legal_process.py    # Modelo Processo Jurídico (Pydantic e SQLAlchemy)
 ├── requirements.txt        # Dependências Python do projeto
-├── seed_db.py              # Script para popular o banco de dados com dados sintéticos
+├── routers/                # Módulos de roteamento da API
+│   ├── __init__.py
+│   └── auth.py             # Endpoints de autenticação (`/token`, `/users/me`)
+├── seed_db.py              # Script para popular o banco de dados com dados sintéticos (inclui usuário admin)
 ├── telegram_bot.py         # Módulo para interações com o Telegram Bot (configuração inicial)
 └── static_frontend/        # Arquivos da interface web
     ├── dashboard.css       # Estilos para o painel

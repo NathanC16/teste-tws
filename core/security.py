@@ -109,23 +109,5 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
-async def get_current_admin_user(current_user: lawyer_models.LawyerDB = Depends(get_current_user)) -> lawyer_models.LawyerDB:
-    """
-    Dependency to ensure the current user is an administrator.
-    Relies on get_current_user to first authenticate the user.
-
-    Args:
-        current_user: The authenticated user object, injected by Depends(get_current_user).
-
-    Returns:
-        The authenticated user object if they are an admin.
-
-    Raises:
-        HTTPException (403 Forbidden): If the authenticated user is not an admin.
-    """
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user does not have administrative privileges"
-        )
-    return current_user
+# The get_current_admin_user function is now removed as per simplification.
+# All authenticated users will have the same level of access to protected routes.

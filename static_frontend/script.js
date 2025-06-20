@@ -110,33 +110,34 @@ function formatDate(dateString) {
 
 // --- Seletores de Seção da UI ---
 const loginSection = document.getElementById('login-section');
-const registerSection = document.getElementById('register-section');
+// const registerSection = document.getElementById('register-section'); // Removed
 const mainContentSection = document.getElementById('main-content');
 const userInfoSection = document.getElementById('user-info-section');
-const lawyerManagementSection = document.getElementById('lawyers-section'); // Section for managing lawyers (admin only)
+const lawyerManagementSection = document.getElementById('lawyers-section'); // This is part of mainContentSection
 
-// Links para alternar entre formulários de login/registro
-const showRegisterLink = document.getElementById('show-register-link');
-const showLoginLink = document.getElementById('show-login-link');
+// Links para alternar entre formulários de login/registro - REMOVED
+// const showRegisterLink = document.getElementById('show-register-link');
+// const showLoginLink = document.getElementById('show-login-link');
 
 // --- Elementos dos Formulários de Login/Registro ---
 const loginForm = document.getElementById('login-form');
 const loginOabInput = document.getElementById('login-oab');
 const loginPasswordInput = document.getElementById('login-password');
 
-const registerForm = document.getElementById('register-form');
-const registerNameInput = document.getElementById('register-name');
-const registerOabInput = document.getElementById('register-oab');
-const registerEmailInput = document.getElementById('register-email');
-const registerPasswordInput = document.getElementById('register-password');
-const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
-const registerTelegramInput = document.getElementById('register-telegram');
+// Registration form elements removed
+// const registerForm = document.getElementById('register-form');
+// const registerNameInput = document.getElementById('register-name');
+// const registerOabInput = document.getElementById('register-oab');
+// const registerEmailInput = document.getElementById('register-email');
+// const registerPasswordInput = document.getElementById('register-password');
+// const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
+// const registerTelegramInput = document.getElementById('register-telegram');
 
 const userOabDisplay = document.getElementById('user-oab-display');
 const logoutButton = document.getElementById('logout-button');
 
 // Elementos do DOM para Advogados (CRUD)
-const lawyerForm = document.getElementById('lawyer-form'); // Note: This ID is for the CRUD lawyer form, not registration
+const lawyerForm = document.getElementById('lawyer-form');
 const lawyerIdInput = document.getElementById('lawyer-id');
 const lawyerNameInput = document.getElementById('lawyer-name');
 const lawyerOabInput = document.getElementById('lawyer-oab');
@@ -1063,9 +1064,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await populateLawyerOptions();
                 await populateClientOptions();
                 await loadAreasOfExpertise(); // Public, but good to have here for sequence
-                if (lawyerManagementSection.style.display !== 'none') { // Only fetch if section is visible
-                    fetchLawyers();
-                }
+                // Lawyer management is part of mainContent, so if logged in, it's visible.
+                // No specific is_admin check needed here for fetching.
+                fetchLawyers();
                 fetchClients();
                 fetchProcesses();
 
@@ -1092,49 +1093,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             userInfoSection.style.display = 'block';
             userOabDisplay.textContent = currentUser.oab || 'N/A'; // Use OAB from currentUser
 
-            // Control visibility of lawyer management section
-            if (lawyerManagementSection) { // Check if element exists
-                if (currentUser.is_admin) {
-                    lawyerManagementSection.style.display = 'block'; // Or 'flex', 'grid'
-                } else {
-                    lawyerManagementSection.style.display = 'none';
-                }
-            }
-             // Data fetching is now primarily handled by fetchAndSetCurrentUser after login
-             // or on page load if token is valid.
+            // Lawyer management section is part of mainContentSection, so it will be shown.
+            // No specific is_admin check needed for visibility here.
+            // if (lawyerManagementSection) {
+            //     lawyerManagementSection.style.display = 'block';
+            // }
         } else {
             loginSection.style.display = 'block';
-            registerSection.style.display = 'none';
+            // registerSection.style.display = 'none'; // Section removed
             mainContentSection.style.display = 'none';
             userInfoSection.style.display = 'none';
             if (userOabDisplay) userOabDisplay.textContent = '';
-            if (lawyerManagementSection) lawyerManagementSection.style.display = 'none';
+            // if (lawyerManagementSection) lawyerManagementSection.style.display = 'none'; // Covered by mainContentSection hide
             currentUser = null; // Ensure currentUser is cleared on logout state
 
-            // Limpar listas para não mostrar dados antigos
             lawyersListDiv.innerHTML = '';
             clientsListDiv.innerHTML = '';
             processesListDiv.innerHTML = '';
         }
     }
 
-    if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginSection.style.display = 'none';
-            registerSection.style.display = 'block';
-            clearAllFormErrors(registerForm);
-        });
-    }
+    // Event listeners for switching forms removed as registration form is gone.
+    // if (showRegisterLink) { ... }
+    // if (showLoginLink) { ... }
 
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            registerSection.style.display = 'none';
-            loginSection.style.display = 'block';
-            clearAllFormErrors(loginForm);
-        });
-    }
 
     // --- Event Listeners para Forms de Autenticação ---
     if (loginForm) {
@@ -1179,89 +1161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    if (registerForm) {
-        registerForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            clearAllFormErrors(registerForm);
-
-            const name = registerNameInput.value.trim();
-            const oab = registerOabInput.value.trim();
-            const email = registerEmailInput.value.trim();
-            const password = registerPasswordInput.value.trim();
-            const confirmPassword = registerConfirmPasswordInput.value.trim();
-            const telegramId = registerTelegramInput.value.trim();
-
-            if (!name || !oab || !email || !password || !confirmPassword) {
-                alert("Por favor, preencha todos os campos obrigatórios.");
-                // Use showFieldError for specific fields if desired
-                if(!name) showFieldError('register-name', "Nome é obrigatório");
-                if(!oab) showFieldError('register-oab', "OAB é obrigatória");
-                if(!email) showFieldError('register-email', "Email é obrigatório");
-                if(!password) showFieldError('register-password', "Senha é obrigatória");
-                if(!confirmPassword) showFieldError('register-confirm-password', "Confirmação de senha é obrigatória");
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                showFieldError('register-password', "As senhas não coincidem.");
-                showFieldError('register-confirm-password', "As senhas não coincidem.");
-                registerPasswordInput.value = "";
-                registerConfirmPasswordInput.value = "";
-                return;
-            }
-
-            // Basic OAB validation (similar to lawyer form)
-            const oabPatternNumUf = /^\d{1,3}(\.?\d{3})?[A-Z]{2}$/i; // Added i for case-insensitivity of UF
-            const oabPatternNumBarraUf = /^\d{1,6}\/[A-Z]{2}$/i;
-            if (!(oabPatternNumUf.test(oab) || oabPatternNumBarraUf.test(oab))) {
-                showFieldError('register-oab', "Formato da OAB inválido. Ex: 12345SP, 123.456SP, 12345/SP.");
-                return;
-            }
-            // Basic Telegram ID validation (optional)
-            if (telegramId && !/^@[a-zA-Z0-9_]{3,31}$/.test(telegramId)) {
-                 showFieldError('register-telegram', "ID Telegram inválido. Ex: @usuario_123");
-                 return;
-            }
-
-
-            const lawyerData = {
-                name: name,
-                oab: oab.toUpperCase(), // Send OAB in uppercase
-                email: email,
-                password: password,
-                telegram_id: telegramId || null
-            };
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }, // Register sends JSON
-                    body: JSON.stringify(lawyerData)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                     if (errorData.detail && errorData.detail.toLowerCase().includes("oab")) {
-                        showFieldError('register-oab', errorData.detail);
-                    } else if (errorData.detail && errorData.detail.toLowerCase().includes("email")) {
-                        showFieldError('register-email', errorData.detail);
-                    } else {
-                        alert(`Erro no registro: ${errorData.detail || `Erro HTTP ${response.status}`}`);
-                    }
-                    throw new Error(`Registration failed: ${errorData.detail || response.status}`);
-                }
-
-                alert("Registro bem-sucedido! Faça o login com sua OAB e senha.");
-                registerForm.reset();
-                showLoginLink.click(); // Simulate click to switch to login view
-                loginOabInput.value = oab.toUpperCase(); // Pre-fill OAB on login form
-                loginPasswordInput.focus();
-
-            } catch (error) {
-                console.error('Erro no registro:', error);
-            }
-        });
-    }
+    // Registration form event listener removed
+    // if (registerForm) { ... }
 
     function logout() {
         removeToken();
