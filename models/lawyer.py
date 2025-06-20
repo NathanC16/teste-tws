@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr, field_validator # Adicionar field_validator
 from typing import Optional
@@ -16,6 +16,8 @@ class LawyerDB(Base):
     oab = Column(String(20), unique=True, index=True) # Comprimento 20
     email = Column(String(100), unique=True, index=True) # Comprimento 100
     telegram_id = Column(String(50), nullable=True) # Comprimento 50
+    hashed_password = Column(String(255), nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)
 
     processes = relationship("LegalProcessDB", back_populates="lawyer")
 
@@ -68,11 +70,15 @@ class LawyerBase(BaseModel):
         return value_upper
 
 
-class LawyerCreate(LawyerBase):
+class LawyerCreate(LawyerBase): # This is used for PUT updates, typically without password change here
     pass
+
+class LawyerCreateRequest(LawyerBase): # New model for registration
+    password: str
 
 class Lawyer(LawyerBase):
     id: int
+    is_admin: bool # Added is_admin
 
     class Config:
         from_attributes = True # Changed from orm_mode = True for Pydantic v2

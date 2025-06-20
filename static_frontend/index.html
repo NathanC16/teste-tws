@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Processos Jurídicos - Gerenciamento de Dados</title> <!-- Título atualizado -->
+    <title>Gerenciador de Processos Jurídicos - Gerenciamento de Dados</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
@@ -30,151 +30,217 @@
         </div>
     </nav>
 
-    <!-- O restante do conteúdo do body (<h1>, sections, etc.) continua aqui -->
-    <div class="container"> <!-- Adiciona um container Bootstrap para o conteúdo principal -->
-        <h1 class="text-center my-4">Gerenciador de Processos Jurídicos - Teste API</h1>
+    <div class="container">
 
-        <!-- Seção de Advogados -->
-        <section id="lawyers-section" class="mb-5 p-4 border rounded shadow-sm">
-            <h2><i class="fas fa-gavel me-2"></i>Advogados</h2>
-            <div class="row">
-                <div class="col-md-8"> <!-- Coluna para a lista -->
-                    <h3>Lista de Advogados</h3>
-                    <div id="lawyers-list" class="list-group">
-                        <!-- Lista de advogados será populada aqui com classes de list-group-item -->
-                    </div>
-                </div>
-                <div class="col-md-4"> <!-- Coluna para o formulário -->
-                    <h3>Adicionar/Atualizar Advogado</h3>
-                    <form id="lawyer-form">
-                        <input type="hidden" id="lawyer-id">
-                        <div class="mb-3">
-                            <label for="lawyer-name" class="form-label">Nome:</label>
-                            <input type="text" class="form-control" id="lawyer-name" required>
-                            <div class="invalid-feedback" id="lawyer-name-error"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="lawyer-oab" class="form-label">OAB:</label>
-                            <input type="text" class="form-control" id="lawyer-oab" required>
-                            <div class="invalid-feedback" id="lawyer-oab-error"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="lawyer-email" class="form-label">Email:</label>
-                            <input type="email" class="form-control" id="lawyer-email" required>
-                            <div class="invalid-feedback" id="lawyer-email-error"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="lawyer-telegram" class="form-label">ID Telegram:</label>
-                            <input type="text" class="form-control" id="lawyer-telegram">
-                            <div class="invalid-feedback" id="lawyer-telegram-error"></div>
-                        </div>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Advogado</button>
-                        <button type="button" id="cancel-lawyer-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-
-    <hr class="my-5">
-
-    <!-- Seção de Clientes -->
-    <section id="clients-section" class="mb-5 p-4 border rounded shadow-sm">
-        <h2><i class="fas fa-users me-2"></i>Clientes</h2>
-        <div class="row">
-            <div class="col-md-8"> <!-- Coluna para a lista -->
-                <h3>Lista de Clientes</h3>
-                <div id="clients-list" class="list-group">
-                    <!-- Lista de clientes será populada aqui -->
-                </div>
-            </div>
-            <div class="col-md-4"> <!-- Coluna para o formulário -->
-                <h3>Adicionar/Atualizar Cliente</h3>
-                <form id="client-form">
-                    <input type="hidden" id="client-id">
+        <!-- Seção de Login -->
+        <div id="login-section" class="row justify-content-center mt-5">
+            <div class="col-md-6 col-lg-4">
+                <h2 class="text-center mb-4">Login</h2>
+                <form id="login-form" class="p-4 border rounded shadow-sm">
                     <div class="mb-3">
-                        <label for="client-name" class="form-label">Nome/Razão Social:</label>
-                        <input type="text" class="form-control" id="client-name" required>
-                        <div class="invalid-feedback" id="client-name-error"></div>
+                        <label for="login-oab" class="form-label">OAB (Login):</label>
+                        <input type="text" class="form-control" id="login-oab" placeholder="Ex: 12345SP" required>
                     </div>
                     <div class="mb-3">
-                        <label for="clientAreaOfExpertiseSelect" class="form-label">Área de Atuação:</label>
-                        <select class="form-select" id="clientAreaOfExpertiseSelect" required>
-                            <option value="">Selecione uma área</option>
-                        </select>
-                        <div class="invalid-feedback" id="client-area-error"></div> <!-- Mantendo o div de erro, pode ser útil -->
+                        <label for="login-password" class="form-label">Senha:</label>
+                        <input type="password" class="form-control" id="login-password" placeholder="Senha" required>
                     </div>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Cliente</button>
-                        <button type="button" id="cancel-client-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                    <p class="mt-3 text-center">
+                        Não tem conta? <a href="#" id="show-register-link">Registre-se</a>
+                    </p>
                 </form>
             </div>
         </div>
-    </section>
 
-    <hr class="my-5">
-
-    <!-- Seção de Processos Jurídicos -->
-    <section id="processes-section" class="mb-5 p-4 border rounded shadow-sm">
-        <h2><i class="fas fa-file-alt me-2"></i>Processos Jurídicos</h2>
-        <div class="row">
-            <div class="col-md-8"> <!-- Coluna para a lista e botão de exclusão -->
-                <h3>Lista de Processos</h3>
-                <div style="margin-bottom: 10px;"> <!-- Ajuste para margin-bottom -->
-                    <button type="button" id="delete-selected-processes-btn" class="btn btn-danger mt-3"><i class="fas fa-trash-alt me-2"></i>Excluir Processos Selecionados</button>
-                </div>
-                <div id="processes-list" class="list-group">
-                    <!-- Lista de processos será populada aqui -->
-                </div>
-            </div>
-            <div class="col-md-4"> <!-- Coluna para o formulário -->
-                <h3>Adicionar/Atualizar Processo</h3>
-                <form id="process-form">
-                    <input type="hidden" id="process-id">
+        <!-- Seção de Registro -->
+        <div id="register-section" class="row justify-content-center mt-5" style="display:none;">
+            <div class="col-md-8 col-lg-6">
+                <h2 class="text-center mb-4">Registro de Novo Advogado</h2>
+                <form id="register-form" class="p-4 border rounded shadow-sm">
                     <div class="mb-3">
-                        <label for="process-number" class="form-label">Número do Processo:</label>
-                        <input type="text" class="form-control" id="process-number" required>
-                        <div class="invalid-feedback" id="process-number-error"></div>
+                        <label for="register-name" class="form-label">Nome Completo:</label>
+                        <input type="text" class="form-control" id="register-name" required>
                     </div>
                     <div class="mb-3">
-                        <label for="process-lawyer" class="form-label">Advogado Responsável:</label>
-                        <select class="form-select" id="process-lawyer" required>
-                            <!-- Opções de advogados serão populadas aqui -->
-                        </select>
+                        <label for="register-oab" class="form-label">OAB (Será seu usuário de login):</label>
+                        <input type="text" class="form-control" id="register-oab" placeholder="Ex: 12345SP ou 123.456/SP" required>
                     </div>
                     <div class="mb-3">
-                        <label for="process-client" class="form-label">Cliente:</label>
-                        <select class="form-select" id="process-client" required>
-                            <!-- Opções de clientes serão populadas aqui -->
-                        </select>
+                        <label for="register-email" class="form-label">Email:</label>
+                        <input type="email" class="form-control" id="register-email" required>
                     </div>
                     <div class="mb-3">
-                        <label for="process-entry-date" class="form-label">Data de Entrada:</label>
-                        <input type="date" class="form-control" id="process-entry-date" required>
+                        <label for="register-password" class="form-label">Senha:</label>
+                        <input type="password" class="form-control" id="register-password" required>
                     </div>
                     <div class="mb-3">
-                        <label for="process-delivery-deadline" class="form-label">Prazo para Entrega:</label>
-                        <input type="date" class="form-control" id="process-delivery-deadline" required>
+                        <label for="register-confirm-password" class="form-label">Confirmar Senha:</label>
+                        <input type="password" class="form-control" id="register-confirm-password" required>
                     </div>
                     <div class="mb-3">
-                        <label for="process-fatal-deadline" class="form-label">Prazo Fatal:</label>
-                        <input type="date" class="form-control" id="process-fatal-deadline" required>
+                        <label for="register-telegram" class="form-label">ID Telegram (Opcional):</label>
+                        <input type="text" class="form-control" id="register-telegram" placeholder="Ex: @seuUsuario">
                     </div>
-                    <div class="mb-3">
-                        <label for="process-status" class="form-label">Status:</label>
-                        <input type="text" class="form-control" id="process-status" value="ativo">
-                        <div class="invalid-feedback" id="process-status-error"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="process-action-type" class="form-label">Tipo de Ação:</label>
-                        <input type="text" class="form-control" id="process-action-type">
-                        <div class="invalid-feedback" id="process-action-type-error"></div>
-                    </div>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Processo</button>
-                        <button type="button" id="cancel-process-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
+                    <button type="submit" class="btn btn-success w-100">Registrar</button>
+                    <p class="mt-3 text-center">
+                        Já tem conta? <a href="#" id="show-login-link">Faça login</a>
+                    </p>
                 </form>
             </div>
         </div>
-    </section>
 
+        <!-- Seção de Informações do Usuário / Logout -->
+        <div id="user-info-section" class="my-3 p-3 border rounded shadow-sm" style="display:none;">
+            <p>Logado como: <span id="user-oab-display"></span></p>
+            <button id="logout-button" class="btn btn-danger btn-sm">Logout</button>
+        </div>
+
+        <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
+        <div id="main-content" style="display:none;">
+            <h1 class="text-center my-4">Gerenciador de Processos Jurídicos - Teste API</h1>
+
+            <!-- Seção de Advogados -->
+            <section id="lawyers-section" class="mb-5 p-4 border rounded shadow-sm">
+                <h2><i class="fas fa-gavel me-2"></i>Advogados</h2>
+                <div class="row">
+                    <div class="col-md-8"> <!-- Coluna para a lista -->
+                        <h3>Lista de Advogados</h3>
+                        <div id="lawyers-list" class="list-group">
+                            <!-- Lista de advogados será populada aqui com classes de list-group-item -->
+                        </div>
+                    </div>
+                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                        <h3>Adicionar/Atualizar Advogado</h3>
+                        <form id="lawyer-form">
+                            <input type="hidden" id="lawyer-id">
+                            <div class="mb-3">
+                                <label for="lawyer-name" class="form-label">Nome:</label>
+                                <input type="text" class="form-control" id="lawyer-name" required>
+                                <div class="invalid-feedback" id="lawyer-name-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lawyer-oab" class="form-label">OAB:</label>
+                                <input type="text" class="form-control" id="lawyer-oab" required>
+                                <div class="invalid-feedback" id="lawyer-oab-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lawyer-email" class="form-label">Email:</label>
+                                <input type="email" class="form-control" id="lawyer-email" required>
+                                <div class="invalid-feedback" id="lawyer-email-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lawyer-telegram" class="form-label">ID Telegram:</label>
+                                <input type="text" class="form-control" id="lawyer-telegram">
+                                <div class="invalid-feedback" id="lawyer-telegram-error"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Advogado</button>
+                            <button type="button" id="cancel-lawyer-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="my-5">
+
+            <!-- Seção de Clientes -->
+            <section id="clients-section" class="mb-5 p-4 border rounded shadow-sm">
+                <h2><i class="fas fa-users me-2"></i>Clientes</h2>
+                <div class="row">
+                    <div class="col-md-8"> <!-- Coluna para a lista -->
+                        <h3>Lista de Clientes</h3>
+                        <div id="clients-list" class="list-group">
+                            <!-- Lista de clientes será populada aqui -->
+                        </div>
+                    </div>
+                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                        <h3>Adicionar/Atualizar Cliente</h3>
+                        <form id="client-form">
+                            <input type="hidden" id="client-id">
+                            <div class="mb-3">
+                                <label for="client-name" class="form-label">Nome/Razão Social:</label>
+                                <input type="text" class="form-control" id="client-name" required>
+                                <div class="invalid-feedback" id="client-name-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="clientAreaOfExpertiseSelect" class="form-label">Área de Atuação:</label>
+                                <select class="form-select" id="clientAreaOfExpertiseSelect" required>
+                                    <option value="">Selecione uma área</option>
+                                </select>
+                                <div class="invalid-feedback" id="client-area-error"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Cliente</button>
+                            <button type="button" id="cancel-client-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="my-5">
+
+            <!-- Seção de Processos Jurídicos -->
+            <section id="processes-section" class="mb-5 p-4 border rounded shadow-sm">
+                <h2><i class="fas fa-file-alt me-2"></i>Processos Jurídicos</h2>
+                <div class="row">
+                    <div class="col-md-8"> <!-- Coluna para a lista e botão de exclusão -->
+                        <h3>Lista de Processos</h3>
+                        <div style="margin-bottom: 10px;">
+                            <button type="button" id="delete-selected-processes-btn" class="btn btn-danger mt-3"><i class="fas fa-trash-alt me-2"></i>Excluir Processos Selecionados</button>
+                        </div>
+                        <div id="processes-list" class="list-group">
+                            <!-- Lista de processos será populada aqui -->
+                        </div>
+                    </div>
+                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                        <h3>Adicionar/Atualizar Processo</h3>
+                        <form id="process-form">
+                            <input type="hidden" id="process-id">
+                            <div class="mb-3">
+                                <label for="process-number" class="form-label">Número do Processo:</label>
+                                <input type="text" class="form-control" id="process-number" required>
+                                <div class="invalid-feedback" id="process-number-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-lawyer" class="form-label">Advogado Responsável:</label>
+                                <select class="form-select" id="process-lawyer" required>
+                                    <!-- Opções de advogados serão populadas aqui -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-client" class="form-label">Cliente:</label>
+                                <select class="form-select" id="process-client" required>
+                                    <!-- Opções de clientes serão populadas aqui -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-entry-date" class="form-label">Data de Entrada:</label>
+                                <input type="date" class="form-control" id="process-entry-date" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-delivery-deadline" class="form-label">Prazo para Entrega:</label>
+                                <input type="date" class="form-control" id="process-delivery-deadline" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-fatal-deadline" class="form-label">Prazo Fatal:</label>
+                                <input type="date" class="form-control" id="process-fatal-deadline" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-status" class="form-label">Status:</label>
+                                <input type="text" class="form-control" id="process-status" value="ativo">
+                                <div class="invalid-feedback" id="process-status-error"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="process-action-type" class="form-label">Tipo de Ação:</label>
+                                <input type="text" class="form-control" id="process-action-type">
+                                <div class="invalid-feedback" id="process-action-type-error"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Processo</button>
+                            <button type="button" id="cancel-process-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div> <!-- Fim do #main-content -->
     </div> <!-- Fim do container Bootstrap -->
     <script src="script.js"></script>
     <!-- Bootstrap JS Bundle (Popper.js incluído) -->

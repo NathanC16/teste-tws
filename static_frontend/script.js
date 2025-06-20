@@ -1,4 +1,40 @@
 const API_BASE_URL = ''; // Usaremos caminhos relativos para a API, ex: /lawyers
+let currentUser = null; // Holds data of the currently logged-in user
+
+// --- Token Management & Auth Header ---
+function saveToken(token) {
+    localStorage.setItem('authToken', token);
+}
+
+function getToken() {
+    return localStorage.getItem('authToken');
+}
+
+function removeToken() {
+    localStorage.removeItem('authToken');
+}
+
+function getAuthHeaders(isFormData = false) {
+    const token = getToken();
+    const headers = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (!isFormData) { // Do not set Content-Type for FormData, browser does it with boundary
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
+
+function parseJwt(token) {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+        console.error("Failed to parse JWT:", e);
+        return null;
+    }
+}
+
 
 // --- Funções Utilitárias de Feedback de Validação ---
 function showFieldError(fieldId, message) {
@@ -72,8 +108,35 @@ function formatDate(dateString) {
 }
 // --- Fim Funções Utilitárias ---
 
-// Elementos do DOM para Advogados
-const lawyerForm = document.getElementById('lawyer-form');
+// --- Seletores de Seção da UI ---
+const loginSection = document.getElementById('login-section');
+const registerSection = document.getElementById('register-section');
+const mainContentSection = document.getElementById('main-content');
+const userInfoSection = document.getElementById('user-info-section');
+const lawyerManagementSection = document.getElementById('lawyers-section'); // Section for managing lawyers (admin only)
+
+// Links para alternar entre formulários de login/registro
+const showRegisterLink = document.getElementById('show-register-link');
+const showLoginLink = document.getElementById('show-login-link');
+
+// --- Elementos dos Formulários de Login/Registro ---
+const loginForm = document.getElementById('login-form');
+const loginOabInput = document.getElementById('login-oab');
+const loginPasswordInput = document.getElementById('login-password');
+
+const registerForm = document.getElementById('register-form');
+const registerNameInput = document.getElementById('register-name');
+const registerOabInput = document.getElementById('register-oab');
+const registerEmailInput = document.getElementById('register-email');
+const registerPasswordInput = document.getElementById('register-password');
+const registerConfirmPasswordInput = document.getElementById('register-confirm-password');
+const registerTelegramInput = document.getElementById('register-telegram');
+
+const userOabDisplay = document.getElementById('user-oab-display');
+const logoutButton = document.getElementById('logout-button');
+
+// Elementos do DOM para Advogados (CRUD)
+const lawyerForm = document.getElementById('lawyer-form'); // Note: This ID is for the CRUD lawyer form, not registration
 const lawyerIdInput = document.getElementById('lawyer-id');
 const lawyerNameInput = document.getElementById('lawyer-name');
 const lawyerOabInput = document.getElementById('lawyer-oab');
@@ -86,8 +149,14 @@ const cancelLawyerUpdateBtn = document.getElementById('cancel-lawyer-update');
 
 // Listar Advogados
 async function fetchLawyers() {
+    if (!getToken()) return; // Don't fetch if not logged in
     try {
-        const response = await fetch(`${API_BASE_URL}/lawyers/`);
+        const response = await fetch(`${API_BASE_URL}/lawyers/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { // Handle unauthorized access
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); // Call logout to clear state
+            return;
+        }
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
@@ -193,20 +262,25 @@ lawyerForm.addEventListener('submit', async (event) => {
 
     try {
         let response;
+        const headers = getAuthHeaders();
         if (id) { // Atualizar
             response = await fetch(`${API_BASE_URL}/lawyers/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(lawyerData),
             });
         } else { // Criar
             response = await fetch(`${API_BASE_URL}/lawyers/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(lawyerData),
             });
         }
 
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             const errorData = await response.json();
             // Tenta exibir o erro da API no campo mais relevante ou um erro geral no formulário
@@ -264,9 +338,14 @@ async function deleteLawyer(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/lawyers/${id}`, {
             method: 'DELETE',
+            headers: getAuthHeaders()
         });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json(); // Attempt to parse error
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
         }
         fetchLawyers(); // Atualizar lista
@@ -317,8 +396,13 @@ async function loadAreasOfExpertise() {
 
 // Listar Clientes
 async function fetchClients() {
+    if (!getToken()) return;
     try {
-        const response = await fetch(`${API_BASE_URL}/clients/`);
+        const response = await fetch(`${API_BASE_URL}/clients/`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
@@ -388,20 +472,25 @@ clientForm.addEventListener('submit', async (event) => {
 
     try {
         let response;
+        const headers = getAuthHeaders();
         if (id) { // Atualizar
             response = await fetch(`${API_BASE_URL}/clients/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(clientData),
             });
         } else { // Criar
             response = await fetch(`${API_BASE_URL}/clients/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(clientData),
             });
         }
 
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             const errorData = await response.json();
             // Tenta exibir o erro da API no campo mais relevante ou um erro geral
@@ -454,7 +543,12 @@ async function deleteClient(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
             method: 'DELETE',
+            headers: getAuthHeaders()
         });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
@@ -495,8 +589,13 @@ let allClients = []; // Para armazenar clientes para o select
 
 // Popular Select de Advogados
 async function populateLawyerOptions() {
+    if (!getToken()) return;
     try {
-        const response = await fetch(`${API_BASE_URL}/lawyers/`);
+        const response = await fetch(`${API_BASE_URL}/lawyers/`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
@@ -515,8 +614,13 @@ async function populateLawyerOptions() {
 
 // Popular Select de Clientes
 async function populateClientOptions() {
+    if (!getToken()) return;
     try {
-        const response = await fetch(`${API_BASE_URL}/clients/`);
+        const response = await fetch(`${API_BASE_URL}/clients/`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         allClients = await response.json();
         processClientSelect.innerHTML = '<option value="">Selecione um Cliente</option>'; // Opção padrão
         allClients.forEach(client => {
@@ -533,8 +637,13 @@ async function populateClientOptions() {
 
 // Listar Processos
 async function fetchProcesses() {
+    if (!getToken()) return;
     try {
-        const response = await fetch(`${API_BASE_URL}/processes/`);
+        const response = await fetch(`${API_BASE_URL}/processes/`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
         }
@@ -678,20 +787,25 @@ processForm.addEventListener('submit', async (event) => {
 
     try {
         let response;
+        const headers = getAuthHeaders();
         if (id) { // Atualizar
             response = await fetch(`${API_BASE_URL}/processes/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(processData),
             });
         } else { // Criar
             response = await fetch(`${API_BASE_URL}/processes/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(processData),
             });
         }
 
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             const errorData = await response.json();
             // Tenta exibir o erro da API no campo mais relevante
@@ -752,7 +866,12 @@ async function deleteProcess(id) {
     try {
         const response = await fetch(`${API_BASE_URL}/processes/${id}`, {
             method: 'DELETE',
+            headers: getAuthHeaders()
         });
+        if (response.status === 401) {
+            alert("Sessão expirada ou inválida. Faça login novamente.");
+            logout(); return;
+        }
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
@@ -768,6 +887,7 @@ async function deleteProcess(id) {
 // --- Fim das Funções para Processos Jurídicos ---
 
 async function handleDeleteSelectedProcesses() {
+    let alertShownForBatchDelete = false; // Declare here for wider scope within the function
     const selectedCheckboxes = document.querySelectorAll('.process-checkbox:checked');
 
     if (selectedCheckboxes.length === 0) {
@@ -789,8 +909,16 @@ async function handleDeleteSelectedProcesses() {
     const deletePromises = processIdsToDelete.map(id => {
         return fetch(`${API_BASE_URL}/processes/${id}`, {
             method: 'DELETE',
+            headers: getAuthHeaders() // Add auth headers for each delete request
         })
         .then(response => {
+            if (response.status === 401 && !alertShownForBatchDelete) { // Show alert once for batch
+                alert("Sessão expirada ou inválida. Faça login novamente.");
+                alertShownForBatchDelete = true; // Prevent multiple alerts
+                logout();
+                // Need to throw or handle to stop further processing if desired
+                throw new Error("Unauthorized batch delete");
+            }
             if (!response.ok) {
                 // Tenta pegar o detalhe do erro do backend
                 return response.json().then(errorData => {
@@ -913,4 +1041,243 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (deleteSelectedProcessesBtn) { // Adiciona verificação, pois este botão só existe no index.html
         deleteSelectedProcessesBtn.addEventListener('click', handleDeleteSelectedProcesses);
     }
+
+    // --- Lógica de Estado da UI (Login/Registro/Conteúdo Principal) ---
+    async function fetchAndSetCurrentUser() {
+        const token = getToken();
+        if (!token) {
+            currentUser = null;
+            updateUIForAuthState(false);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/users/me`, { headers: getAuthHeaders() });
+            if (response.ok) {
+                currentUser = await response.json();
+                updateUIForAuthState(true); // Update UI now that we have user data
+
+                // Call functions to fetch initial protected data that depend on login state
+                // These should ideally be called after currentUser is confirmed and UI is set.
+                // Also, ensure these functions use getAuthHeaders() internally.
+                await populateLawyerOptions();
+                await populateClientOptions();
+                await loadAreasOfExpertise(); // Public, but good to have here for sequence
+                if (lawyerManagementSection.style.display !== 'none') { // Only fetch if section is visible
+                    fetchLawyers();
+                }
+                fetchClients();
+                fetchProcesses();
+
+            } else if (response.status === 401) {
+                console.error('Token inválido ou expirado durante fetchAndSetCurrentUser. Fazendo logout.');
+                logout(); // Centralized logout handles token removal and UI update
+            } else {
+                console.error('Erro ao buscar dados do usuário:', response.status);
+                currentUser = null;
+                updateUIForAuthState(false); // Show login if /users/me fails for other reasons
+            }
+        } catch (error) {
+            console.error('Falha na requisição /users/me:', error);
+            currentUser = null;
+            updateUIForAuthState(false);
+        }
+    }
+
+    function updateUIForAuthState(isLoggedIn) {
+        if (isLoggedIn && currentUser) { // Check currentUser as well
+            loginSection.style.display = 'none';
+            registerSection.style.display = 'none';
+            mainContentSection.style.display = 'block';
+            userInfoSection.style.display = 'block';
+            userOabDisplay.textContent = currentUser.oab || 'N/A'; // Use OAB from currentUser
+
+            // Control visibility of lawyer management section
+            if (lawyerManagementSection) { // Check if element exists
+                if (currentUser.is_admin) {
+                    lawyerManagementSection.style.display = 'block'; // Or 'flex', 'grid'
+                } else {
+                    lawyerManagementSection.style.display = 'none';
+                }
+            }
+             // Data fetching is now primarily handled by fetchAndSetCurrentUser after login
+             // or on page load if token is valid.
+        } else {
+            loginSection.style.display = 'block';
+            registerSection.style.display = 'none';
+            mainContentSection.style.display = 'none';
+            userInfoSection.style.display = 'none';
+            if (userOabDisplay) userOabDisplay.textContent = '';
+            if (lawyerManagementSection) lawyerManagementSection.style.display = 'none';
+            currentUser = null; // Ensure currentUser is cleared on logout state
+
+            // Limpar listas para não mostrar dados antigos
+            lawyersListDiv.innerHTML = '';
+            clientsListDiv.innerHTML = '';
+            processesListDiv.innerHTML = '';
+        }
+    }
+
+    if (showRegisterLink) {
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginSection.style.display = 'none';
+            registerSection.style.display = 'block';
+            clearAllFormErrors(registerForm);
+        });
+    }
+
+    if (showLoginLink) {
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerSection.style.display = 'none';
+            loginSection.style.display = 'block';
+            clearAllFormErrors(loginForm);
+        });
+    }
+
+    // --- Event Listeners para Forms de Autenticação ---
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearAllFormErrors(loginForm);
+            const oab = loginOabInput.value.trim();
+            const password = loginPasswordInput.value.trim();
+
+            if (!oab || !password) {
+                alert("OAB e Senha são obrigatórios.");
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('username', oab);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/token`, {
+                    method: 'POST',
+                    body: formData
+                    // Content-Type for URLSearchParams is set automatically by browser
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showFieldError('login-oab', errorData.detail || "Falha no login. Verifique OAB e senha.");
+                    showFieldError('login-password', " "); // Clear any previous specific password error, main error on OAB
+                    loginPasswordInput.value = ""; // Clear password field
+                    throw new Error(`Login failed: ${errorData.detail || response.status}`);
+                }
+
+                const data = await response.json();
+                saveToken(data.access_token);
+                loginPasswordInput.value = ""; // Clear password field
+                await fetchAndSetCurrentUser(); // Fetch user data and then update UI & fetch other data
+            } catch (error) {
+                console.error('Erro no login:', error);
+                // Error already shown by showFieldError or alert if it's a network error
+            }
+        });
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearAllFormErrors(registerForm);
+
+            const name = registerNameInput.value.trim();
+            const oab = registerOabInput.value.trim();
+            const email = registerEmailInput.value.trim();
+            const password = registerPasswordInput.value.trim();
+            const confirmPassword = registerConfirmPasswordInput.value.trim();
+            const telegramId = registerTelegramInput.value.trim();
+
+            if (!name || !oab || !email || !password || !confirmPassword) {
+                alert("Por favor, preencha todos os campos obrigatórios.");
+                // Use showFieldError for specific fields if desired
+                if(!name) showFieldError('register-name', "Nome é obrigatório");
+                if(!oab) showFieldError('register-oab', "OAB é obrigatória");
+                if(!email) showFieldError('register-email', "Email é obrigatório");
+                if(!password) showFieldError('register-password', "Senha é obrigatória");
+                if(!confirmPassword) showFieldError('register-confirm-password', "Confirmação de senha é obrigatória");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showFieldError('register-password', "As senhas não coincidem.");
+                showFieldError('register-confirm-password', "As senhas não coincidem.");
+                registerPasswordInput.value = "";
+                registerConfirmPasswordInput.value = "";
+                return;
+            }
+
+            // Basic OAB validation (similar to lawyer form)
+            const oabPatternNumUf = /^\d{1,3}(\.?\d{3})?[A-Z]{2}$/i; // Added i for case-insensitivity of UF
+            const oabPatternNumBarraUf = /^\d{1,6}\/[A-Z]{2}$/i;
+            if (!(oabPatternNumUf.test(oab) || oabPatternNumBarraUf.test(oab))) {
+                showFieldError('register-oab', "Formato da OAB inválido. Ex: 12345SP, 123.456SP, 12345/SP.");
+                return;
+            }
+            // Basic Telegram ID validation (optional)
+            if (telegramId && !/^@[a-zA-Z0-9_]{3,31}$/.test(telegramId)) {
+                 showFieldError('register-telegram', "ID Telegram inválido. Ex: @usuario_123");
+                 return;
+            }
+
+
+            const lawyerData = {
+                name: name,
+                oab: oab.toUpperCase(), // Send OAB in uppercase
+                email: email,
+                password: password,
+                telegram_id: telegramId || null
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }, // Register sends JSON
+                    body: JSON.stringify(lawyerData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                     if (errorData.detail && errorData.detail.toLowerCase().includes("oab")) {
+                        showFieldError('register-oab', errorData.detail);
+                    } else if (errorData.detail && errorData.detail.toLowerCase().includes("email")) {
+                        showFieldError('register-email', errorData.detail);
+                    } else {
+                        alert(`Erro no registro: ${errorData.detail || `Erro HTTP ${response.status}`}`);
+                    }
+                    throw new Error(`Registration failed: ${errorData.detail || response.status}`);
+                }
+
+                alert("Registro bem-sucedido! Faça o login com sua OAB e senha.");
+                registerForm.reset();
+                showLoginLink.click(); // Simulate click to switch to login view
+                loginOabInput.value = oab.toUpperCase(); // Pre-fill OAB on login form
+                loginPasswordInput.focus();
+
+            } catch (error) {
+                console.error('Erro no registro:', error);
+            }
+        });
+    }
+
+    function logout() {
+        removeToken();
+        currentUser = null; // Clear current user data
+        updateUIForAuthState(false);
+        // userOabDisplay.textContent = ''; // Already handled in updateUIForAuthState
+    }
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            if (confirm("Tem certeza que deseja sair?")) {
+               logout();
+            }
+        });
+    }
+
+    // Estado inicial da UI - Chamar fetchAndSetCurrentUser para verificar token e configurar UI
+    await fetchAndSetCurrentUser();
 });
