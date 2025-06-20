@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, validator # Alterado de field_validator para validator
 from datetime import date, datetime # Adicionado datetime para strptime
 from typing import Any, Union, Optional # Adicionado Optional
 
@@ -36,8 +36,8 @@ class LegalProcessBase(BaseModel):
     status: Optional[str] = "ativo"
     action_type: Optional[str] = None
 
-    # Validador para converter datas de string "dd/mm/aaaa" para objetos date
-    @field_validator('entry_date', 'delivery_deadline', 'fatal_deadline', pre=True)
+    # Validador para converter datas de string "dd/mm/aaaa" para objetos date (Sintaxe Pydantic V1)
+    @validator('entry_date', 'delivery_deadline', 'fatal_deadline', pre=True, always=True)
     @classmethod
     def parse_date_format(cls, value: Any) -> Union[date, Any]:
         # Verifica se o valor é uma string no formato "dd/mm/aaaa"
