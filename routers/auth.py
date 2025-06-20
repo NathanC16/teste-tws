@@ -17,16 +17,23 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    db_lawyer = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.oab == form_data.username).first()
+    # Tenta encontrar o advogado pelo username primeiro
+    db_lawyer = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.username == form_data.username).first()
 
+    # Se não encontrar pelo username, tenta pela OAB
+    if not db_lawyer:
+        db_lawyer = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.oab == form_data.username).first()
+
+    # Verifica se o advogado foi encontrado e se a senha está correta
     if not db_lawyer or not verify_password(form_data.password, db_lawyer.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect OAB or password",
+            detail="Usuário/OAB ou senha incorretos", # Mensagem de erro atualizada
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": db_lawyer.oab}) # "sub" is standard claim for subject (user identifier)
+    # Cria o token de acesso usando a OAB do advogado como "sub" (subject)
+    access_token = create_access_token(data={"sub": db_lawyer.oab})
 
     return {"access_token": access_token, "token_type": "bearer"}
 

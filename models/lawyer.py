@@ -15,6 +15,7 @@ class LawyerDB(Base):
     name = Column(String(100), index=True)  # Comprimento 100
     oab = Column(String(20), unique=True, index=True) # Comprimento 20
     email = Column(String(100), unique=True, index=True) # Comprimento 100
+    username = Column(String(50), unique=True, index=True, nullable=True)
     telegram_id = Column(String(50), nullable=True) # Comprimento 50
     hashed_password = Column(String(255), nullable=False)
     # is_admin column removed
@@ -26,7 +27,21 @@ class LawyerBase(BaseModel):
     name: str
     oab: str
     email: EmailStr
+    username: Optional[str] = None # Adicionado campo username
     telegram_id: Optional[str] = None
+
+    # Validador para o campo username
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        # Verifica se o username é alfanumérico e tem entre 3 e 20 caracteres
+        if not re.match(r"^[a-zA-Z0-9]{3,20}$", value):
+            raise ValueError(
+                "Username inválido. Deve ser alfanumérico e ter entre 3 e 20 caracteres."
+            )
+        return value
 
     @field_validator('telegram_id')
     @classmethod
