@@ -1,5 +1,37 @@
 const API_BASE_URL = ''; // Usaremos caminhos relativos para a API, ex: /lawyers
 
+// --- Funções Utilitárias ---
+function formatDate(dateString) {
+    if (!dateString) return 'N/A'; // Retorna N/A se a string de data for nula ou vazia
+
+    // As datas da API vêm como YYYY-MM-DD.
+    // new Date('YYYY-MM-DD') trata a string como UTC.
+    // Para evitar problemas de fuso horário que mostram o dia anterior,
+    // parseamos os componentes e criamos a data como local.
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Mês em JavaScript é 0-indexado (0-11)
+        const day = parseInt(parts[2], 10);
+
+        // Cria o objeto Date usando os componentes, interpretados como data local
+        const date = new Date(year, month, day);
+
+        // Formata para o padrão pt-BR (DD/MM/YYYY)
+        return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    } else {
+        // Se a string de data não estiver no formato esperado, retorna um aviso e tenta uma conversão direta.
+        console.warn(`Formato de data inesperado: ${dateString}. Tentando conversão direta.`);
+        const date = new Date(dateString); // Tentativa de fallback
+        // Verifica se a data é válida após a tentativa de fallback
+        if (isNaN(date.getTime())) {
+            return 'Data Inválida';
+        }
+        return date.toLocaleDateString('pt-BR'); // Formatação padrão se o fallback funcionar
+    }
+}
+// --- Fim Funções Utilitárias ---
+
 // Elementos do DOM para Advogados
 const lawyerForm = document.getElementById('lawyer-form');
 const lawyerIdInput = document.getElementById('lawyer-id');
