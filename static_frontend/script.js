@@ -608,12 +608,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             });
+
+            // Adiciona listener para a tecla "Enter"
+            searchInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Previne o comportamento padrão (ex: submissão de formulário)
+                    searchInput.blur(); // Remove o foco do campo de input
+                }
+            });
         }
 
         // Configurar busca para cada seção
         setupLiveSearch('search-lawyers', '#lawyers-list .list-group-item');
         setupLiveSearch('search-clients', '#clients-list .list-group-item');
         setupLiveSearch('search-processes', '#processes-list .list-group-item');
+
+        // --- Lógica de Clique no Ícone de Busca ---
+        // Função para configurar o clique no ícone de busca para focar no input
+        function setupSearchIconClick(iconId, inputId) {
+            const iconElement = document.getElementById(iconId);
+            const inputElement = document.getElementById(inputId);
+
+            if (iconElement && inputElement) {
+                iconElement.addEventListener('click', function() {
+                    inputElement.focus();
+                });
+            } else {
+                if (!iconElement) console.warn(`Elemento do ícone de busca não encontrado: ${iconId}`);
+                if (!inputElement) console.warn(`Elemento de input de busca não encontrado: ${inputId}`);
+            }
+        }
+
+        // Configurar clique nos ícones de busca
+        setupSearchIconClick('search-lawyers-icon', 'search-lawyers');
+        setupSearchIconClick('search-clients-icon', 'search-clients');
+        setupSearchIconClick('search-processes-icon', 'search-processes');
     }
 });
 
