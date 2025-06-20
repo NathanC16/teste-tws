@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 # Importe seus modelos DB SQLAlchemy aqui
 from models.lawyer import LawyerDB
-from models.client import ClientDB
+from models.client import ClientDB, AreaOfExpertiseEnum # AreaOfExpertiseEnum adicionado
 from models.legal_process import LegalProcessDB
 import random
 from datetime import datetime, timedelta
@@ -43,13 +43,15 @@ def create_synthetic_data(db: Session):
     print("Advogados gerados.")
 
     print(f"Gerando {NUM_CLIENTS} clientes...")
-    client_areas = ['Energia Renovável', 'Petróleo e Gás', 'Direito Ambiental Energético',
-                    'Regulatório de Energia', 'Contratos de Energia', 'Litígios de Energia',
-                    'M&A Setor Energético', 'Infraestrutura de Energia']
+    # client_areas = ['Energia Renovável', 'Petróleo e Gás', 'Direito Ambiental Energético',
+    #                 'Regulatório de Energia', 'Contratos de Energia', 'Litígios de Energia',
+    #                 'M&A Setor Energético', 'Infraestrutura de Energia'] # Removido
+    valid_client_areas = [area.value for area in AreaOfExpertiseEnum] # Usando o Enum
+
     for _ in range(NUM_CLIENTS):
         client = ClientDB(
             name=fake.company() if random.choice([True, False]) else fake.name(), # Pode ser pessoa ou empresa
-            area_of_expertise=random.choice(client_areas)
+            area_of_expertise=random.choice(valid_client_areas) # Usando a lista do Enum
         )
         db.add(client)
         created_clients.append(client)
