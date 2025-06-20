@@ -1,19 +1,16 @@
-const API_BASE_URL = ''; // Usaremos caminhos relativos para a API, ex: /lawyers
-let currentUser = null; // Holds data of the currently logged-in user
+const API_BASE_URL = '';
+let currentUser = null;
 
 // --- Token Management & Auth Header ---
 function saveToken(token) {
     localStorage.setItem('authToken', token);
 }
-
 function getToken() {
     return localStorage.getItem('authToken');
 }
-
 function removeToken() {
     localStorage.removeItem('authToken');
 }
-
 function getAuthHeaders(isFormData = false) {
     const token = getToken();
     const headers = {};
@@ -25,7 +22,6 @@ function getAuthHeaders(isFormData = false) {
     }
     return headers;
 }
-
 function parseJwt(token) {
     try {
         return JSON.parse(atob(token.split('.')[1]));
@@ -38,24 +34,22 @@ function parseJwt(token) {
 // --- Funções Utilitárias de Feedback de Validação ---
 function showFieldError(fieldId, message) {
     const field = document.getElementById(fieldId);
-    const errorDiv = document.getElementById(`${fieldId}-error`); // Assumes error div ID is fieldId + '-error'
+    const errorDiv = document.getElementById(`${fieldId}-error`);
     if (field) field.classList.add('is-invalid');
     if (errorDiv) { errorDiv.textContent = message; errorDiv.style.display = 'block'; }
 }
-
 function clearFieldError(fieldId) {
     const field = document.getElementById(fieldId);
     const errorDiv = document.getElementById(`${fieldId}-error`);
     if (field) field.classList.remove('is-invalid');
     if (errorDiv) { errorDiv.textContent = ''; errorDiv.style.display = 'none'; }
 }
-
 function clearAllFormErrors(formElement) {
     if (!formElement) return;
     const inputs = formElement.querySelectorAll('.form-control, .form-select');
     inputs.forEach(input => clearFieldError(input.id));
-    const errorMessages = formElement.querySelectorAll('.invalid-feedback, .text-danger'); // Include general error divs
-    errorMessages.forEach(errorDiv => { errorDiv.textContent = ''; errorDiv.style.display = 'none';});
+    const errorMessages = formElement.querySelectorAll('.invalid-feedback, .alert-danger');
+    errorMessages.forEach(errorDiv => { errorDiv.textContent = ''; errorDiv.style.display = 'none'; });
 }
 
 // --- Funções Utilitárias ---
@@ -66,7 +60,7 @@ function formatDate(dateString) {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1;
         const day = parseInt(parts[2], 10);
-        const date = new Date(Date.UTC(year, month, day)); // Use UTC to avoid timezone issues with YYYY-MM-DD
+        const date = new Date(Date.UTC(year, month, day));
         return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
     } else {
         console.warn(`Formato de data inesperado: ${dateString}.`);
@@ -74,44 +68,42 @@ function formatDate(dateString) {
     }
 }
 
-// --- Lógica de UI e Autenticação ---
+// --- Lógica de Autenticação e UI ---
+function logout() {
+    removeToken();
+    currentUser = null;
+    window.location.href = 'login.html';
+}
 
-// UI State for index.html (main app page)
+// UI State update for index.html
 function updateUIForIndexPage(isLoggedIn) {
     const mainContentSection = document.getElementById('main-content');
     const userInfoSection = document.getElementById('user-info-section');
     const userOabDisplay = document.getElementById('user-oab-display');
-    // Lawyer CRUD elements (assuming they are part of mainContentSection)
     const lawyersListDiv = document.getElementById('lawyers-list');
     const clientsListDiv = document.getElementById('clients-list');
     const processesListDiv = document.getElementById('processes-list');
 
-
     if (isLoggedIn && currentUser) {
-        if(mainContentSection) mainContentSection.style.display = 'block';
-        if(userInfoSection) userInfoSection.style.display = 'block';
-        if(userOabDisplay) userOabDisplay.textContent = currentUser.oab || 'N/A';
-        // Lawyer management section is part of mainContentSection, so it's shown.
+        if (mainContentSection) mainContentSection.style.display = 'block';
+        if (userInfoSection) userInfoSection.style.display = 'block';
+        if (userOabDisplay) userOabDisplay.textContent = currentUser.oab || 'N/A';
     } else {
-        if(mainContentSection) mainContentSection.style.display = 'none';
-        if(userInfoSection) userInfoSection.style.display = 'none';
+        if (mainContentSection) mainContentSection.style.display = 'none';
+        if (userInfoSection) userInfoSection.style.display = 'none';
         if (userOabDisplay) userOabDisplay.textContent = '';
-        currentUser = null;
-        if(lawyersListDiv) lawyersListDiv.innerHTML = '';
-        if(clientsListDiv) clientsListDiv.innerHTML = '';
-        if(processesListDiv) processesListDiv.innerHTML = '';
+        if (lawyersListDiv) lawyersListDiv.innerHTML = '';
+        if (clientsListDiv) clientsListDiv.innerHTML = '';
+        if (processesListDiv) processesListDiv.innerHTML = '';
     }
 }
 
 async function fetchAndSetCurrentUser_forIndexPage() {
     const token = getToken();
     if (!token) {
-        currentUser = null;
-        updateUIForIndexPage(false);
-        window.location.href = 'login.html'; // Redirect if no token
-        return;
+        window.location.href = 'login.html';
+        return false; // Indicate auth failed
     }
-
     try {
         const response = await fetch(`${API_BASE_URL}/auth/users/me`, { headers: getAuthHeaders() });
         if (response.ok) {
@@ -124,141 +116,258 @@ async function fetchAndSetCurrentUser_forIndexPage() {
             fetchLawyers();
             fetchClients();
             fetchProcesses();
-        } else if (response.status === 401) {
-            console.error('Token inválido ou expirado. Redirecionando para login.');
-            logout(); // This will remove token and redirect
-        } else {
-            console.error('Erro ao buscar dados do usuário:', response.status);
-            currentUser = null;
-            updateUIForIndexPage(false);
-            window.location.href = 'login.html'; // Redirect on other errors
+            return true; // Indicate auth succeeded
+        } else { // Covers 401 and other errors
+            console.error('Falha ao validar token ou buscar dados do usuário:', response.status);
+            logout(); // Clears token and redirects to login.html
+            return false; // Indicate auth failed
         }
     } catch (error) {
-        console.error('Falha na requisição /users/me:', error);
-        currentUser = null;
-        updateUIForIndexPage(false);
-        window.location.href = 'login.html'; // Redirect on fetch failure
+        console.error('Erro na requisição /users/me:', error);
+        logout(); // Clears token and redirects to login.html
+        return false; // Indicate auth failed
     }
 }
 
-function logout() {
-    removeToken();
-    currentUser = null;
-    // No need to call updateUIForIndexPage(false) here as we are redirecting
-    window.location.href = 'login.html';
+// --- Funções de Carregamento de Dados (para index.html) ---
+let allLawyers = [];
+let allClients = [];
+
+async function fetchLawyers() {
+    if (!getToken() || !document.getElementById('lawyers-list')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/lawyers/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { logout(); return; }
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const lawyers = await response.json();
+        const lawyersListDiv = document.getElementById('lawyers-list');
+        lawyersListDiv.innerHTML = '';
+        lawyers.forEach(lawyer => { /* ... (render lawyer list item) ... */
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const escapedName = lawyer.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedOab = lawyer.oab.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedEmail = lawyer.email.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedTelegramId = (lawyer.telegram_id || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            li.innerHTML = `
+                <div class="flex-grow-1">
+                    <strong>${lawyer.name}</strong><br>
+                    <small>OAB: ${lawyer.oab} | Email: ${lawyer.email} | Telegram: ${lawyer.telegram_id || 'N/A'}</small>
+                </div>
+                <div class="item-actions ms-3">
+                    <button class="btn btn-sm btn-outline-primary btn-edit-lawyer" data-id="${lawyer.id}" data-name="${escapedName}" data-oab="${escapedOab}" data-email="${escapedEmail}" data-telegram="${escapedTelegramId}">Editar</button>
+                    <button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn" data-id="${lawyer.id}">Excluir</button>
+                </div>`;
+            lawyersListDiv.appendChild(li);
+        });
+    } catch (error) { console.error('Falha ao buscar advogados:', error); if(document.getElementById('lawyers-list')) document.getElementById('lawyers-list').innerHTML = '<p>Erro ao carregar.</p>'; }
+}
+async function loadAreasOfExpertise() {
+    const clientAreaOfExpertiseSelect = document.getElementById('clientAreaOfExpertiseSelect');
+    if (!clientAreaOfExpertiseSelect) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/areas-of-expertise/`);
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const areas = await response.json();
+        clientAreaOfExpertiseSelect.innerHTML = '<option value="">Selecione uma área</option>';
+        areas.forEach(area => { const option = document.createElement('option'); option.value = area; option.textContent = area; clientAreaOfExpertiseSelect.appendChild(option); });
+    } catch (error) { console.error('Falha ao buscar áreas de atuação:', error); clientAreaOfExpertiseSelect.innerHTML = '<option value="">Erro</option>'; }
+}
+async function fetchClients() {
+    if (!getToken() || !document.getElementById('clients-list')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/clients/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { logout(); return; }
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const clients = await response.json();
+        const clientsListDiv = document.getElementById('clients-list');
+        clientsListDiv.innerHTML = '';
+        clients.forEach(client => { /* ... (render client list item) ... */
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const escapedClientName = client.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedArea = client.area_of_expertise.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            li.innerHTML = `
+                <div class="flex-grow-1">
+                    <strong>${client.name}</strong><br>
+                    <small>Área: ${client.area_of_expertise}</small>
+                </div>
+                <div class="item-actions ms-3">
+                    <button class="btn btn-sm btn-outline-primary btn-edit-client" data-id="${client.id}" data-name="${escapedClientName}" data-area="${escapedArea}">Editar</button>
+                    <button class="btn btn-sm btn-outline-danger btn-delete-client delete-btn" data-id="${client.id}">Excluir</button>
+                </div>`;
+            clientsListDiv.appendChild(li);
+        });
+    } catch (error) { console.error('Falha ao buscar clientes:', error); if(document.getElementById('clients-list')) document.getElementById('clients-list').innerHTML = '<p>Erro ao carregar.</p>'; }
+}
+async function populateLawyerOptions() {
+    const processLawyerSelect = document.getElementById('process-lawyer');
+    if (!getToken() || !processLawyerSelect) return [];
+    try {
+        const response = await fetch(`${API_BASE_URL}/lawyers/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { logout(); return []; }
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        allLawyers = await response.json();
+        processLawyerSelect.innerHTML = '<option value="">Selecione um Advogado</option>';
+        allLawyers.forEach(lawyer => { const option = document.createElement('option'); option.value = lawyer.id; option.textContent = lawyer.name; processLawyerSelect.appendChild(option); });
+        return allLawyers;
+    } catch (error) { console.error('Falha ao buscar advogados para select:', error); return []; }
+}
+async function populateClientOptions() {
+    const processClientSelect = document.getElementById('process-client');
+    if (!getToken() || !processClientSelect) return [];
+    try {
+        const response = await fetch(`${API_BASE_URL}/clients/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { logout(); return []; }
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        allClients = await response.json();
+        processClientSelect.innerHTML = '<option value="">Selecione um Cliente</option>';
+        allClients.forEach(client => { const option = document.createElement('option'); option.value = client.id; option.textContent = client.name; processClientSelect.appendChild(option); });
+        return allClients;
+    } catch (error) { console.error('Falha ao buscar clientes para select:', error); return []; }
+}
+async function fetchProcesses() {
+    const processesListDiv = document.getElementById('processes-list');
+    if (!getToken() || !processesListDiv) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/processes/`, { headers: getAuthHeaders() });
+        if (response.status === 401) { logout(); return; }
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const processes = await response.json();
+        processesListDiv.innerHTML = '';
+        const lawyerMap = allLawyers.reduce((map, lawyer) => { map[lawyer.id] = lawyer.name; return map; }, {});
+        const clientMap = allClients.reduce((map, client) => { map[client.id] = client.name; return map; }, {});
+        processes.forEach(process => { /* ... (render process list item) ... */
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex align-items-center';
+            const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            li.innerHTML = `
+                <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">
+                <div class="flex-grow-1">
+                    <strong>Nº: ${process.process_number}</strong> (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})<br>
+                    <small>Status: ${process.status} | Prazo Fatal: ${formatDate(process.fatal_deadline)} | Tipo: ${process.action_type || 'N/A'}</small>
+                </div>
+                <div class="item-actions ms-3" style="flex-shrink: 0;">
+                    <button class="btn btn-sm btn-outline-primary btn-edit-process" data-id="${process.id}" data-number="${escapedProcessNumber}" data-lawyerid="${process.lawyer_id}" data-clientid="${process.client_id}" data-entrydate="${process.entry_date}" data-deliverydeadline="${process.delivery_deadline}" data-fataldeadline="${process.fatal_deadline}" data-status="${escapedStatus}" data-actiontype="${escapedActionType}">Editar</button>
+                    <button class="btn btn-sm btn-outline-danger btn-delete-process delete-btn" data-id="${process.id}">Excluir</button>
+                </div>`;
+            processesListDiv.appendChild(li);
+        });
+    } catch (error) { console.error('Falha ao buscar processos:', error); processesListDiv.innerHTML = '<p>Erro ao carregar.</p>'; }
 }
 
-// --- Funções de Carregamento de Dados (for index.html) ---
-// (fetchLawyers, loadAreasOfExpertise, fetchClients, populateLawyerOptions, populateClientOptions, fetchProcesses - assumed to be defined below and adapted to use getAuthHeaders)
-
-// --- EVENT LISTENERS ---
+// --- Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    if (window.location.pathname.includes('login.html') || window.location.pathname.endsWith('/frontend/') || window.location.pathname.endsWith('/')) {
-        // Logic for login.html
+    const currentPagePath = window.location.pathname;
+
+    if (currentPagePath.includes('login.html')) {
+        // --- LOGIN PAGE LOGIC ---
         const token = getToken();
         if (token) {
-            // Simple check: if token exists, try to go to index.html
-            // More robust: validate token with /users/me, then redirect.
-            // For now, if a token exists, we assume it might be valid and redirect.
-            // fetchAndSetCurrentUser_forIndexPage will validate it on index.html.
-            window.location.href = 'index.html';
-            return; // Stop further execution on login page if redirecting
+            // Try to validate token; if good, redirect to index.html
+            // This prevents showing login page if already logged in and token is valid
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/users/me`, { headers: getAuthHeaders() });
+                if (response.ok) {
+                    window.location.href = 'index.html';
+                    return; // Stop further execution on login page
+                } else {
+                    removeToken(); // Invalid token, remove it
+                }
+            } catch (e) {
+                console.error("Error validating token on login page:", e);
+                removeToken(); // Error during validation, remove token
+            }
         }
 
-        const loginForm = document.getElementById('login-form');
-        const loginOabInput = document.getElementById('login-oab');
-        const loginPasswordInput = document.getElementById('login-password');
-        const loginGeneralError = document.getElementById('login-general-error');
+        const loginFormEl = document.getElementById('login-form');
+        const loginOabInputEl = document.getElementById('login-oab');
+        const loginPasswordInputEl = document.getElementById('login-password');
+        const loginGeneralErrorEl = document.getElementById('login-general-error');
 
-
-        if (loginForm) {
-            loginForm.addEventListener('submit', async (event) => {
+        if (loginFormEl) {
+            loginFormEl.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                clearAllFormErrors(loginForm);
-                const oab = loginOabInput.value.trim();
-                const password = loginPasswordInput.value.trim();
+                clearAllFormErrors(loginFormEl);
+                const oab = loginOabInputEl.value.trim();
+                const password = loginPasswordInputEl.value.trim();
 
                 if (!oab || !password) {
-                    if(loginGeneralError) { loginGeneralError.textContent = "OAB e Senha são obrigatórios."; loginGeneralError.style.display = 'block'; }
+                    if(loginGeneralErrorEl) { loginGeneralErrorEl.textContent = "OAB e Senha são obrigatórios."; loginGeneralErrorEl.style.display = 'block'; }
                     else { alert("OAB e Senha são obrigatórios."); }
                     return;
                 }
-
                 const formData = new URLSearchParams();
                 formData.append('username', oab);
                 formData.append('password', password);
-
                 try {
-                    const response = await fetch(`${API_BASE_URL}/auth/token`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
+                    const response = await fetch(`${API_BASE_URL}/auth/token`, { method: 'POST', body: formData });
                     if (!response.ok) {
                         const errorData = await response.json();
                         const detailError = errorData.detail || "Falha no login. Verifique OAB e senha.";
-                        showFieldError('login-oab', detailError);
-                        // showFieldError('login-password', " "); // Keep password field for re-entry attempt
-                        if(loginGeneralError && detailError === "Falha no login. Verifique OAB e senha.") {
-                             loginGeneralError.textContent = detailError; loginGeneralError.style.display = 'block';
+                        showFieldError('login-oab', detailError); // Show error on OAB field
+                        if(loginGeneralErrorEl && detailError === "Falha no login. Verifique OAB e senha.") {
+                            loginGeneralErrorEl.textContent = detailError; loginGeneralErrorEl.style.display = 'block';
                         }
-                        loginPasswordInput.value = "";
+                        loginPasswordInputEl.value = "";
                         throw new Error(`Login failed: ${detailError}`);
                     }
-
                     const data = await response.json();
                     saveToken(data.access_token);
-                    window.location.href = 'index.html'; // Redirect to main app page
+                    window.location.href = 'index.html';
                 } catch (error) {
                     console.error('Erro no login:', error);
-                    if(loginGeneralError && !loginGeneralError.textContent) { // If no specific field error shown by detail
-                        loginGeneralError.textContent = "Erro ao tentar fazer login. Tente novamente.";
-                        loginGeneralError.style.display = 'block';
+                    if(loginGeneralErrorEl && !loginGeneralErrorEl.textContent) {
+                        loginGeneralErrorEl.textContent = "Erro ao tentar fazer login. Tente novamente.";
+                        loginGeneralErrorEl.style.display = 'block';
                     }
                 }
             });
         }
-    } else if (window.location.pathname.includes('index.html')) {
-        // Logic for index.html (main app page)
-        const mainContentSection = document.getElementById('main-content');
-        const userInfoSection = document.getElementById('user-info-section');
-        const userOabDisplay = document.getElementById('user-oab-display');
-        const logoutButton = document.getElementById('logout-button');
-
-        // Assign CRUD form/list elements (already defined globally earlier in the script)
-        // Ensure event listeners for CRUD operations are set up here, within the index.html context
-
-        if(logoutButton) {
-            logoutButton.addEventListener('click', () => {
-                if (confirm("Tem certeza que deseja sair?")) {
-                   logout();
-                }
+    } else if (currentPagePath.includes('index.html') || currentPagePath.endsWith('/frontend/') || currentPagePath.endsWith('/')) {
+        // --- INDEX PAGE (MAIN APP) LOGIC ---
+        const logoutButtonEl = document.getElementById('logout-button');
+        if(logoutButtonEl) {
+            logoutButtonEl.addEventListener('click', () => {
+                if (confirm("Tem certeza que deseja sair?")) logout();
             });
         }
 
-        await fetchAndSetCurrentUser_forIndexPage();
+        const authSuccess = await fetchAndSetCurrentUser_forIndexPage();
+        if (!authSuccess) return; // Stop if auth failed and redirection occurred
 
-        // Setup CRUD event listeners only for index.html
+        // Event Listeners for CRUD forms and lists (scoped to index.html)
         // Advogados
-        if (lawyerForm) {
-            lawyerForm.addEventListener('submit', async (event) => {
-                event.preventDefault(); clearAllFormErrors(lawyerForm);
-                const id = lawyerIdInput.value;
-                const telegramIdValue = lawyerTelegramInput.value.trim();
+        const lawyerFormEl = document.getElementById('lawyer-form');
+        const lawyerIdInputEl = document.getElementById('lawyer-id');
+        const lawyerNameInputEl = document.getElementById('lawyer-name');
+        const lawyerOabCrudInputEl = document.getElementById('lawyer-oab'); // Specific ID for CRUD OAB
+        const lawyerEmailInputEl = document.getElementById('lawyer-email');
+        const lawyerTelegramInputEl = document.getElementById('lawyer-telegram');
+        const lawyersListDivEl = document.getElementById('lawyers-list');
+        const cancelLawyerUpdateBtnEl = document.getElementById('cancel-lawyer-update');
+
+        if (lawyerFormEl) {
+            lawyerFormEl.addEventListener('submit', async (event) => {
+                event.preventDefault(); clearAllFormErrors(lawyerFormEl);
+                const id = lawyerIdInputEl.value;
+                const telegramIdValue = lawyerTelegramInputEl.value.trim();
                 if (telegramIdValue) {
                     const telegramRegex = /^@[a-zA-Z0-9_]{3,31}$/;
-                    if (!telegramRegex.test(telegramIdValue)) { showFieldError('lawyer-telegram', "ID Telegram inválido. Ex: @usuario_123"); lawyerTelegramInput.focus(); return; }
+                    if (!telegramRegex.test(telegramIdValue)) { showFieldError('lawyer-telegram', "ID Telegram inválido. Ex: @usuario_123"); lawyerTelegramInputEl.focus(); return; }
                 }
-                let oabValue = document.getElementById('lawyer-oab').value.trim().toUpperCase(); // Use specific ID for lawyer OAB
+                let oabValue = lawyerOabCrudInputEl.value.trim().toUpperCase();
                 const oabPatternNumUf = /^\d{1,3}(\.?\d{3})?[A-Z]{2}$/; const oabPatternNumBarraUf = /^\d{1,6}\/[A-Z]{2}$/;
-                if (!oabValue) { showFieldError('lawyer-oab', "OAB é obrigatório."); document.getElementById('lawyer-oab').focus(); return; }
-                if (!(oabPatternNumUf.test(oabValue) || oabPatternNumBarraUf.test(oabValue))) { showFieldError('lawyer-oab', "Formato OAB inválido."); document.getElementById('lawyer-oab').focus(); return; }
+                if (!oabValue) { showFieldError('lawyer-oab', "OAB é obrigatório."); lawyerOabCrudInputEl.focus(); return; }
+                if (!(oabPatternNumUf.test(oabValue) || oabPatternNumBarraUf.test(oabValue))) { showFieldError('lawyer-oab', "Formato OAB inválido."); lawyerOabCrudInputEl.focus(); return; }
                 if (oabPatternNumUf.test(oabValue) && oabValue.includes('.')) oabValue = oabValue.replace('.', '');
-                if (!lawyerNameInput.value.trim()) { showFieldError('lawyer-name', "Nome é obrigatório."); lawyerNameInput.focus(); return; }
-                if (!lawyerEmailInput.value.trim()) { showFieldError('lawyer-email', "Email é obrigatório."); lawyerEmailInput.focus(); return; }
+                if (!lawyerNameInputEl.value.trim()) { showFieldError('lawyer-name', "Nome é obrigatório."); lawyerNameInputEl.focus(); return; }
+                if (!lawyerEmailInputEl.value.trim()) { showFieldError('lawyer-email', "Email é obrigatório."); lawyerEmailInputEl.focus(); return; }
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(lawyerEmailInput.value.trim())) { showFieldError('lawyer-email', "Email inválido."); lawyerEmailInput.focus(); return; }
-                const lawyerData = { name: lawyerNameInput.value.trim(), oab: oabValue, email: lawyerEmailInput.value.trim(), telegram_id: telegramIdValue || null };
+                if (!emailRegex.test(lawyerEmailInputEl.value.trim())) { showFieldError('lawyer-email', "Email inválido."); lawyerEmailInputEl.focus(); return; }
+                const lawyerData = { name: lawyerNameInputEl.value.trim(), oab: oabValue, email: lawyerEmailInputEl.value.trim(), telegram_id: telegramIdValue || null };
                 try {
                     let response; const headers = getAuthHeaders();
                     if (id) { response = await fetch(`${API_BASE_URL}/lawyers/${id}`, { method: 'PUT', headers: headers, body: JSON.stringify(lawyerData) }); }
@@ -271,29 +380,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                         else alert(`Erro: ${errorData.detail || response.status}`);
                         throw new Error(`HTTP error: ${response.status}`);
                     }
-                    lawyerForm.reset(); clearAllFormErrors(lawyerForm); lawyerIdInput.value = ''; cancelLawyerUpdateBtn.style.display = 'none';
+                    lawyerFormEl.reset(); clearAllFormErrors(lawyerFormEl); lawyerIdInputEl.value = ''; if(cancelLawyerUpdateBtnEl) cancelLawyerUpdateBtnEl.style.display = 'none';
                     fetchLawyers(); alert(`Advogado ${id ? 'atualizado' : 'adicionado'}!`);
                 } catch (e) { console.error('Falha ao salvar advogado:', e); if (!document.querySelector('#lawyer-form .is-invalid')) alert('Falha ao salvar advogado.');}
             });
         }
-        if(document.getElementById('lawyers-list')) document.getElementById('lawyers-list').addEventListener('click', (event) => {
+        if(lawyersListDivEl) lawyersListDivEl.addEventListener('click', (event) => {
             const target = event.target;
-            if (target.classList.contains('btn-edit-lawyer')) editLawyer(target.dataset.id, target.dataset.name, target.dataset.oab, target.dataset.email, target.dataset.telegram);
-            else if (target.classList.contains('btn-delete-lawyer')) deleteLawyer(target.dataset.id);
+            if (target.classList.contains('btn-edit-lawyer')) {
+                // Need to get references to lawyer form inputs again if they are not global
+                document.getElementById('lawyer-id').value = target.dataset.id;
+                document.getElementById('lawyer-name').value = target.dataset.name;
+                document.getElementById('lawyer-oab').value = target.dataset.oab; // Ensure this ID is for CRUD form
+                document.getElementById('lawyer-email').value = target.dataset.email;
+                document.getElementById('lawyer-telegram').value = target.dataset.telegram;
+                if(cancelLawyerUpdateBtnEl) cancelLawyerUpdateBtnEl.style.display = 'inline-block';
+                document.getElementById('lawyer-name').focus();
+            } else if (target.classList.contains('btn-delete-lawyer')) deleteLawyer(target.dataset.id);
         });
-         if(cancelLawyerUpdateBtn) cancelLawyerUpdateBtn.addEventListener('click', () => {
-            lawyerForm.reset(); clearAllFormErrors(lawyerForm); lawyerIdInput.value = ''; cancelLawyerUpdateBtn.style.display = 'none';
+         if(cancelLawyerUpdateBtnEl) cancelLawyerUpdateBtnEl.addEventListener('click', () => {
+            if(lawyerFormEl) lawyerFormEl.reset(); clearAllFormErrors(lawyerFormEl); if(lawyerIdInputEl) lawyerIdInputEl.value = ''; cancelLawyerUpdateBtnEl.style.display = 'none';
         });
-
 
         // Clientes
-        if(clientForm) clientForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); clearAllFormErrors(clientForm);
-            const id = clientIdInput.value; const clientNameValue = clientNameInput.value.trim(); const clientAreaValue = clientAreaOfExpertiseSelect.value;
+        const clientFormEl = document.getElementById('client-form');
+        const clientIdInputEl = document.getElementById('client-id');
+        const clientNameInputEl = document.getElementById('client-name');
+        const clientAreaOfExpertiseSelectEl = document.getElementById('clientAreaOfExpertiseSelect');
+        const clientsListDivEl = document.getElementById('clients-list');
+        const cancelClientUpdateBtnEl = document.getElementById('cancel-client-update');
+
+        if(clientFormEl) clientFormEl.addEventListener('submit', async (event) => {
+            event.preventDefault(); clearAllFormErrors(clientFormEl);
+            const id = clientIdInputEl.value; const clientNameValue = clientNameInputEl.value.trim(); const clientAreaValue = clientAreaOfExpertiseSelectEl.value;
             let hasError = false;
             if (!clientNameValue) { showFieldError('client-name', "Nome é obrigatório."); hasError = true; }
             if (!clientAreaValue) { showFieldError('clientAreaOfExpertiseSelect', "Área é obrigatória."); hasError = true; }
-            if (hasError) { if (!clientNameValue) clientNameInput.focus(); else if (!clientAreaValue) clientAreaOfExpertiseSelect.focus(); return; }
+            if (hasError) { if (!clientNameValue) clientNameInputEl.focus(); else if (!clientAreaValue) clientAreaOfExpertiseSelectEl.focus(); return; }
             const clientData = { name: clientNameValue, area_of_expertise: clientAreaValue };
             try {
                 let response; const headers = getAuthHeaders();
@@ -307,38 +430,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else alert(`Erro: ${errorData.detail || response.status}`);
                     throw new Error(`HTTP error: ${response.status}`);
                 }
-                clientForm.reset(); clearAllFormErrors(clientForm); clientIdInput.value = ''; cancelClientUpdateBtn.style.display = 'none';
+                clientFormEl.reset(); clearAllFormErrors(clientFormEl); clientIdInputEl.value = ''; if(cancelClientUpdateBtnEl) cancelClientUpdateBtnEl.style.display = 'none';
                 fetchClients(); alert(`Cliente ${id ? 'atualizado' : 'adicionado'}!`);
             } catch (e) { console.error('Falha ao salvar cliente:', e); if (!document.querySelector('#client-form .is-invalid')) alert('Falha ao salvar cliente.');}
         });
-         if(document.getElementById('clients-list')) document.getElementById('clients-list').addEventListener('click', (event) => {
+         if(clientsListDivEl) clientsListDivEl.addEventListener('click', (event) => {
             const target = event.target;
-            if (target.classList.contains('btn-edit-client')) editClient(target.dataset.id, target.dataset.name, target.dataset.area);
+            if (target.classList.contains('btn-edit-client')) {
+                document.getElementById('client-id').value = target.dataset.id;
+                document.getElementById('client-name').value = target.dataset.name;
+                document.getElementById('clientAreaOfExpertiseSelect').value = target.dataset.area;
+                if(cancelClientUpdateBtnEl) cancelClientUpdateBtnEl.style.display = 'inline-block';
+                document.getElementById('client-name').focus();
+            }
             else if (target.classList.contains('btn-delete-client')) deleteClient(target.dataset.id);
         });
-        if(cancelClientUpdateBtn) cancelClientUpdateBtn.addEventListener('click', () => {
-            clientForm.reset(); clearAllFormErrors(clientForm); clientIdInput.value = ''; cancelClientUpdateBtn.style.display = 'none';
+        if(cancelClientUpdateBtnEl) cancelClientUpdateBtnEl.addEventListener('click', () => {
+            if(clientFormEl) clientFormEl.reset(); clearAllFormErrors(clientFormEl); if(clientIdInputEl) clientIdInputEl.value = ''; cancelClientUpdateBtnEl.style.display = 'none';
         });
 
-
         // Processos
-         if (processForm) processForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); clearAllFormErrors(processForm);
-            const id = processIdInput.value;
-            const processNumberValue = processNumberInput.value.trim(); const lawyerIdValue = processLawyerSelect.value; const clientIdValue = processClientSelect.value;
-            const entryDateValue = processEntryDateInput.value; const deliveryDeadlineValue = processDeliveryDeadlineInput.value; const fatalDeadlineValue = processFatalDeadlineInput.value;
-            const statusValue = processStatusInput.value.trim(); let hasError = false;
+        const processFormEl = document.getElementById('process-form');
+        const processIdInputEl = document.getElementById('process-id');
+        const processNumberInputEl = document.getElementById('process-number');
+        const processLawyerSelectEl = document.getElementById('process-lawyer');
+        const processClientSelectEl = document.getElementById('process-client');
+        const processEntryDateInputEl = document.getElementById('process-entry-date');
+        const processDeliveryDeadlineInputEl = document.getElementById('process-delivery-deadline');
+        const processFatalDeadlineInputEl = document.getElementById('process-fatal-deadline');
+        const processStatusInputEl = document.getElementById('process-status');
+        const processActionTypeInputEl = document.getElementById('process-action-type');
+        const processesListDivEl = document.getElementById('processes-list');
+        const cancelProcessUpdateBtnEl = document.getElementById('cancel-process-update');
+        const deleteSelectedProcessesBtnEl = document.getElementById('delete-selected-processes-btn');
+
+
+         if (processFormEl) processFormEl.addEventListener('submit', async (event) => {
+            event.preventDefault(); clearAllFormErrors(processFormEl);
+            const id = processIdInputEl.value;
+            const processNumberValue = processNumberInputEl.value.trim(); const lawyerIdValue = processLawyerSelectEl.value; const clientIdValue = processClientSelectEl.value;
+            const entryDateValue = processEntryDateInputEl.value; const deliveryDeadlineValue = processDeliveryDeadlineInputEl.value; const fatalDeadlineValue = processFatalDeadlineInputEl.value;
+            const statusValue = processStatusInputEl.value.trim(); let hasError = false;
             if (!processNumberValue) { showFieldError('process-number', "Número é obrigatório."); hasError = true; }
-            if (!lawyerIdValue) { showFieldError('process-lawyer', "Advogado é obrigatório."); if(!hasError)processLawyerSelect.focus(); hasError = true; }
-            if (!clientIdValue) { showFieldError('process-client', "Cliente é obrigatório."); if(!hasError)processClientSelect.focus(); hasError = true; }
-            if (!entryDateValue) { showFieldError('process-entry-date', "Data de Entrada é obrigatória."); if(!hasError)processEntryDateInput.focus(); hasError = true; }
-            if (!deliveryDeadlineValue) { showFieldError('process-delivery-deadline', "Prazo de Entrega é obrigatório."); if(!hasError)processDeliveryDeadlineInput.focus(); hasError = true; }
-            if (!fatalDeadlineValue) { showFieldError('process-fatal-deadline', "Prazo Fatal é obrigatório."); if(!hasError)processFatalDeadlineInput.focus(); hasError = true; }
-            if (!statusValue) { showFieldError('process-status', "Status é obrigatório."); if(!hasError)processStatusInput.focus(); hasError = true; }
-            if (entryDateValue && deliveryDeadlineValue && new Date(deliveryDeadlineValue) < new Date(entryDateValue)) { showFieldError('process-delivery-deadline', "Prazo Entrega >= Data Entrada."); if(!hasError)processDeliveryDeadlineInput.focus(); hasError = true; }
-            if (deliveryDeadlineValue && fatalDeadlineValue && new Date(fatalDeadlineValue) < new Date(deliveryDeadlineValue)) { showFieldError('process-fatal-deadline', "Prazo Fatal >= Prazo Entrega."); if(!hasError)processFatalDeadlineInput.focus(); hasError = true; }
+            if (!lawyerIdValue) { showFieldError('process-lawyer', "Advogado é obrigatório."); if(!hasError)processLawyerSelectEl.focus(); hasError = true; }
+            if (!clientIdValue) { showFieldError('process-client', "Cliente é obrigatório."); if(!hasError)processClientSelectEl.focus(); hasError = true; }
+            if (!entryDateValue) { showFieldError('process-entry-date', "Data de Entrada é obrigatória."); if(!hasError)processEntryDateInputEl.focus(); hasError = true; }
+            if (!deliveryDeadlineValue) { showFieldError('process-delivery-deadline', "Prazo de Entrega é obrigatório."); if(!hasError)processDeliveryDeadlineInputEl.focus(); hasError = true; }
+            if (!fatalDeadlineValue) { showFieldError('process-fatal-deadline', "Prazo Fatal é obrigatório."); if(!hasError)processFatalDeadlineInputEl.focus(); hasError = true; }
+            if (!statusValue) { showFieldError('process-status', "Status é obrigatório."); if(!hasError)processStatusInputEl.focus(); hasError = true; }
+            if (entryDateValue && deliveryDeadlineValue && new Date(deliveryDeadlineValue) < new Date(entryDateValue)) { showFieldError('process-delivery-deadline', "Prazo Entrega >= Data Entrada."); if(!hasError)processDeliveryDeadlineInputEl.focus(); hasError = true; }
+            if (deliveryDeadlineValue && fatalDeadlineValue && new Date(fatalDeadlineValue) < new Date(deliveryDeadlineValue)) { showFieldError('process-fatal-deadline', "Prazo Fatal >= Prazo Entrega."); if(!hasError)processFatalDeadlineInputEl.focus(); hasError = true; }
             if (hasError) return;
-            const processData = { process_number: processNumberValue, lawyer_id: parseInt(lawyerIdValue), client_id: parseInt(clientIdValue), entry_date: entryDateValue, delivery_deadline: deliveryDeadlineValue, fatal_deadline: fatalDeadlineValue, status: statusValue, action_type: processActionTypeInput.value.trim() || null };
+            const processData = { process_number: processNumberValue, lawyer_id: parseInt(lawyerIdValue), client_id: parseInt(clientIdValue), entry_date: entryDateValue, delivery_deadline: deliveryDeadlineValue, fatal_deadline: fatalDeadlineValue, status: statusValue, action_type: processActionTypeInputEl.value.trim() || null };
             try {
                 let response; const headers = getAuthHeaders();
                 if (id) { response = await fetch(`${API_BASE_URL}/processes/${id}`, { method: 'PUT', headers: headers, body: JSON.stringify(processData) }); }
@@ -350,29 +493,140 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else alert(`Erro: ${errorData.detail || response.status}`);
                     throw new Error(`HTTP error: ${response.status}`);
                 }
-                processForm.reset(); clearAllFormErrors(processForm); processIdInput.value = ''; cancelProcessUpdateBtn.style.display = 'none';
+                processFormEl.reset(); clearAllFormErrors(processFormEl); processIdInputEl.value = ''; if(cancelProcessUpdateBtnEl) cancelProcessUpdateBtnEl.style.display = 'none';
                 fetchProcesses(); alert(`Processo ${id ? 'atualizado' : 'adicionado'}!`);
             } catch (e) { console.error('Falha ao salvar processo:', e); if (!document.querySelector('#process-form .is-invalid')) alert('Falha ao salvar processo.');}
         });
-        if(document.getElementById('processes-list')) document.getElementById('processes-list').addEventListener('click', (event) => {
+        if(processesListDivEl) processesListDivEl.addEventListener('click', (event) => {
             const target = event.target;
-            if (target.classList.contains('btn-edit-process')) editProcess(target.dataset.id, target.dataset.number, target.dataset.lawyerid, target.dataset.clientid, target.dataset.entrydate, target.dataset.deliverydeadline, target.dataset.fataldeadline, target.dataset.status, target.dataset.actiontype);
+            if (target.classList.contains('btn-edit-process')) {
+                document.getElementById('process-id').value = target.dataset.id;
+                document.getElementById('process-number').value = target.dataset.number;
+                document.getElementById('process-lawyer').value = target.dataset.lawyerid;
+                document.getElementById('process-client').value = target.dataset.clientid;
+                document.getElementById('process-entry-date').value = target.dataset.entrydate;
+                document.getElementById('process-delivery-deadline').value = target.dataset.deliverydeadline;
+                document.getElementById('process-fatal-deadline').value = target.dataset.fataldeadline;
+                document.getElementById('process-status').value = target.dataset.status;
+                document.getElementById('process-action-type').value = target.dataset.actiontype;
+                if(cancelProcessUpdateBtnEl) cancelProcessUpdateBtnEl.style.display = 'inline-block';
+                document.getElementById('process-number').focus();
+            }
             else if (target.classList.contains('btn-delete-process')) deleteProcess(target.dataset.id);
         });
-        if(cancelProcessUpdateBtn) cancelProcessUpdateBtn.addEventListener('click', () => {
-            processForm.reset(); clearAllFormErrors(processForm); processIdInput.value = ''; cancelProcessUpdateBtn.style.display = 'none';
+        if(cancelProcessUpdateBtnEl) cancelProcessUpdateBtnEl.addEventListener('click', () => {
+            if(processFormEl) processFormEl.reset(); clearAllFormErrors(processFormEl); if(processIdInputEl) processIdInputEl.value = ''; cancelProcessUpdateBtnEl.style.display = 'none';
         });
-        if (deleteSelectedProcessesBtn) {
-            deleteSelectedProcessesBtn.addEventListener('click', handleDeleteSelectedProcesses);
+        if (deleteSelectedProcessesBtnEl) {
+            deleteSelectedProcessesBtnEl.addEventListener('click', handleDeleteSelectedProcesses);
         }
     }
 });
 
-// Helper functions for editing/deleting (already defined above, just ensure they are accessible)
-// function editLawyer(...){...}
-// async function deleteLawyer(...){...}
-// function editClient(...){...}
-// async function deleteClient(...){...}
-// function editProcess(...){...}
-// async function deleteProcess(...){...}
-// async function handleDeleteSelectedProcesses(...){...}
+// Helper functions for edit/delete that were previously defined globally
+// These are now defined within the index.html scope if needed or kept global if they don't conflict.
+// For simplicity, their original definitions are assumed to be fine if they don't rely on login-page-specific globals.
+// Example:
+function editLawyer(id, name, oab, email, telegram_id) {
+    if(document.getElementById('lawyer-id')) { // Check if on index.html
+        document.getElementById('lawyer-id').value = id;
+        document.getElementById('lawyer-name').value = name;
+        document.getElementById('lawyer-oab').value = oab;
+        document.getElementById('lawyer-email').value = email;
+        document.getElementById('lawyer-telegram').value = telegram_id;
+        const cancelBtn = document.getElementById('cancel-lawyer-update');
+        if(cancelBtn) cancelBtn.style.display = 'inline-block';
+        document.getElementById('lawyer-name').focus();
+    }
+}
+async function deleteLawyer(id) {
+    if (!confirm('Tem certeza que deseja excluir este advogado?')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/lawyers/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (response.status === 401) { alert("Sessão expirada."); logout(); return; }
+        if (!response.ok) { const errorData = await response.json(); throw new Error(`HTTP error ${response.status}: ${errorData.detail || 'Erro desconhecido'}`); }
+        fetchLawyers(); alert('Advogado excluído com sucesso!');
+    } catch (error) { console.error('Falha ao excluir advogado:', error); alert(`Erro: ${error.message}`); }
+}
+function editClient(id, name, area) {
+    if(document.getElementById('client-id')) {
+        document.getElementById('client-id').value = id;
+        document.getElementById('client-name').value = name;
+        document.getElementById('clientAreaOfExpertiseSelect').value = area;
+        const cancelBtn = document.getElementById('cancel-client-update');
+        if(cancelBtn) cancelBtn.style.display = 'inline-block';
+        document.getElementById('client-name').focus();
+    }
+}
+async function deleteClient(id) {
+    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/clients/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (response.status === 401) { alert("Sessão expirada."); logout(); return; }
+        if (!response.ok) { const errorData = await response.json(); throw new Error(`HTTP error ${response.status}: ${errorData.detail || 'Erro desconhecido'}`); }
+        fetchClients(); alert('Cliente excluído com sucesso!');
+    } catch (error) { console.error('Falha ao excluir cliente:', error); alert(`Erro: ${error.message}`); }
+}
+function editProcess(id, number, lawyerId, clientId, entryDate, deliveryDeadline, fatalDeadline, status, actionType) {
+    if(document.getElementById('process-id')) {
+        document.getElementById('process-id').value = id;
+        document.getElementById('process-number').value = number;
+        document.getElementById('process-lawyer').value = lawyerId;
+        document.getElementById('process-client').value = clientId;
+        document.getElementById('process-entry-date').value = entryDate;
+        document.getElementById('process-delivery-deadline').value = deliveryDeadline;
+        document.getElementById('process-fatal-deadline').value = fatalDeadline;
+        document.getElementById('process-status').value = status;
+        document.getElementById('process-action-type').value = actionType;
+        const cancelBtn = document.getElementById('cancel-process-update');
+        if(cancelBtn) cancelBtn.style.display = 'inline-block';
+        document.getElementById('process-number').focus();
+    }
+}
+async function deleteProcess(id) {
+    if (!confirm('Tem certeza que deseja excluir este processo?')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/processes/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+        if (response.status === 401) { alert("Sessão expirada."); logout(); return; }
+        if (!response.ok) { const errorData = await response.json(); throw new Error(`HTTP error ${response.status}: ${errorData.detail || 'Erro desconhecido'}`); }
+        fetchProcesses(); alert('Processo excluído com sucesso!');
+    } catch (error) { console.error('Falha ao excluir processo:', error); alert(`Erro: ${error.message}`); }
+}
+async function handleDeleteSelectedProcesses() {
+    let alertShownForBatchDelete = false;
+    const selectedCheckboxes = document.querySelectorAll('#processes-list .process-checkbox:checked');
+    if (selectedCheckboxes.length === 0) { alert('Nenhum processo selecionado.'); return; }
+    const processIdsToDelete = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+    if (!confirm(`Excluir ${processIdsToDelete.length} processo(s)?`)) return;
+    console.log(`Excluindo ${processIdsToDelete.length} processos...`);
+    const deletePromises = processIdsToDelete.map(id => {
+        return fetch(`${API_BASE_URL}/processes/${id}`, { method: 'DELETE', headers: getAuthHeaders() })
+        .then(response => {
+            if (response.status === 401 && !alertShownForBatchDelete) {
+                alert("Sessão expirada."); alertShownForBatchDelete = true; logout();
+                throw new Error("Unauthorized batch delete");
+            }
+            if (!response.ok) {
+                return response.json().then(errorData => ({ id, success: false, status: response.status, detail: errorData.detail || `HTTP ${response.status}` }))
+                               .catch(() => ({ id, success: false, status: response.status, detail: `HTTP ${response.status}` }));
+            }
+            return { id, success: true };
+        })
+        .catch(error => ({ id, success: false, status: 'NetworkError', detail: error.message }));
+    });
+    const results = await Promise.allSettled(deletePromises);
+    let successCount = 0; let failureCount = 0; const errorMessages = [];
+    results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.success) successCount++;
+        else if (result.status === 'fulfilled' && !result.value.success) {
+            failureCount++; errorMessages.push(`ID ${result.value.id}: ${result.value.detail}`);
+        } else if (result.status === 'rejected') {
+            failureCount++; errorMessages.push(`ID desconhecido: ${result.reason}`);
+        }
+    });
+    let finalMessage = '';
+    if (successCount > 0) finalMessage += `${successCount} processo(s) excluído(s).\n`;
+    if (failureCount > 0) { finalMessage += `${failureCount} falha(s).\nDetalhes:\n${errorMessages.join("\n")}`; }
+    if (finalMessage) alert(finalMessage);
+    fetchProcesses();
+}
