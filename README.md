@@ -161,6 +161,7 @@ Com o MySQL Server instalado e configurado conforme o guia acima, siga os próxi
     DATABASE_URL="mysql+pymysql://myuser:mypassword@localhost:3306/mydatabase"
     ```
     A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
+    O arquivo `.env.example` (e consequentemente o seu `.env`) também contém placeholders para `TELEGRAM_BOT_TOKEN` e `TELEGRAM_ADVANCE_NOTIFICATION_DAYS`. Estes devem ser configurados para habilitar a funcionalidade de notificações via Telegram, uma vez que ela seja completamente implementada.
 
 3.  **Criação das Tabelas:**
     As tabelas do banco de dados são criadas automaticamente pela aplicação na primeira vez que ela é iniciada, com base nos modelos definidos em `models/`.
@@ -214,6 +215,8 @@ Para facilitar os testes e a demonstração da aplicação, foi incluído um scr
     ```
 3.  O script irá criar as tabelas (se ainda não existirem) e depois inserir os dados. Você verá mensagens de progresso no console.
 
+    **Nota Importante Pós-Correções:** Após recentes atualizações nos modelos de dados e validadores (especialmente para `area_of_expertise` de Clientes e `oab`/`telegram_id` de Advogados), é crucial garantir que o banco de dados esteja limpo (sem dados antigos nessas tabelas) ou que os dados existentes sejam compatíveis antes de executar `python seed_db.py`. O script `seed_db.py` foi atualizado para gerar dados consistentes com as definições atuais do modelo (ex: usando valores válidos do `AreaOfExpertiseEnum`). Se encontrar erros, experimente limpar as tabelas `clients` e `lawyers` ou o banco de dados inteiro e executar o script de povoamento novamente.
+
 **Configuração do Volume de Dados:**
 Você pode ajustar o número de advogados, clientes e processos a serem gerados editando as seguintes constantes no topo do arquivo `seed_db.py`:
 ```python
@@ -232,6 +235,8 @@ NUM_PROCESSES = 50
 *   **Gerenciamento de Dados:**
     Uma interface para gerenciamento direto das entidades (Advogados, Clientes, Processos) está disponível em:
     `http://127.0.0.1:8000/frontend/index.html`
+
+*   **Painel Home / Resumo Gerencial:** `http://127.0.0.1:8000/frontend/dashboard.html`
 
 ## Compatibilidade de Navegador
 
@@ -265,10 +270,15 @@ Para uma visão detalhada do escopo completo do projeto, suas diferentes versõe
 │   ├── lawyer.py           # Modelo Advogado (Pydantic e SQLAlchemy)
 │   └── legal_process.py    # Modelo Processo Jurídico (Pydantic e SQLAlchemy)
 ├── requirements.txt        # Dependências Python do projeto
-└── static_frontend/        # Arquivos da interface web de teste
-    ├── index.html
-    ├── script.js
-    └── style.css
+├── seed_db.py              # Script para popular o banco de dados com dados sintéticos
+├── telegram_bot.py         # Módulo para interações com o Telegram Bot (configuração inicial)
+└── static_frontend/        # Arquivos da interface web
+    ├── dashboard.css       # Estilos para o painel
+    ├── dashboard.html      # Painel Home / Resumo Gerencial
+    ├── dashboard.js        # Lógica JavaScript para o painel
+    ├── index.html          # Interface de Gerenciamento de Dados
+    ├── script.js           # Lógica JavaScript para index.html
+    └── style.css           # Estilos para index.html
 ```
 
 Para referência sobre o histórico de commits e a tradução de prefixos de mensagens ou nomes de branch que foram feitos em inglês no início do projeto, consulte o arquivo `COMMITS_A_TRADUZIR.md`.
@@ -276,8 +286,8 @@ Para referência sobre o histórico de commits e a tradução de prefixos de men
 ## Próximos Passos (Visão Geral da Versão Estável)
 
 Consulte o `DESCRICAO_PROJETO.md` para o detalhamento completo. As próximas grandes funcionalidades incluem:
-*   Desenvolvimento do Painel Home / Resumo Gerencial (Frontend).
-*   Integração com o Telegram para notificações.
+*   Integração com o Telegram para notificações (configuração base realizada, funcionalidade de envio pendente).
 *   Implementação da funcionalidade de Inteligência Artificial obrigatória.
+*   (Revisar `DESCRICAO_PROJETO.md` e `FUNCIONALIDADES_PROJETO.md` para outras funcionalidades pendentes da versão estável)
 
 ```
