@@ -51,18 +51,22 @@
                         <div class="mb-3">
                             <label for="lawyer-name" class="form-label">Nome:</label>
                             <input type="text" class="form-control" id="lawyer-name" required>
+                            <div class="invalid-feedback" id="lawyer-name-error"></div>
                         </div>
                         <div class="mb-3">
                             <label for="lawyer-oab" class="form-label">OAB:</label>
                             <input type="text" class="form-control" id="lawyer-oab" required>
+                            <div class="invalid-feedback" id="lawyer-oab-error"></div>
                         </div>
                         <div class="mb-3">
                             <label for="lawyer-email" class="form-label">Email:</label>
                             <input type="email" class="form-control" id="lawyer-email" required>
+                            <div class="invalid-feedback" id="lawyer-email-error"></div>
                         </div>
                         <div class="mb-3">
                             <label for="lawyer-telegram" class="form-label">ID Telegram:</label>
                             <input type="text" class="form-control" id="lawyer-telegram">
+                            <div class="invalid-feedback" id="lawyer-telegram-error"></div>
                         </div>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Advogado</button>
                         <button type="button" id="cancel-lawyer-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
@@ -90,10 +94,12 @@
                     <div class="mb-3">
                         <label for="client-name" class="form-label">Nome/Razão Social:</label>
                         <input type="text" class="form-control" id="client-name" required>
+                        <div class="invalid-feedback" id="client-name-error"></div>
                     </div>
                     <div class="mb-3">
                         <label for="client-area" class="form-label">Área de Atuação:</label>
                         <input type="text" class="form-control" id="client-area" required>
+                        <div class="invalid-feedback" id="client-area-error"></div>
                     </div>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Cliente</button>
                         <button type="button" id="cancel-client-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>
@@ -124,6 +130,7 @@
                     <div class="mb-3">
                         <label for="process-number" class="form-label">Número do Processo:</label>
                         <input type="text" class="form-control" id="process-number" required>
+                        <div class="invalid-feedback" id="process-number-error"></div>
                     </div>
                     <div class="mb-3">
                         <label for="process-lawyer" class="form-label">Advogado Responsável:</label>
@@ -152,10 +159,12 @@
                     <div class="mb-3">
                         <label for="process-status" class="form-label">Status:</label>
                         <input type="text" class="form-control" id="process-status" value="ativo">
+                        <div class="invalid-feedback" id="process-status-error"></div>
                     </div>
                     <div class="mb-3">
                         <label for="process-action-type" class="form-label">Tipo de Ação:</label>
                         <input type="text" class="form-control" id="process-action-type">
+                        <div class="invalid-feedback" id="process-action-type-error"></div>
                     </div>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Processo</button>
                         <button type="button" id="cancel-process-update" class="btn btn-secondary" style="display:none;"><i class="fas fa-times me-2"></i>Cancelar Atualização</button>

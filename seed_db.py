@@ -25,12 +25,15 @@ def create_synthetic_data(db: Session):
 
     print(f"Gerando {NUM_LAWYERS} advogados...")
     for i in range(NUM_LAWYERS):
-        oab_number = f"{random.randint(1000, 99999)}{random.choice(['SP', 'RJ', 'MG', 'BA', 'RS'])}"
+        ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
+        oab_number_part = str(random.randint(1, 999999)).zfill(random.randint(3,6)) # Número de 3 a 6 dígitos, preenchido com zeros à esquerda se necessário
+        oab_uf_part = random.choice(ufs)
+
         lawyer = LawyerDB(
             name=fake.name(),
-            oab=f"{oab_number}/{random.randint(1000,9999)}", # Formato um pouco mais realista
+            oab=f"{oab_number_part}{oab_uf_part}", # ALTERADO para NNNNNUF
             email=fake.unique.email(),
-            telegram_id=str(fake.unique.random_number(digits=9)) if random.choice([True, False]) else None
+            telegram_id=f"@{fake.user_name().lower().replace('.', '').replace('-', '')}" if random.choice([True, False, False]) else None
         )
         db.add(lawyer)
         created_lawyers.append(lawyer)

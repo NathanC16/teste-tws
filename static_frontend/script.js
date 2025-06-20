@@ -1,5 +1,45 @@
 const API_BASE_URL = ''; // Usaremos caminhos relativos para a API, ex: /lawyers
 
+// --- Funções Utilitárias de Feedback de Validação ---
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}-error`);
+    if (field) {
+        field.classList.add('is-invalid');
+    }
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block'; // Bootstrap .invalid-feedback é display:none por padrão
+    }
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}-error`);
+    if (field) {
+        field.classList.remove('is-invalid');
+    }
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+}
+
+function clearAllFormErrors(formElement) {
+    const inputs = formElement.querySelectorAll('.form-control, .form-select');
+    inputs.forEach(input => {
+        clearFieldError(input.id);
+    });
+    // Limpar também erros que podem não estar associados a um .form-control (raro, mas para garantir)
+    const errorMessages = formElement.querySelectorAll('.invalid-feedback');
+    errorMessages.forEach(errorDiv => {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    });
+}
+// --- Fim Funções Utilitárias de Feedback de Validação ---
+
+
 // --- Funções Utilitárias ---
 function formatDate(dateString) {
     if (!dateString) return 'N/A'; // Retorna N/A se a string de data for nula ou vazia
@@ -89,12 +129,66 @@ async function fetchLawyers() {
 // Adicionar ou Atualizar Advogado
 lawyerForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    clearAllFormErrors(lawyerForm); // Limpa erros anteriores
+
     const id = lawyerIdInput.value;
+
+    // Validação do ID do Telegram
+    const telegramIdValue = lawyerTelegramInput.value.trim();
+    if (telegramIdValue) {
+        const telegramRegex = /^@[a-zA-Z0-9_]{3,31}$/;
+        if (!telegramRegex.test(telegramIdValue)) {
+            showFieldError('lawyer-telegram', "ID do Telegram inválido. Deve começar com '@' seguido por 3 a 31 caracteres (letras, números ou '_'). Ex: @usuario_123");
+            lawyerTelegramInput.focus();
+            return;
+        }
+    }
+
+    // Validação do OAB
+    let oabValue = lawyerOabInput.value.trim().toUpperCase();
+    const oabPatternNumUf = /^\d{1,3}(\.?\d{3})?[A-Z]{2}$/;
+    const oabPatternNumBarraUf = /^\d{1,6}\/[A-Z]{2}$/;
+    let isValidOab = oabPatternNumUf.test(oabValue) || oabPatternNumBarraUf.test(oabValue);
+
+    if (!oabValue) { // Adiciona verificação de campo obrigatório
+        showFieldError('lawyer-oab', "O campo OAB é obrigatório.");
+        lawyerOabInput.focus();
+        return;
+    }
+    if (!isValidOab) {
+        showFieldError('lawyer-oab', "Formato da OAB inválido. Use formatos como '12345SP', '123.456SP', ou '12345/SP'.");
+        lawyerOabInput.focus();
+        return;
+    }
+    if (oabPatternNumUf.test(oabValue) && oabValue.includes('.')) {
+        oabValue = oabValue.replace('.', '');
+    }
+
+    // Validação do Nome (obrigatório)
+    if (!lawyerNameInput.value.trim()) {
+        showFieldError('lawyer-name', "O campo Nome é obrigatório.");
+        lawyerNameInput.focus();
+        return;
+    }
+    // Validação do Email (obrigatório e formato básico)
+    if (!lawyerEmailInput.value.trim()) {
+        showFieldError('lawyer-email', "O campo Email é obrigatório.");
+        lawyerEmailInput.focus();
+        return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regex simples para email
+    if (!emailRegex.test(lawyerEmailInput.value.trim())) {
+         showFieldError('lawyer-email', "Formato de email inválido.");
+        lawyerEmailInput.focus();
+        return;
+    }
+
+
     const lawyerData = {
-        name: lawyerNameInput.value,
-        oab: lawyerOabInput.value,
-        email: lawyerEmailInput.value,
-        telegram_id: lawyerTelegramInput.value || null,
+        name: lawyerNameInput.value.trim(), // Adiciona trim() aqui também
+        oab: oabValue,
+        email: lawyerEmailInput.value.trim(), // Adiciona trim()
+        telegram_id: telegramIdValue || null,
     };
 
     try {
@@ -115,17 +209,31 @@ lawyerForm.addEventListener('submit', async (event) => {
 
         if (!response.ok) {
             const errorData = await response.json();
+            // Tenta exibir o erro da API no campo mais relevante ou um erro geral no formulário
+            if (errorData.detail && errorData.detail.toLowerCase().includes("oab")) {
+                showFieldError('lawyer-oab', errorData.detail);
+            } else if (errorData.detail && errorData.detail.toLowerCase().includes("email")) {
+                showFieldError('lawyer-email', errorData.detail);
+            } else {
+                // Adicionar um div geral para erros de formulário se necessário, ou usar alert
+                alert(`Erro ao salvar advogado: ${errorData.detail || `Erro HTTP ${response.status}`}`);
+            }
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
         }
 
         lawyerForm.reset();
+        clearAllFormErrors(lawyerForm); // Adicionar após reset para limpar visualmente
         lawyerIdInput.value = '';
         cancelLawyerUpdateBtn.style.display = 'none';
-        fetchLawyers(); // Atualizar lista
+        fetchLawyers();
         alert(`Advogado ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
     } catch (error) {
         console.error(`Falha ao salvar advogado:`, error);
-        alert(`Erro ao salvar advogado: ${error.message}`);
+        // Não mostrar alert aqui se o erro já foi tratado e exibido no campo
+        // Apenas se for um erro inesperado não tratado acima.
+        if (!document.querySelector('#lawyer-form .is-invalid')) {
+             alert(`Erro ao salvar advogado: ${error.message.replace(/^Erro HTTP: \d+ - /, '')}`);
+        }
     }
 });
 
@@ -143,6 +251,7 @@ function editLawyer(id, name, oab, email, telegram_id) {
 // Cancelar Atualização de Advogado
 cancelLawyerUpdateBtn.addEventListener('click', () => {
     lawyerForm.reset();
+    clearAllFormErrors(lawyerForm); // Adicionar esta linha
     lawyerIdInput.value = '';
     cancelLawyerUpdateBtn.style.display = 'none';
 });
@@ -225,10 +334,34 @@ async function fetchClients() {
 // Adicionar ou Atualizar Cliente
 clientForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    clearAllFormErrors(clientForm); // Limpa erros anteriores
+
     const id = clientIdInput.value;
+
+    // Validação dos campos de Cliente
+    const clientNameValue = clientNameInput.value.trim();
+    const clientAreaValue = clientAreaInput.value.trim();
+
+    let hasError = false;
+    if (!clientNameValue) {
+        showFieldError('client-name', "O campo Nome/Razão Social é obrigatório.");
+        hasError = true;
+    }
+    if (!clientAreaValue) {
+        showFieldError('client-area', "O campo Área de Atuação é obrigatório.");
+        hasError = true;
+    }
+
+    if (hasError) {
+        // Focar no primeiro campo com erro, se houver
+        if (!clientNameValue) clientNameInput.focus();
+        else if (!clientAreaValue) clientAreaInput.focus();
+        return;
+    }
+
     const clientData = {
-        name: clientNameInput.value,
-        area_of_expertise: clientAreaInput.value,
+        name: clientNameValue,
+        area_of_expertise: clientAreaValue,
     };
 
     try {
@@ -249,17 +382,28 @@ clientForm.addEventListener('submit', async (event) => {
 
         if (!response.ok) {
             const errorData = await response.json();
+            // Tenta exibir o erro da API no campo mais relevante ou um erro geral
+            if (errorData.detail && errorData.detail.toLowerCase().includes("nome") || errorData.detail.toLowerCase().includes("name")) {
+                showFieldError('client-name', errorData.detail);
+            } else if (errorData.detail && errorData.detail.toLowerCase().includes("area") || errorData.detail.toLowerCase().includes("área")) {
+                showFieldError('client-area', errorData.detail);
+            } else {
+                alert(`Erro ao salvar cliente: ${errorData.detail || `Erro HTTP ${response.status}`}`);
+            }
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
         }
 
         clientForm.reset();
+        clearAllFormErrors(clientForm); // Limpar após reset bem sucedido
         clientIdInput.value = '';
         cancelClientUpdateBtn.style.display = 'none';
-        fetchClients(); // Atualizar lista
+        fetchClients();
         alert(`Cliente ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
     } catch (error) {
         console.error(`Falha ao salvar cliente:`, error);
-        alert(`Erro ao salvar cliente: ${error.message}`);
+        if (!document.querySelector('#client-form .is-invalid')) {
+             alert(`Erro ao salvar cliente: ${error.message.replace(/^Erro HTTP: \d+ - /, '')}`);
+        }
     }
 });
 
@@ -275,6 +419,7 @@ function editClient(id, name, area) {
 // Cancelar Atualização de Cliente
 cancelClientUpdateBtn.addEventListener('click', () => {
     clientForm.reset();
+    clearAllFormErrors(clientForm); // Adicionar esta linha
     clientIdInput.value = '';
     cancelClientUpdateBtn.style.display = 'none';
 });
@@ -418,22 +563,93 @@ async function fetchProcesses() {
 // Adicionar ou Atualizar Processo
 processForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const id = processIdInput.value;
-    const processData = {
-        process_number: processNumberInput.value,
-        lawyer_id: parseInt(processLawyerSelect.value),
-        client_id: parseInt(processClientSelect.value),
-        entry_date: processEntryDateInput.value,
-        delivery_deadline: processDeliveryDeadlineInput.value,
-        fatal_deadline: processFatalDeadlineInput.value,
-        status: processStatusInput.value,
-        action_type: processActionTypeInput.value || null,
-    };
+    clearAllFormErrors(processForm); // Limpa erros anteriores
 
-    if (!processData.lawyer_id || !processData.client_id) {
-        alert("Por favor, selecione um advogado e um cliente.");
+    const id = processIdInput.value;
+
+    // Validação dos campos de Processo
+    const processNumberValue = processNumberInput.value.trim();
+    const lawyerIdValue = processLawyerSelect.value;
+    const clientIdValue = processClientSelect.value;
+    const entryDateValue = processEntryDateInput.value;
+    const deliveryDeadlineValue = processDeliveryDeadlineInput.value;
+    const fatalDeadlineValue = processFatalDeadlineInput.value;
+    const statusValue = processStatusInput.value.trim();
+    // actionTypeValue é opcional, então não precisa de validação de "obrigatório" aqui,
+    // a menos que haja uma regra de formato se preenchido.
+
+    let hasError = false;
+    if (!processNumberValue) {
+        showFieldError('process-number', "O campo Número do Processo é obrigatório.");
+        hasError = true;
+    }
+    if (!lawyerIdValue) {
+        showFieldError('process-lawyer', "Selecione um Advogado Responsável.");
+        // Não tem um input direto para focar, mas o select será destacado pela classe se adicionarmos
+        // ou podemos focar no select. Bootstrap pode não estilizar selects com is-invalid tão obviamente.
+        if (!hasError) processLawyerSelect.focus(); // Foca se for o primeiro erro
+        hasError = true;
+    }
+    if (!clientIdValue) {
+        showFieldError('process-client', "Selecione um Cliente.");
+        if (!hasError) processClientSelect.focus();
+        hasError = true;
+    }
+    if (!entryDateValue) {
+        showFieldError('process-entry-date', "A Data de Entrada é obrigatória.");
+        if (!hasError) processEntryDateInput.focus();
+        hasError = true;
+    }
+    if (!deliveryDeadlineValue) {
+        showFieldError('process-delivery-deadline', "O Prazo para Entrega é obrigatório.");
+        if (!hasError) processDeliveryDeadlineInput.focus();
+        hasError = true;
+    }
+    if (!fatalDeadlineValue) {
+        showFieldError('process-fatal-deadline', "O Prazo Fatal é obrigatório.");
+        if (!hasError) processFatalDeadlineInput.focus();
+        hasError = true;
+    }
+    if (!statusValue) { // Status é obrigatório (tem default, mas usuário pode apagar)
+        showFieldError('process-status', "O campo Status é obrigatório.");
+        if (!hasError) processStatusInput.focus();
+        hasError = true;
+    }
+    // Validação de datas: Prazo de Entrega >= Data de Entrada
+    if (entryDateValue && deliveryDeadlineValue && new Date(deliveryDeadlineValue) < new Date(entryDateValue)) {
+        showFieldError('process-delivery-deadline', "O Prazo para Entrega deve ser igual ou posterior à Data de Entrada.");
+        if (!hasError) processDeliveryDeadlineInput.focus();
+        hasError = true;
+    }
+    // Validação de datas: Prazo Fatal >= Prazo de Entrega
+    if (deliveryDeadlineValue && fatalDeadlineValue && new Date(fatalDeadlineValue) < new Date(deliveryDeadlineValue)) {
+        showFieldError('process-fatal-deadline', "O Prazo Fatal deve ser igual ou posterior ao Prazo para Entrega.");
+        if (!hasError) processFatalDeadlineInput.focus();
+        hasError = true;
+    }
+
+
+    if (hasError) {
+        // Focar no primeiro campo com erro já foi feito acima
         return;
     }
+
+    const processData = {
+        process_number: processNumberValue,
+        lawyer_id: parseInt(lawyerIdValue),
+        client_id: parseInt(clientIdValue),
+        entry_date: entryDateValue,
+        delivery_deadline: deliveryDeadlineValue,
+        fatal_deadline: fatalDeadlineValue,
+        status: statusValue,
+        action_type: processActionTypeInput.value.trim() || null,
+    };
+
+    // Removida a validação aqui, pois já foi feita acima e pode ser confusa com os selects
+    // if (!processData.lawyer_id || !processData.client_id) {
+    //     alert("Por favor, selecione um advogado e um cliente.");
+    //     return;
+    // }
 
     try {
         let response;
@@ -453,17 +669,30 @@ processForm.addEventListener('submit', async (event) => {
 
         if (!response.ok) {
             const errorData = await response.json();
+            // Tenta exibir o erro da API no campo mais relevante
+            if (errorData.detail && errorData.detail.toLowerCase().includes("número do processo") || errorData.detail.toLowerCase().includes("process_number")) {
+                showFieldError('process-number', errorData.detail);
+            } else if (errorData.detail && errorData.detail.toLowerCase().includes("advogado") || errorData.detail.toLowerCase().includes("lawyer")) {
+                showFieldError('process-lawyer', errorData.detail);
+            } else if (errorData.detail && errorData.detail.toLowerCase().includes("cliente") || errorData.detail.toLowerCase().includes("client")) {
+                showFieldError('process-client', errorData.detail);
+            } else {
+                alert(`Erro ao salvar processo: ${errorData.detail || `Erro HTTP ${response.status}`}`);
+            }
             throw new Error(`Erro HTTP: ${response.status} - ${errorData.detail || 'Erro desconhecido'}`);
         }
 
         processForm.reset();
+        clearAllFormErrors(processForm); // Limpar após reset bem sucedido
         processIdInput.value = '';
         cancelProcessUpdateBtn.style.display = 'none';
-        fetchProcesses(); // Atualizar lista
+        fetchProcesses();
         alert(`Processo ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
     } catch (error) {
         console.error(`Falha ao salvar processo:`, error);
-        alert(`Erro ao salvar processo: ${error.message}`);
+        if (!document.querySelector('#process-form .is-invalid')) {
+             alert(`Erro ao salvar processo: ${error.message.replace(/^Erro HTTP: \d+ - /, '')}`);
+        }
     }
 });
 
@@ -485,6 +714,7 @@ function editProcess(id, number, lawyerId, clientId, entryDate, deliveryDeadline
 // Cancelar Atualização de Processo
 cancelProcessUpdateBtn.addEventListener('click', () => {
     processForm.reset();
+    clearAllFormErrors(processForm); // Adicionar esta linha
     processIdInput.value = '';
     cancelProcessUpdateBtn.style.display = 'none';
 });
