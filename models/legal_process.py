@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, field_validator
 from datetime import date, datetime # Adicionado datetime para strptime
-from typing import Any, Union # Union para o tipo de retorno do validador
+from typing import Any, Union, Optional # Adicionado Optional
 
 from database import Base # Importa Base de database.py
 
