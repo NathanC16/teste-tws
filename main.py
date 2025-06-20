@@ -19,7 +19,8 @@ from models import lawyer as lawyer_model
 from models import client as client_model
 from models import legal_process as process_model
 from routers import auth as auth_router # Import the auth router
-from core.security import get_current_user, get_current_admin_user # Import for dependency injection
+from core.security import get_current_user # get_current_admin_user removed
+from core.security import get_password_hash # For placeholder password in create_lawyer
 
 app = FastAPI()
 
@@ -42,10 +43,10 @@ process_model.Base.metadata.create_all(bind=engine)
 def get_areas_of_expertise():
     return [area.value for area in AreaOfExpertiseEnum]
 
-@app.post("/lawyers/", response_model=LawyerResponse) # Use LawyerResponse Pydantic model for response
-def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), admin_user: lawyer_model.LawyerDB = Depends(get_current_admin_user)):
-    # Only admins can create lawyers through this endpoint. Registration is separate.
-    # Note: lawyer_in is LawyerCreate, which doesn't include password or is_admin.
+@app.post("/lawyers/", response_model=LawyerResponse)
+def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
+    # Any authenticated user can now create a "lawyer" (which is now just a user).
+    # Note: lawyer_in is LawyerCreate, which doesn't include password.
     # This endpoint might need its own Pydantic model if admins should set passwords/is_admin status directly.
     # For now, this creates a lawyer without a password, which is problematic.
     # This endpoint should ideally take a model similar to LawyerCreateRequest or have specific fields.
@@ -82,8 +83,8 @@ def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), admin_
 
     db_lawyer = lawyer_model.LawyerDB(
         **lawyer_in.model_dump(),
-        hashed_password=placeholder_hashed_password, # Placeholder!
-        is_admin=False # Default for this specific model, admin can change via PUT if needed
+        hashed_password=placeholder_hashed_password # Placeholder!
+        # is_admin field removed
     )
     db.add(db_lawyer)
     try:
@@ -94,8 +95,8 @@ def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), admin_
         raise HTTPException(status_code=400, detail="Erro: Advogado com este OAB ou Email já existe.")
     return db_lawyer
 
-@app.get("/lawyers/", response_model=List[LawyerResponse]) # Use LawyerResponse Pydantic model
-def get_lawyers(name: Optional[str] = None, oab: Optional[str] = None, db: Session = Depends(get_db), admin_user: lawyer_model.LawyerDB = Depends(get_current_admin_user)):
+@app.get("/lawyers/", response_model=List[LawyerResponse])
+def get_lawyers(name: Optional[str] = None, oab: Optional[str] = None, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
     query = db.query(lawyer_model.LawyerDB)
     if name:
         query = query.filter(lawyer_model.LawyerDB.name.contains(name))
@@ -103,17 +104,17 @@ def get_lawyers(name: Optional[str] = None, oab: Optional[str] = None, db: Sessi
         query = query.filter(lawyer_model.LawyerDB.oab == oab)
     return query.all()
 
-@app.get("/lawyers/{lawyer_id}", response_model=LawyerResponse) # Use LawyerResponse Pydantic model
-def get_lawyer(lawyer_id: int, db: Session = Depends(get_db), admin_user: lawyer_model.LawyerDB = Depends(get_current_admin_user)):
+@app.get("/lawyers/{lawyer_id}", response_model=LawyerResponse)
+def get_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
     db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
     if db_lawyer is None:
         raise HTTPException(status_code=404, detail="Lawyer not found")
     return db_lawyer
 
-@app.put("/lawyers/{lawyer_id}", response_model=LawyerResponse) # Use LawyerResponse Pydantic model
-def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Depends(get_db), admin_user: lawyer_model.LawyerDB = Depends(get_current_admin_user)):
-    # Note: LawyerCreate doesn't allow updating password or is_admin directly.
-    # Separate endpoints or payload fields would be needed for those admin actions.
+@app.put("/lawyers/{lawyer_id}", response_model=LawyerResponse)
+def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
+    # Note: LawyerCreate doesn't allow updating password.
+    # is_admin field is removed.
     db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
     if db_lawyer is None:
         raise HTTPException(status_code=404, detail="Lawyer not found")
@@ -128,7 +129,7 @@ def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Dep
     return db_lawyer
 
 @app.delete("/lawyers/{lawyer_id}")
-def delete_lawyer(lawyer_id: int, db: Session = Depends(get_db), admin_user: lawyer_model.LawyerDB = Depends(get_current_admin_user)):
+def delete_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
     db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
     if db_lawyer is None:
         raise HTTPException(status_code=404, detail="Lawyer not found")

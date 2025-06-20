@@ -9,62 +9,8 @@ from core.security import get_password_hash, verify_password, create_access_toke
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=lawyer_models.Lawyer)
-def register_lawyer(
-    lawyer_in: lawyer_models.LawyerCreateRequest,
-    db: Session = Depends(get_db)
-):
-    # Check if OAB already exists
-    existing_lawyer_oab = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.oab == lawyer_in.oab).first()
-    if existing_lawyer_oab:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="OAB already registered."
-        )
-
-    # Check if email already exists
-    existing_lawyer_email = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.email == lawyer_in.email).first()
-    if existing_lawyer_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered."
-        )
-
-    hashed_password = get_password_hash(lawyer_in.password)
-
-    # Create the LawyerDB instance
-    # Note: Pydantic model validation (like OAB format) happens before this point
-    # when FastAPI processes the request body against LawyerCreateRequest.
-    db_lawyer = lawyer_models.LawyerDB(
-        name=lawyer_in.name,
-        oab=lawyer_in.oab, # Already validated by LawyerBase
-        email=lawyer_in.email, # Already validated by LawyerBase
-        telegram_id=lawyer_in.telegram_id, # Already validated by LawyerBase
-        hashed_password=hashed_password,
-        is_admin=False  # Default to False for self-registration
-    )
-
-    db.add(db_lawyer)
-    try:
-        db.commit()
-        db.refresh(db_lawyer)
-    except IntegrityError: # Should be caught by earlier checks, but good as a fallback
-        db.rollback()
-        # This might happen if there's a race condition or if a unique constraint
-        # other than oab/email is violated (though none are defined currently besides those)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while creating the lawyer account. OAB or Email might already exist."
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred: {e}"
-        )
-
-    return db_lawyer
-
+# Registration endpoint removed for Admin-only login system.
+# Users (lawyers) will be created by an existing admin via the /lawyers/ endpoint or directly in the DB.
 
 @router.post("/token", response_model=dict)
 def login_for_access_token(
