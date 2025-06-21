@@ -11,9 +11,9 @@ import random
 from datetime import datetime, timedelta
 
 # --- Configurações para Geração de Dados ---
-NUM_LAWYERS = 10
-NUM_CLIENTS = 20
-NUM_PROCESSES = 50
+NUM_LAWYERS = 50
+NUM_CLIENTS = 100
+NUM_PROCESSES = 250
 
 # Inicializa o Faker para dados em português do Brasil
 fake = Faker('pt_BR')
