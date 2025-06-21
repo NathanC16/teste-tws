@@ -17,10 +17,11 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
 *   **Dashboard Interativo (`dashboard.html`):** Um painel de controle visual para acompanhamento gerencial, incluindo:
     *   Cards de resumo com indicadores chave.
     *   Alertas de prazos importantes.
-    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local.
-    *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels).
+    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos agora possui **barra de scroll vertical** para melhor navegação.
+    *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels). Gráficos de barras no dashboard agora são **horizontais** para melhor visualização.
     *   Requer login para acesso.
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
+*   **Preparação para Análise de IA:** Adição do campo `data_conclusao_real` nos processos, que é populado com dados sintéticos, visando futuras análises e previsões.
 
 Para uma lista detalhada de todas as funcionalidades e seu status de implementação, consulte o arquivo `FUNCIONALIDADES_PROJETO.md`.
 
@@ -260,14 +261,16 @@ Para facilitar os testes e a demonstração da aplicação, foi incluído um scr
     *   Utilizar valores válidos do `AreaOfExpertiseEnum` para clientes.
     Se encontrar erros durante o povoamento, experimente limpar as tabelas relevantes (especialmente `lawyers`, `clients`, `legal_processes`) ou o banco de dados inteiro e executar o script novamente.
     **Nota Importante:** O script `seed_db.py` agora utiliza `Base.metadata.drop_all(bind=engine)` antes de `Base.metadata.create_all(bind=engine)`. Isso significa que **ele limpará todas as tabelas conhecidas pelo SQLAlchemy Base (advogados, clientes, processos) antes de recriá-las e populá-las.** Este comportamento é útil para garantir um estado limpo ao executar o seed, mas tenha cuidado se você tiver dados importantes nessas tabelas.
+    O script também popula o novo campo `data_conclusao_real` para processos com status "concluído", gerando uma base de dados mais rica para futuras análises de IA.
 
 **Configuração do Volume de Dados:**
-Você pode ajustar o número de advogados, clientes e processos a serem gerados editando as seguintes constantes no topo do arquivo `seed_db.py`:
+O script agora gera um volume maior de dados para permitir testes mais robustos. Os valores foram aumentados para:
 ```python
-NUM_LAWYERS = 10
-NUM_CLIENTS = 20
-NUM_PROCESSES = 50
+NUM_LAWYERS = 50
+NUM_CLIENTS = 100
+NUM_PROCESSES = 250
 ```
+Estes valores podem ser ajustados editando as constantes no topo do arquivo `seed_db.py`.
 
 **Importante:** Executar o script múltiplas vezes pode gerar dados duplicados se os seus modelos não tiverem constraints `unique` em campos que deveriam ser únicos (como email do advogado ou número do processo, que já possuem). Se precisar recomeçar com um banco limpo, você pode precisar deletar as tabelas ou o banco de dados manualmente antes de executar o script novamente.
 
