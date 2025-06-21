@@ -60,22 +60,26 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Data de entrada do processo:** Implementado (campo `entry_date`).
 *   ✅ **Prazo para entrega (Processo):** Implementado (campo `delivery_deadline`).
 *   ✅ **Prazo fatal (Processo):** Implementado (campo `fatal_deadline`).
+*   ✅ **Campo `data_conclusao_real`:** Permite registrar a data de conclusão efetiva dos processos. Implementado no backend (modelo e API) e no frontend (`index.html`) para CRUD.
 *   ✅ **Status do processo:** Implementado (campo `status`, com valor padrão "ativo").
 *   ✅ **Tipo de ação do processo:** Implementado (campo `action_type`, opcional).
 *   ✅ **CRUD para Processos:** Implementado (API e interface de gerenciamento de dados em `index.html`).
 *   ✅ **Regra de Negócio:** `lawyer_id` e `client_id` devem existir (validação no backend).
+*   ✅ **Povoamento de `data_conclusao_real` no `seed_db.py`:** Script de popular dados agora preenche o campo `data_conclusao_real` para processos concluídos, simulando cenários de conclusão no prazo e com atraso, para futura análise de IA.
+*   ✅ **Volume de Dados de Teste Aumentado:** O script `seed_db.py` foi atualizado para gerar um volume 5x maior de dados (50 advogados, 100 clientes, 250 processos) para testes mais robustos.
 
 ### 6. Painel Home / Resumo Gerencial (`dashboard.html`)
 
 *   ✅ **Visão Geral com Cards de Resumo:** Exibição de totais (Processos Ativos, Prazos Fatais Próximos, Total de Advogados, Total de Clientes).
 *   ✅ **Alertas de Prazos Próximos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias.
-*   ✅ **Tabela de Processos Detalhada:** Listagem de processos com informações chave, incluindo pesquisa local na tabela para filtrar os dados exibidos.
+*   ✅ **Tabela de Processos Detalhada:** Listagem de processos com informações chave, incluindo pesquisa local na tabela para filtrar os dados exibidos. Adicionada **barra de scroll vertical** à tabela para melhor navegação com muitos registros.
 *   ✅ **Filtros de Processos (via API):** Permite filtrar a lista de processos exibida na tabela por Status, Advogado e Cliente.
 *   ✅ **Gráficos de Acompanhamento:**
     *   Implementados usando Chart.js e `chartjs-plugin-datalabels`.
     *   Gráficos são organizados em **abas** para melhor visualização ("Por Status", "Por Advogado", "Por Tipo de Ação").
     *   Exibem **valores e/ou porcentagens diretamente nos elementos do gráfico** (datalabels).
-    *   Tipos: Pizza (Status) e Barras (Advogado, Tipo de Ação).
+    *   Tipos: Pizza (Status), Barras **Horizontais** (Advogado, Tipo de Ação) para melhor legibilidade.
+    *   Ajuste visual (offset) aplicado aos datalabels do gráfico "Processos por Tipo de Ação".
     *   Renderização otimizada (gráficos em abas não ativas são renderizados quando a aba é mostrada).
 *   ⏳ **Busca e filtros adicionais:** Filtro por "intervalo de prazo específico" na tabela não está implementado.
 
@@ -87,7 +91,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 
 ### 8. Automação com IA (mínimo viável)
 
-*   ⏳ **Proposta: usar IA para prever possíveis atrasos ou gerar resumo automático:** Pendente (escolha da abordagem e implementação).
+*   ⏳ **Proposta:** Usar IA para prever possíveis atrasos ou gerar resumo automático. Nota: A preparação de dados para a "previsão de possíveis atrasos" foi iniciada com a inclusão do campo `data_conclusao_real` no modelo de processos.
 
 ---
 
