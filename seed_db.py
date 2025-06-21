@@ -175,6 +175,36 @@ def create_synthetic_data(db: Session):
         # Prazo fatal entre 30 e 180 dias após o prazo de entrega
         fatal_deadline = delivery_deadline + timedelta(days=random.randint(30, 180))
 
+        current_status = random.choice(process_statuses)
+        data_conclusao_real = None
+
+        if current_status == "concluído":
+            # 75% de chance de concluir no prazo (ou antes), 25% de chance de concluir atrasado
+            if random.random() < 0.75:
+                # Conclui entre a data de entrada e o prazo fatal.
+                # Garantir que a data de conclusão seja pelo menos um dia após a data de entrada.
+                min_conclusao_date = entry_date + timedelta(days=1)
+
+                # Se o prazo fatal for antes ou no mesmo dia que a data mínima de conclusão,
+                # concluir no dia do prazo fatal (se for após min_conclusao_date) ou em min_conclusao_date.
+                if fatal_deadline <= min_conclusao_date:
+                    data_conclusao_real = max(fatal_deadline, min_conclusao_date)
+                else:
+                    # Intervalo válido para conclusão antecipada/no prazo
+                    dias_entre_min_conclusao_e_fatal = (fatal_deadline - min_conclusao_date).days
+                    if dias_entre_min_conclusao_e_fatal <= 0: # Se fatal_deadline é igual a min_conclusao_date
+                        data_conclusao_real = min_conclusao_date
+                    else:
+                        offset_conclusao = random.randint(0, dias_entre_min_conclusao_e_fatal)
+                        data_conclusao_real = min_conclusao_date + timedelta(days=offset_conclusao)
+            else:
+                # Conclui atrasado: entre 1 e 30 dias após o prazo fatal
+                data_conclusao_real = fatal_deadline + timedelta(days=random.randint(1, 30))
+
+            # Segurança final para garantir que a data de conclusão não seja antes da data de entrada.
+            # (A lógica acima deve cobrir isso, mas é uma boa verificação.)
+            data_conclusao_real = max(data_conclusao_real, entry_date + timedelta(days=1))
+
         process = LegalProcessDB(
             process_number=f"CNJ-{random.randint(1000000,9999999)}-{random.randint(10,99)}.{datetime.now().year}.{random.randint(1,9)}.{random.randint(10,99)}.{random.randint(1000,9999)}",
             lawyer_id=random.choice(created_lawyers).id,
@@ -182,8 +212,9 @@ def create_synthetic_data(db: Session):
             entry_date=entry_date,
             delivery_deadline=delivery_deadline,
             fatal_deadline=fatal_deadline,
-            status=random.choice(process_statuses),
-            action_type=random.choice(process_action_types)
+            status=current_status,
+            action_type=random.choice(process_action_types),
+            data_conclusao_real=data_conclusao_real
         )
         db.add(process)
     db.commit()

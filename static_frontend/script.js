@@ -269,14 +269,16 @@ async function fetchProcesses() {
             const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const dataConclusaoRealStr = process.data_conclusao_real ? formatDate(process.data_conclusao_real) : 'N/A';
+
             li.innerHTML = `
                 <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">
                 <div class="flex-grow-1">
                     <strong>Nº: ${process.process_number}</strong> (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})<br>
-                    <small>Status: ${process.status} | Prazo Fatal: ${formatDate(process.fatal_deadline)} | Tipo: ${process.action_type || 'N/A'}</small>
+                    <small>Status: ${process.status} | Prazo Fatal: ${formatDate(process.fatal_deadline)} | Conclusão: ${dataConclusaoRealStr} | Tipo: ${process.action_type || 'N/A'}</small>
                 </div>
                 <div class="item-actions ms-3" style="flex-shrink: 0;">
-                    <button class="btn btn-sm btn-outline-primary btn-edit-process" data-id="${process.id}" data-number="${escapedProcessNumber}" data-lawyerid="${process.lawyer_id}" data-clientid="${process.client_id}" data-entrydate="${process.entry_date}" data-deliverydeadline="${process.delivery_deadline}" data-fataldeadline="${process.fatal_deadline}" data-status="${escapedStatus}" data-actiontype="${escapedActionType}">Editar</button>
+                    <button class="btn btn-sm btn-outline-primary btn-edit-process" data-id="${process.id}" data-number="${escapedProcessNumber}" data-lawyerid="${process.lawyer_id}" data-clientid="${process.client_id}" data-entrydate="${process.entry_date}" data-deliverydeadline="${process.delivery_deadline}" data-fataldeadline="${process.fatal_deadline}" data-status="${escapedStatus}" data-actiontype="${escapedActionType}" data-completiondate="${process.data_conclusao_real || ''}">Editar</button>
                     <button class="btn btn-sm btn-outline-danger btn-delete-process delete-btn" data-id="${process.id}">Excluir</button>
                 </div>`;
             processesListDiv.appendChild(li);
@@ -484,6 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const processEntryDateInputEl = document.getElementById('process-entry-date');
         const processDeliveryDeadlineInputEl = document.getElementById('process-delivery-deadline');
         const processFatalDeadlineInputEl = document.getElementById('process-fatal-deadline');
+        const processCompletionDateInputEl = document.getElementById('process-completion-date'); // Novo campo
         const processStatusInputEl = document.getElementById('process-status');
         const processActionTypeInputEl = document.getElementById('process-action-type');
         const processesListDivEl = document.getElementById('processes-list');
@@ -494,23 +497,23 @@ document.addEventListener('DOMContentLoaded', async () => {
          if (processFormEl) processFormEl.addEventListener('submit', async (event) => {
             event.preventDefault(); clearAllFormErrors(processFormEl);
             const id = processIdInputEl.value;
-            let hasError = false; // Flag para rastrear erros de validação
+            let hasError = false;
 
-            // Limpar erros de validação anteriores para campos de data
             clearFieldError('process-entry-date');
             clearFieldError('process-delivery-deadline');
             clearFieldError('process-fatal-deadline');
+            clearFieldError('process-completion-date'); // Limpar erro do novo campo
 
             const processNumberValue = processNumberInputEl.value.trim();
             const lawyerIdValue = processLawyerSelectEl.value;
             const clientIdValue = processClientSelectEl.value;
             const statusValue = processStatusInputEl.value.trim();
 
-            // Validação e obtenção dos valores de data
             const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
             let entryDateValue_display = processEntryDateInputEl.value.trim();
             let deliveryDeadlineValue_display = processDeliveryDeadlineInputEl.value.trim();
             let fatalDeadlineValue_display = processFatalDeadlineInputEl.value.trim();
+            let completionDateValue_display = processCompletionDateInputEl.value.trim(); // Novo campo
 
             if (!processNumberValue) { showFieldError('process-number', "Número é obrigatório."); hasError = true; }
             if (!lawyerIdValue) { showFieldError('process-lawyer', "Advogado é obrigatório."); if(!hasError) processLawyerSelectEl.focus(); hasError = true; }
@@ -525,33 +528,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!fatalDeadlineValue_display) { showFieldError('process-fatal-deadline', "Prazo Fatal é obrigatório."); if(!hasError) processFatalDeadlineInputEl.focus(); hasError = true; }
             else if (!dateRegex.test(fatalDeadlineValue_display)) { showFieldError('process-fatal-deadline', "Formato de data deve ser dd/mm/aaaa."); if(!hasError) processFatalDeadlineInputEl.focus(); hasError = true; }
 
+            let parsedCompletionDate = null;
+            if (completionDateValue_display) { // Valida e parseia apenas se preenchido
+                if (!dateRegex.test(completionDateValue_display)) {
+                    showFieldError('process-completion-date', "Formato da Data de Conclusão deve ser dd/mm/aaaa.");
+                    if(!hasError) processCompletionDateInputEl.focus();
+                    hasError = true;
+                } else {
+                    parsedCompletionDate = parseDisplayDate(completionDateValue_display);
+                }
+            }
+
             if (!statusValue) { showFieldError('process-status', "Status é obrigatório."); if(!hasError) processStatusInputEl.focus(); hasError = true; }
 
-            if (hasError) return; // Interrompe se houver erro de validação básico ou de formato
+            if (hasError) return;
 
-            // Converter datas para ISO "yyyy-mm-dd" para envio e validação de precedência
             const entryDate_iso = parseDisplayDate(entryDateValue_display);
             const deliveryDeadline_iso = parseDisplayDate(deliveryDeadlineValue_display);
             const fatalDeadline_iso = parseDisplayDate(fatalDeadlineValue_display);
 
-            // Validação de datas (após conversão para ISO para facilitar a comparação)
-            // É importante que parseDisplayDate retorne algo que Date() consiga interpretar ou que a comparação falhe de forma previsível
             if (entryDate_iso && deliveryDeadline_iso && new Date(deliveryDeadline_iso) < new Date(entryDate_iso)) {
                 showFieldError('process-delivery-deadline', "Prazo Entrega deve ser >= Data Entrada."); hasError = true;
             }
             if (deliveryDeadline_iso && fatalDeadline_iso && new Date(fatalDeadline_iso) < new Date(deliveryDeadline_iso)) {
                 showFieldError('process-fatal-deadline', "Prazo Fatal deve ser >= Prazo Entrega."); hasError = true;
             }
+            if (entryDate_iso && parsedCompletionDate && new Date(parsedCompletionDate) < new Date(entryDate_iso)) {
+                showFieldError('process-completion-date', "Data de Conclusão deve ser >= Data Entrada."); hasError = true;
+            }
 
-            if (hasError) return; // Interrompe se houver erro de precedência de datas
+
+            if (hasError) return;
 
             const processData = {
                 process_number: processNumberValue,
                 lawyer_id: parseInt(lawyerIdValue),
                 client_id: parseInt(clientIdValue),
-                entry_date: entryDate_iso, // Enviar em formato ISO
-                delivery_deadline: deliveryDeadline_iso, // Enviar em formato ISO
-                fatal_deadline: fatalDeadline_iso, // Enviar em formato ISO
+                entry_date: entryDate_iso,
+                delivery_deadline: deliveryDeadline_iso,
+                fatal_deadline: fatalDeadline_iso,
+                data_conclusao_real: parsedCompletionDate, // Adicionado
                 status: statusValue,
                 action_type: processActionTypeInputEl.value.trim() || null
             };
@@ -582,6 +598,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('process-entry-date').value = formatDate(target.dataset.entrydate);
                 document.getElementById('process-delivery-deadline').value = formatDate(target.dataset.deliverydeadline);
                 document.getElementById('process-fatal-deadline').value = formatDate(target.dataset.fataldeadline);
+                const completionDateValue = target.dataset.completiondate; // Novo campo
+                document.getElementById('process-completion-date').value = completionDateValue ? formatDate(completionDateValue) : ''; // Novo campo
                 document.getElementById('process-status').value = target.dataset.status;
                 document.getElementById('process-action-type').value = target.dataset.actiontype;
                 if(cancelProcessUpdateBtnEl) cancelProcessUpdateBtnEl.style.display = 'inline-block';

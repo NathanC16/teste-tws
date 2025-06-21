@@ -15,6 +15,7 @@ class LegalProcessDB(Base):
     entry_date = Column(Date)
     delivery_deadline = Column(Date)
     fatal_deadline = Column(Date)
+    data_conclusao_real = Column(Date, nullable=True) # Novo campo
     status = Column(String(30), default="ativo") # Comprimento 30
     action_type = Column(String(100), nullable=True) # Comprimento 100
 
@@ -33,11 +34,12 @@ class LegalProcessBase(BaseModel):
     entry_date: date
     delivery_deadline: date
     fatal_deadline: date
+    data_conclusao_real: Optional[date] = None # Novo campo Pydantic
     status: Optional[str] = "ativo"
     action_type: Optional[str] = None
 
     # Validador para converter datas de string "dd/mm/aaaa" para objetos date (Sintaxe Pydantic V1)
-    @validator('entry_date', 'delivery_deadline', 'fatal_deadline', pre=True, always=True)
+    @validator('entry_date', 'delivery_deadline', 'fatal_deadline', 'data_conclusao_real', pre=True, always=True, check_fields=False)
     @classmethod
     def parse_date_format(cls, value: Any) -> Union[date, Any]:
         # Verifica se o valor é uma string no formato "dd/mm/aaaa"
