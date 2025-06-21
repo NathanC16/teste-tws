@@ -406,6 +406,7 @@ function renderLawyerChart() {
             datalabels: {
                 anchor: 'end',
                 align: 'top',
+                offset: 8, // Adicionado para dar espaço
                 formatter: (value, ctx) => value,
                 color: '#333'
             }
