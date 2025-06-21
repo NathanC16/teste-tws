@@ -1,6 +1,28 @@
 # Desafio Técnico - Cadastro e Monitoramento de Processos Jurídicos
 
-Aplicação web para um escritório de advocacia especializado no setor de energia, permitindo o cadastro e o acompanhamento detalhado de processos jurídicos. O sistema foca na organização, controle de prazos e automação de notificações.
+Aplicação web para um escritório de advocacia especializado no setor de energia, permitindo o cadastro e o acompanhamento detalhado de processos jurídicos. O sistema foca na organização, controle de prazos e uma visão gerencial clara do andamento de todos os casos.
+
+## Funcionalidades Principais
+
+O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídica eficiente:
+
+*   **Gerenciamento Completo de Entidades:** Capacidade total de Criar, Ler, Atualizar e Deletar (CRUD) Advogados (que também são os usuários do sistema), Clientes e Processos Jurídicos.
+*   **Autenticação Segura:** Sistema de autenticação baseado em tokens JWT, com login disponível via OAB ou nome de usuário (`username`) e senha. As rotas da API são protegidas, exigindo autenticação para operações sensíveis.
+*   **Interface de Gerenciamento de Dados (`index.html`):** Uma página dedicada para todas as operações de CRUD, equipada com:
+    *   Pesquisa em tempo real para todas as listas.
+    *   Validação de formulários no lado do cliente.
+    *   Formatação de data "dd/mm/aaaa" para fácil utilização.
+    *   Botão de logout na barra de navegação.
+    *   Proteção contra a exclusão do usuário administrador principal na interface.
+*   **Dashboard Interativo (`dashboard.html`):** Um painel de controle visual para acompanhamento gerencial, incluindo:
+    *   Cards de resumo com indicadores chave.
+    *   Alertas de prazos importantes.
+    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local.
+    *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels).
+    *   Requer login para acesso.
+*   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
+
+Para uma lista detalhada de todas as funcionalidades e seu status de implementação, consulte o arquivo `FUNCIONALIDADES_PROJETO.md`.
 
 ## Tecnologias Utilizadas
 
@@ -20,8 +42,9 @@ Aplicação web para um escritório de advocacia especializado no setor de energ
     *   JavaScript (Vanilla JS)
     *   Font Awesome 6.5 (para iconografia)
     *   Chart.js 3.7 (para gráficos no painel)
+    *   `chartjs-plugin-datalabels` (para exibir valores nos gráficos)
 *   **Documentação:**
-    *   Markdown (`DESCRICAO_PROJETO.md`, `README.md`)
+    *   Markdown (`DESCRICAO_PROJETO.md`, `FUNCIONALIDADES_PROJETO.md`, `README.md`)
 
 ## Pré-requisitos
 
@@ -206,10 +229,10 @@ O sistema utiliza um mecanismo de login para acesso às funcionalidades de geren
 
 Para acessar o sistema, utilize as seguintes credenciais, que são criadas automaticamente pelo script `seed_db.py`:
 
-*   **OAB (Login):** `00001SP`
+*   **Login (OAB ou Username):** `00001SP` OU `admin`
 *   **Senha:** `admin`
 
-Recomenda-se fortemente alterar a senha padrão do usuário "ADMIN" (OAB `00001SP`) se esta aplicação for utilizada em um ambiente mais sério ou de produção. Atualmente, a funcionalidade de alteração de senha não está implementada na interface, mas a senha pode ser alterada diretamente no banco de dados ou por meio de um script de gerenciamento.
+Recomenda-se fortemente alterar a senha padrão do usuário "ADMIN" (OAB `00001SP`, username `admin`) se esta aplicação for utilizada em um ambiente mais sério ou de produção. Atualmente, a funcionalidade de alteração de senha não está implementada na interface, mas a senha pode ser alterada diretamente no banco de dados ou por meio de um script de gerenciamento.
 
 O script `seed_db.py` também cria outros advogados com senhas aleatórias para fins de preenchimento de dados de exemplo. Estes usuários não são destinados a login no sistema na configuração atual, mas podem ser usados para testar listagens e associações de processos.
 
@@ -236,6 +259,7 @@ Para facilitar os testes e a demonstração da aplicação, foi incluído um scr
     *   Gerar advogados aleatórios sem o campo `is_admin` (que foi removido do modelo).
     *   Utilizar valores válidos do `AreaOfExpertiseEnum` para clientes.
     Se encontrar erros durante o povoamento, experimente limpar as tabelas relevantes (especialmente `lawyers`, `clients`, `legal_processes`) ou o banco de dados inteiro e executar o script novamente.
+    **Nota Importante:** O script `seed_db.py` agora utiliza `Base.metadata.drop_all(bind=engine)` antes de `Base.metadata.create_all(bind=engine)`. Isso significa que **ele limpará todas as tabelas conhecidas pelo SQLAlchemy Base (advogados, clientes, processos) antes de recriá-las e populá-las.** Este comportamento é útil para garantir um estado limpo ao executar o seed, mas tenha cuidado se você tiver dados importantes nessas tabelas.
 
 **Configuração do Volume de Dados:**
 Você pode ajustar o número de advogados, clientes e processos a serem gerados editando as seguintes constantes no topo do arquivo `seed_db.py`:
@@ -252,11 +276,14 @@ NUM_PROCESSES = 50
 *   **Documentação Interativa da API (Swagger UI):**
     Após iniciar o servidor, acesse: `http://127.0.0.1:8000/docs`
 
-*   **Gerenciamento de Dados:**
-    Uma interface para gerenciamento direto das entidades (Advogados, Clientes, Processos) está disponível em:
-    `http://127.0.0.1:8000/frontend/index.html`
+*   **Página de Login:**
+    `http://127.0.0.1:8000/frontend/login.html`
 
-*   **Painel Home / Resumo Gerencial:** `http://127.0.0.1:8000/frontend/dashboard.html`
+*   **Gerenciamento de Dados (CRUD):**
+    (Requer login) `http://127.0.0.1:8000/frontend/index.html`
+
+*   **Painel Home / Resumo Gerencial:**
+    (Requer login) `http://127.0.0.1:8000/frontend/dashboard.html`
 
 ## Compatibilidade de Navegador
 
@@ -268,10 +295,10 @@ Embora a aplicação utilize tecnologias web padrão (HTML, CSS, JavaScript) e b
 
 ## Planejamento e Acompanhamento do Projeto
 
-Para uma visão detalhada do escopo completo do projeto, suas diferentes versões (Estável e Teste), e o status atual das funcionalidades (implementadas, pendentes e planejadas), consulte os seguintes documentos:
+Para uma visão detalhada do escopo completo do projeto, suas diferentes versões (Estável e Teste), e o status atual das funcionalidades (implementadas, pendentes e planejadas), consulte os seguintes documentos que são mantidos atualizados:
 
-*   `DESCRICAO_PROJETO.md`: Fornece uma descrição narrativa completa do projeto e seus objetivos.
-*   `FUNCIONALIDADES_PROJETO.md`: Apresenta uma lista estruturada das funcionalidades, divididas por status e versão.
+*   `DESCRICAO_PROJETO.md`: Fornece uma descrição narrativa completa do projeto, arquitetura e seus objetivos.
+*   `FUNCIONALIDADES_PROJETO.md`: Apresenta uma lista estruturada das funcionalidades, divididas por status e versão, permitindo um acompanhamento claro do progresso.
 
 ## Estrutura do Projeto
 
@@ -300,8 +327,9 @@ Para uma visão detalhada do escopo completo do projeto, suas diferentes versõe
     ├── dashboard.html      # Painel Home / Resumo Gerencial
     ├── dashboard.js        # Lógica JavaScript para o painel
     ├── index.html          # Interface de Gerenciamento de Dados
-    ├── script.js           # Lógica JavaScript para index.html
-    └── style.css           # Estilos para index.html
+    ├── login.html          # Página de Login
+    ├── script.js           # Lógica JavaScript para index.html e login.html (compartilhada)
+    └── style.css           # Estilos para index.html e login.html (compartilhados)
 ```
 
 Para referência sobre o histórico de commits e a tradução de prefixos de mensagens ou nomes de branch que foram feitos em inglês no início do projeto, consulte o arquivo `COMMITS_A_TRADUZIR.md`.
