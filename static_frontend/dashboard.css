@@ -75,3 +75,9 @@ h4 {
     background-color: #f8f9fa;
     border-bottom: 1px solid #e3e6f0;
 }
+
+/* Estilo para adicionar scroll à tabela de processos no dashboard */
+.process-table-scrollable {
+    max-height: 500px; /* Define uma altura máxima. Ajuste conforme necessário. */
+    overflow-y: auto;  /* Mostra a barra de scroll vertical apenas se o conteúdo exceder max-height */
+}
