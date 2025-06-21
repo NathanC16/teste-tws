@@ -399,16 +399,24 @@ function renderLawyerChart() {
     console.log('[Dashboard Debug] Renderizando/Atualizando Lawyer Chart...');
     const lawyerData = processDataForLawyerChart(allProcesses, lawyerMap);
     const options = {
+        indexAxis: 'y', // Define como gráfico de barras horizontais
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        scales: {
+            x: { // O eixo de valores agora é X
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
         plugins: {
             datalabels: {
                 anchor: 'end',
-                align: 'top',
-                offset: 8, // Adicionado para dar espaço
-                formatter: (value, ctx) => value,
-                color: '#333'
+                align: 'right',
+                offset: -4, // Ajusta para dentro da barra
+                color: '#fff', // Cor do texto do datalabel
+                formatter: (value, ctx) => value
             }
         }
     };
@@ -427,15 +435,24 @@ function renderActionTypeChart() {
     console.log('[Dashboard Debug] Renderizando/Atualizando Action Type Chart...');
     const actionTypeData = processDataForActionTypeChart(allProcesses);
     const options = {
+        indexAxis: 'y', // Define como gráfico de barras horizontais
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        scales: {
+            x: { // O eixo de valores agora é X
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
         plugins: {
             datalabels: {
                 anchor: 'end',
-                align: 'top',
-                formatter: (value, ctx) => value,
-                color: '#333'
+                align: 'right',
+                offset: -4, // Ajusta para dentro da barra
+                color: '#fff', // Cor do texto do datalabel
+                formatter: (value, ctx) => value
             }
         }
     };
