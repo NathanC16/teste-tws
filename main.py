@@ -22,7 +22,45 @@ from routers import auth as auth_router # Import the auth router
 from core.security import get_current_user # get_current_admin_user removed
 from core.security import get_password_hash # For placeholder password in create_lawyer
 
+# Scheduler imports
+from apscheduler.schedulers.background import BackgroundScheduler
+from core.notifications import check_and_notify_daily_deadlines, check_and_notify_upcoming_fatal_deadlines
+import logging # Import logging
+
 app = FastAPI(title="Gerenciador de Processos Jurídicos")
+
+# Configure logging for APScheduler
+apscheduler_logger = logging.getLogger('apscheduler')
+apscheduler_logger.setLevel(logging.WARNING) # Set to WARNING or ERROR for less verbose logs in production
+
+# Scheduler instance
+scheduler = BackgroundScheduler(timezone="America/Sao_Paulo") # Use a relevant timezone
+
+@app.on_event("startup")
+def startup_event():
+    # Schedule jobs
+    # For daily deadlines, run once a day, e.g., at 8:00 AM
+    scheduler.add_job(check_and_notify_daily_deadlines, 'cron', hour=8, minute=0)
+
+    # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
+    # (or more frequently if needed, but daily is often sufficient)
+    scheduler.add_job(check_and_notify_upcoming_fatal_deadlines, 'cron', hour=8, minute=30)
+
+    # For testing purposes, you might want to run them more frequently:
+    # scheduler.add_job(check_and_notify_daily_deadlines, 'interval', minutes=5)
+    # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines, 'interval', minutes=7)
+
+    scheduler.start()
+    app_logger = logging.getLogger(__name__)
+    app_logger.info("Scheduler started and jobs added.")
+    print("Scheduler started and jobs added for notifications.") # For Uvicorn console visibility
+
+@app.on_event("shutdown")
+def shutdown_event():
+    scheduler.shutdown()
+    app_logger = logging.getLogger(__name__)
+    app_logger.info("Scheduler shut down.")
+    print("Scheduler shut down.") # For Uvicorn console visibility
 
 # Include routers
 app.include_router(auth_router.router)

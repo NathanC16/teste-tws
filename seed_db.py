@@ -41,7 +41,7 @@ def create_synthetic_data(db: Session):
             email=ADMIN_EMAIL,
             hashed_password=hashed_admin_password,
             # is_admin=True, # Campo removido
-            telegram_id="@admin_user_tg"
+            telegram_id=None # Definido como None inicialmente ou um ID de teste específico se fornecido
         )
         db.add(new_admin)
         db.commit()
@@ -111,7 +111,7 @@ def create_synthetic_data(db: Session):
             "name": fake.name(),
             "oab": generated_oab,
             "email": generated_email,
-            "telegram_id": f"@{fake.user_name().lower().replace('.', '').replace('-', '')}" if random.choice([True, False, False]) else None,
+            "telegram_id": None, # Garantir que IDs de Telegram falsos não sejam gerados por padrão
             "hashed_password": hashed_random_password
             # campo is_admin removido
         }
