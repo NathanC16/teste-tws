@@ -39,44 +39,44 @@ apscheduler_logger.setLevel(logging.WARNING) # Set to WARNING or ERROR for less 
 scheduler = BackgroundScheduler(timezone="America/Sao_Paulo") # Use a relevant timezone
 
 @app.on_event("startup")
-async def startup_event(): # Tornar o evento de startup async
+async def startup_event():
     app_logger = logging.getLogger(__name__)
-    # Temporariamente comentado para diagnosticar problema de login
-    # # Schedule jobs
-    # # For daily deadlines, run once a day, e.g., at 8:00 AM
-    # scheduler.add_job(check_and_notify_daily_deadlines_async, 'cron', hour=8, minute=0)
 
-    # # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
-    # # (or more frequently if needed, but daily is often sufficient)
-    # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'cron', hour=8, minute=30)
+    # Initialize Telegram bot
+    # Import here to avoid circular imports if telegram_bot itself imports something from main at module level
+    from telegram_bot import initialize_bot_instance
+    await initialize_bot_instance()
+    app_logger.info("Telegram bot initialization attempted on startup.")
 
-    # # For testing purposes, you might want to run them more frequently:
-    # # scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=1)
-    # # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'interval', minutes=2)
+    # Schedule jobs
+    # For daily deadlines, run once a day, e.g., at 8:00 AM
+    scheduler.add_job(check_and_notify_daily_deadlines_async, 'cron', hour=8, minute=0, misfire_grace_time=600)
 
-    # from telegram_bot import initialize_bot_instance # Mova o import para dentro se for usar
-    # await initialize_bot_instance() # Initialize bot on startup
-    # app_logger.info("Telegram bot initialized on startup.")
+    # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
+    scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'cron', hour=8, minute=30, misfire_grace_time=600)
 
-    # scheduler.start()
-    # app_logger.info("Scheduler started and jobs added.")
-    # print("Scheduler started and jobs added for notifications.") # For Uvicorn console visibility
-    app_logger.info("Startup event completed (scheduler and bot init TEMPORARILY COMMENTED OUT for login debug).")
-    print("Startup event completed (scheduler and bot init TEMPORARILY COMMENTED OUT for login debug).")
+    # Example for testing (run more frequently):
+    # scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=2, id="daily_deadline_test")
+    # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'interval', minutes=3, id="upcoming_deadline_test")
 
+    if not scheduler.running:
+        scheduler.start()
+        app_logger.info("Scheduler started and jobs added.")
+        print("Scheduler started and jobs added for notifications.")
+    else:
+        app_logger.info("Scheduler already running.")
+        print("Scheduler already running.")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    # if scheduler.running: # Verifique se o scheduler está rodando antes de desligar
-    #    scheduler.shutdown()
-    #    app_logger = logging.getLogger(__name__)
-    #    app_logger.info("Scheduler shut down.")
-    #    print("Scheduler shut down.") # For Uvicorn console visibility
-    # else:
-    #    app_logger = logging.getLogger(__name__)
-    #    app_logger.info("Scheduler was not running or already shut down.")
-    #    print("Scheduler was not running or already shut down.")
-    pass # Temporariamente não faz nada no shutdown se o scheduler não iniciou
+    app_logger = logging.getLogger(__name__)
+    if scheduler.running:
+       scheduler.shutdown()
+       app_logger.info("Scheduler shut down successfully.")
+       print("Scheduler shut down successfully.")
+    else:
+       app_logger.info("Scheduler was not running or already shut down.")
+       print("Scheduler was not running or already shut down.")
 
 # Include routers
 app.include_router(auth_router.router)
