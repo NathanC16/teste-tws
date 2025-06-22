@@ -50,6 +50,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Formatação de Datas ("dd/mm/aaaa"):** Formulários de criação/edição de processos aceitam datas no formato "dd/mm/aaaa" e as exibem nesse formato ao editar. A conversão para o formato ISO (yyyy-mm-dd) é feita antes do envio para a API.
 *   ✅ **Validação de Formulários no Cliente:** Implementada para campos como OAB, Telegram ID, e-mail, e formato das datas.
 *   ✅ **Layout e Navegação:** Interface organizada com Bootstrap, navegação global e feedback visual para o usuário.
+*   ✅ **Barras de Scroll nas Listas:** As listas de Advogados, Clientes e Processos agora possuem barras de scroll vertical para melhor navegação com grande volume de dados.
 
 ### 5. Módulo de Cadastro e Gerenciamento de Processos Jurídicos
 
@@ -74,6 +75,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Alertas de Prazos Próximos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias.
 *   ✅ **Tabela de Processos Detalhada:** Listagem de processos com informações chave, incluindo pesquisa local na tabela para filtrar os dados exibidos. Adicionada **barra de scroll vertical** à tabela para melhor navegação com muitos registros.
 *   ✅ **Filtros de Processos (via API):** Permite filtrar a lista de processos exibida na tabela por Status, Advogado e Cliente.
+*   ✅ **Filtro por intervalo de Prazo Fatal:** Permite filtrar processos no dashboard especificando um período "De" e "Até" para o Prazo Fatal (campos de texto com formato "dd/mm/aaaa" e validação no cliente).
 *   ✅ **Gráficos de Acompanhamento:**
     *   Implementados usando Chart.js e `chartjs-plugin-datalabels`.
     *   Gráficos são organizados em **abas** para melhor visualização ("Por Status", "Por Advogado", "Por Tipo de Ação").
@@ -81,7 +83,6 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
     *   Tipos: Pizza (Status), Barras **Horizontais** (Advogado, Tipo de Ação) para melhor legibilidade.
     *   Ajuste visual (offset) aplicado aos datalabels do gráfico "Processos por Tipo de Ação".
     *   Renderização otimizada (gráficos em abas não ativas são renderizados quando a aba é mostrada).
-*   ✅ **Filtro por intervalo de Prazo Fatal:** Permite filtrar processos no dashboard especificando um período "De" e "Até" para o Prazo Fatal.
 
 ### 7. Integração com Telegram
 

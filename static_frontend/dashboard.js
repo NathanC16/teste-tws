@@ -106,6 +106,43 @@ function formatDate(dateString) {
     }
 }
 
+// Função para converter data de "dd/mm/aaaa" para "yyyy-mm-dd" (ISO)
+// Retorna null se o formato for inválido ou a data não for válida.
+function parseDisplayDateToISO(dateString_ddmmyyyy) {
+    if (!dateString_ddmmyyyy || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateString_ddmmyyyy)) {
+        return null;
+    }
+    const parts = dateString_ddmmyyyy.split('/');
+    if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Mês é 0-indexado em JavaScript
+        const year = parseInt(parts[2], 10);
+        const dateObj = new Date(year, month, day);
+        // Verifica se o JS Date object corresponde aos componentes (evita datas como 31/02)
+        if (dateObj.getFullYear() === year && dateObj.getMonth() === month && dateObj.getDate() === day) {
+            // Retorna no formato YYYY-MM-DD
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+    }
+    return null; // Formato inválido ou data inválida
+}
+
+// Funções de feedback de validação para o dashboard (semelhantes às de script.js)
+// Usam um sufixo de ID de erro para maior flexibilidade, embora o padrão seja '-error'
+function showFieldErrorDashboard(fieldId, message, errorSuffix = '-error') {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}${errorSuffix}`);
+    if (field) field.classList.add('is-invalid');
+    if (errorDiv) { errorDiv.textContent = message; errorDiv.style.display = 'block'; }
+}
+
+function clearFieldErrorDashboard(fieldId, errorSuffix = '-error') {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(`${fieldId}${errorSuffix}`);
+    if (field) field.classList.remove('is-invalid');
+    if (errorDiv) { errorDiv.textContent = ''; errorDiv.style.display = 'none'; }
+}
+
 // --- Funções de Busca de Dados ---
 async function fetchData(url) {
     console.log(`[Dashboard Debug] Tentando buscar dados de: ${url}`);
@@ -271,11 +308,18 @@ function renderDeadlineAlerts() {
 }
 
 // --- Lógica de Filtros ---
-async function filterProcesses(status, lawyerId, clientId) { // Mantém assinatura, mas datas serão lidas de elementos globais
-    const fatalDeadlineDe = filterFatalDeadlineDeEl ? filterFatalDeadlineDeEl.value : null;
-    const fatalDeadlineAte = filterFatalDeadlineAteEl ? filterFatalDeadlineAteEl.value : null;
+async function filterProcesses(status, lawyerId, clientId) {
+    // Obter e parsear as datas de prazo fatal dos inputs
+    const fatalDeadlineDeStr = filterFatalDeadlineDeEl ? filterFatalDeadlineDeEl.value.trim() : "";
+    const fatalDeadlineAteStr = filterFatalDeadlineAteEl ? filterFatalDeadlineAteEl.value.trim() : "";
 
-    console.log(`[Dashboard Debug] Filtrando processos com: status=${status}, lawyerId=${lawyerId}, clientId=${clientId}, fatalDeadlineDe=${fatalDeadlineDe}, fatalDeadlineAte=${fatalDeadlineAte}`);
+    // A validação de formato e de "De" vs "Até" já foi feita no listener do botão.
+    // Aqui, apenas convertemos para ISO para a query.
+    const fatalDeadlineDeISO = parseDisplayDateToISO(fatalDeadlineDeStr);
+    const fatalDeadlineAteISO = parseDisplayDateToISO(fatalDeadlineAteStr);
+
+    console.log(`[Dashboard Debug] Filtrando processos com: status=${status}, lawyerId=${lawyerId}, clientId=${clientId}, fatalDeadlineDe=${fatalDeadlineDeStr} (ISO: ${fatalDeadlineDeISO}), fatalDeadlineAte=${fatalDeadlineAteStr} (ISO: ${fatalDeadlineAteISO})`);
+
     let queryString = '/processes/?';
     const params = [];
 
@@ -288,11 +332,11 @@ async function filterProcesses(status, lawyerId, clientId) { // Mantém assinatu
     if (clientId) {
         params.push(`client_id=${encodeURIComponent(clientId)}`);
     }
-    if (fatalDeadlineDe) {
-        params.push(`fatal_deadline_de=${encodeURIComponent(fatalDeadlineDe)}`);
+    if (fatalDeadlineDeISO) { // Usar valor parseado e validado
+        params.push(`fatal_deadline_de=${encodeURIComponent(fatalDeadlineDeISO)}`);
     }
-    if (fatalDeadlineAte) {
-        params.push(`fatal_deadline_ate=${encodeURIComponent(fatalDeadlineAte)}`);
+    if (fatalDeadlineAteISO) { // Usar valor parseado e validado
+        params.push(`fatal_deadline_ate=${encodeURIComponent(fatalDeadlineAteISO)}`);
     }
 
     queryString += params.join('&');
@@ -495,12 +539,49 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[Dashboard Debug] Token encontrado. Chamando fetchAllData...');
     fetchAllData();
 
-    if(applyFiltersBtn) { // Adicionada verificação de existência do botão
+    if(applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', () => {
+            // Limpar erros de validação de data anteriores
+            clearFieldErrorDashboard('filter-fatal-deadline-de');
+            clearFieldErrorDashboard('filter-fatal-deadline-ate');
+
             const status = filterStatusEl.value;
             const lawyerId = filterLawyerEl.value;
             const clientId = filterClientEl.value;
-            filterProcesses(status, lawyerId, clientId);
+
+            const fatalDeadlineDeStr = filterFatalDeadlineDeEl.value.trim();
+            const fatalDeadlineAteStr = filterFatalDeadlineAteEl.value.trim();
+            let hasDateError = false;
+
+            let fatalDeadlineDeISO = null;
+            if (fatalDeadlineDeStr) {
+                fatalDeadlineDeISO = parseDisplayDateToISO(fatalDeadlineDeStr);
+                if (!fatalDeadlineDeISO) {
+                    showFieldErrorDashboard('filter-fatal-deadline-de', 'Formato inválido (dd/mm/aaaa).');
+                    hasDateError = true;
+                }
+            }
+
+            let fatalDeadlineAteISO = null;
+            if (fatalDeadlineAteStr) {
+                fatalDeadlineAteISO = parseDisplayDateToISO(fatalDeadlineAteStr);
+                if (!fatalDeadlineAteISO) {
+                    showFieldErrorDashboard('filter-fatal-deadline-ate', 'Formato inválido (dd/mm/aaaa).');
+                    hasDateError = true;
+                }
+            }
+
+            // Validação de precedência apenas se ambas as datas foram parseadas corretamente
+            if (fatalDeadlineDeISO && fatalDeadlineAteISO && new Date(fatalDeadlineAteISO) < new Date(fatalDeadlineDeISO)) {
+                showFieldErrorDashboard('filter-fatal-deadline-ate', 'Data "Até" deve ser posterior ou igual à data "De".');
+                hasDateError = true;
+            }
+
+            if (hasDateError) {
+                return; // Não prosseguir com o filtro se houver erro de data
+            }
+
+            filterProcesses(status, lawyerId, clientId); // filterProcesses pegará os valores dos inputs de data e os parseará
         });
     } else {
         console.warn("[Dashboard Debug] Botão apply-filters-btn não encontrado.");

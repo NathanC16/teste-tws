@@ -51,13 +51,13 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   `data_conclusao_real`: Data em que o processo foi efetivamente concluído (opcional, para análise de prazos; aceita "dd/mm/aaaa" no frontend).
     *   `status`: Status atual (ex: "ativo", "concluído", "suspenso", "vencido"; padrão: "ativo").
     *   `action_type`: Tipo de ação do processo (categorização textual).
-*   **Operações CRUD:** Endpoints API para Criar, Ler (com filtros), Atualizar e Deletar processos.
+*   **Operações CRUD:** Endpoints API para Criar, Ler (com filtros, incluindo intervalo de `fatal_deadline`), Atualizar e Deletar processos.
 *   **Exclusão em Massa (Interface de Teste):** A interface de teste (`index.html`) permite selecionar múltiplos processos através de checkboxes e excluí-los em uma única operação.
 *   **Regra de Negócio:** `lawyer_id` e `client_id` devem existir ao criar/atualizar.
 *   **Dados de Teste (`seed_db.py`):** O script `seed_db.py` popula o banco com um volume aumentado de dados (50 advogados, 100 clientes, 250 processos) e preenche o campo `data_conclusao_real` para processos com status "concluído", auxiliando em testes e análises futuras.
-*   **Status Atual (Backend):** CRUD básico e validações implementados. Pydantic models aceitam datas no formato "dd/mm/aaaa" e ISO, incluindo o novo campo `data_conclusao_real`.
+*   **Status Atual (Backend):** CRUD básico e validações implementados. Pydantic models aceitam datas no formato "dd/mm/aaaa" e ISO, incluindo o novo campo `data_conclusao_real`. API `GET /processes/` suporta filtragem por intervalo de `fatal_deadline`.
 *   **Status Atual (Frontend de Teste `index.html`):** CRUD completo, incluindo listagem, adição, edição (com o campo `data_conclusao_real`), exclusão individual e exclusão em massa de processos. Formulários de data aceitam e exibem o formato "dd/mm/aaaa". Implementada pesquisa em tempo real na lista de processos.
-*   **Status Atual (Frontend do Painel `dashboard.html`):** Visualização em tabela dos processos com capacidade de pesquisa local na tabela. Filtros de processos por status, advogado e cliente via API.
+*   **Status Atual (Frontend do Painel `dashboard.html`):** Visualização em tabela dos processos com capacidade de pesquisa local na tabela. Filtros de processos por status, advogado, cliente, e **intervalo de Prazo Fatal** (com campos de texto "dd/mm/aaaa" e validação no cliente) via API.
 
 ### 4. Autenticação e Autorização
 
@@ -76,7 +76,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Componentes:**
     *   **Cards de Resumo:** Exibição de totais (Processos Ativos, Prazos Fatais Próximos, Total de Advogados, Total de Clientes).
     *   **Alertas de Prazos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias, com indicação visual de urgência.
-    *   **Filtros de Processos:** Permite filtrar a lista de processos exibida na tabela por Status, Advogado e Cliente (consultando a API).
+    *   **Filtros de Processos:** Permite filtrar a lista de processos exibida na tabela por Status, Advogado, Cliente, e **intervalo de Prazo Fatal** (campos de texto "dd/mm/aaaa" com validação no cliente), consultando a API.
     *   **Tabela de Processos:** Listagem dos processos com informações chave. Inclui campo de **pesquisa local** para filtrar dinamicamente os dados já carregados na tabela. A tabela agora possui uma **barra de scroll vertical** quando o conteúdo excede uma altura máxima, melhorando a usabilidade.
     *   **Gráficos para Acompanhamento:**
         *   Processos por Status (Gráfico de Pizza).
@@ -90,7 +90,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   Chart.js 3.7 e `chartjs-plugin-datalabels` (para renderização dos gráficos e exibição de rótulos de dados).
 *   **Status Atual:** Implementado (`static_frontend/dashboard.html`, `dashboard.js`, `dashboard.css`).
     *   Busca dados da API (requerendo autenticação) para processos, advogados e clientes.
-    *   Renderiza todos os componentes listados: cards, alertas, filtros, tabela (com pesquisa local e scroll) e gráficos (em abas, horizontais para barras, com datalabels).
+    *   Renderiza todos os componentes listados: cards, alertas, filtros (incluindo intervalo de datas para Prazo Fatal), tabela (com pesquisa local e scroll) e gráficos (em abas, horizontais para barras, com datalabels).
     *   A interface é servida em `/frontend/dashboard.html`.
 *   **Navegação:** Inclui barra de navegação global com links para "Gerenciamento de Dados", "Painel Home" e botão de "Sair" (logout).
 
@@ -121,7 +121,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 ### 9. Gerenciamento de Dados (Frontend - `index.html`)
 
 *   **Funcionalidade:** Prover uma interface de usuário para gerenciamento direto (CRUD) das entidades base: Advogados, Clientes e Processos Jurídicos. Requer autenticação.
-    *   Listagem, criação, edição e exclusão para cada entidade.
+    *   Listagem, criação, edição e exclusão para cada entidade. As listas agora possuem **barras de scroll vertical** para melhor navegação com grande volume de dados.
     *   Exclusão em massa para processos.
     *   **Pesquisa em tempo real** para as listas de advogados, clientes e processos, com acionamento por digitação e pela tecla "Enter" (que remove o foco do campo). Ícones de lupa clicáveis para focar nos campos de pesquisa.
     *   **Formulários com validação** no lado do cliente para formatos de OAB, Telegram ID, e-mail, e datas ("dd/mm/aaaa").
@@ -139,7 +139,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   `static_frontend/style.css`: CSS customizado.
     *   `static_frontend/script.js`: Lógica para interagir com a API FastAPI e manipular o DOM.
 *   **Servindo os arquivos:** A API FastAPI serve esta interface em `/frontend/index.html`.
-*   **Status Atual:** Implementada e funcional, com layout, navegação, CRUD completo para as três entidades (incluindo `data_conclusao_real` para processos), validações, pesquisa e funcionalidades de logout aprimoradas.
+*   **Status Atual:** Implementada e funcional, com layout, navegação, CRUD completo para as três entidades (incluindo `data_conclusao_real` para processos), validações, pesquisa e funcionalidades de logout aprimoradas. As listas de dados principais agora possuem barras de scroll.
 
 ## Documentação Adicional
 
