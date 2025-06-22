@@ -51,6 +51,8 @@ const processesTableBodyEl = document.getElementById('processes-table-body');
 const filterStatusEl = document.getElementById('filter-status');
 const filterLawyerEl = document.getElementById('filter-lawyer');
 const filterClientEl = document.getElementById('filter-client');
+const filterFatalDeadlineDeEl = document.getElementById('filter-fatal-deadline-de'); // Novo
+const filterFatalDeadlineAteEl = document.getElementById('filter-fatal-deadline-ate'); // Novo
 const applyFiltersBtn = document.getElementById('apply-filters-btn');
 
 // Canvas para Gráficos
@@ -269,8 +271,11 @@ function renderDeadlineAlerts() {
 }
 
 // --- Lógica de Filtros ---
-async function filterProcesses(status, lawyerId, clientId) {
-    console.log(`[Dashboard Debug] Filtrando processos com: status=${status}, lawyerId=${lawyerId}, clientId=${clientId}`);
+async function filterProcesses(status, lawyerId, clientId) { // Mantém assinatura, mas datas serão lidas de elementos globais
+    const fatalDeadlineDe = filterFatalDeadlineDeEl ? filterFatalDeadlineDeEl.value : null;
+    const fatalDeadlineAte = filterFatalDeadlineAteEl ? filterFatalDeadlineAteEl.value : null;
+
+    console.log(`[Dashboard Debug] Filtrando processos com: status=${status}, lawyerId=${lawyerId}, clientId=${clientId}, fatalDeadlineDe=${fatalDeadlineDe}, fatalDeadlineAte=${fatalDeadlineAte}`);
     let queryString = '/processes/?';
     const params = [];
 
@@ -282,6 +287,12 @@ async function filterProcesses(status, lawyerId, clientId) {
     }
     if (clientId) {
         params.push(`client_id=${encodeURIComponent(clientId)}`);
+    }
+    if (fatalDeadlineDe) {
+        params.push(`fatal_deadline_de=${encodeURIComponent(fatalDeadlineDe)}`);
+    }
+    if (fatalDeadlineAte) {
+        params.push(`fatal_deadline_ate=${encodeURIComponent(fatalDeadlineAte)}`);
     }
 
     queryString += params.join('&');

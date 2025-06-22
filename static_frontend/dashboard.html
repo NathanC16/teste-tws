@@ -127,7 +127,7 @@
                 <div class="col-md-12">
                     <h4>Filtros de Processos</h4>
                     <form class="row g-3" id="process-filters-form">
-                        <div class="col-md-3">
+                        <div class="col-md-2"> <!-- Status -->
                             <label for="filter-status" class="form-label">Status</label>
                             <select id="filter-status" class="form-select">
                                 <option selected value="">Todos</option>
@@ -137,22 +137,30 @@
                                 <option value="vencido">Vencido</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2"> <!-- Advogado -->
                             <label for="filter-lawyer" class="form-label">Advogado</label>
                             <select id="filter-lawyer" class="form-select">
                                 <option selected value="">Todos</option>
                                 <!-- Populado por JS -->
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2"> <!-- Cliente -->
                             <label for="filter-client" class="form-label">Cliente</label>
                             <select id="filter-client" class="form-select">
                                 <option selected value="">Todos</option>
                                 <!-- Populado por JS -->
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="button" id="apply-filters-btn" class="btn btn-info">Aplicar Filtros</button>
+                        <div class="col-md-2"> <!-- Prazo Fatal De -->
+                            <label for="filter-fatal-deadline-de" class="form-label">Prazo Fatal De:</label>
+                            <input type="date" id="filter-fatal-deadline-de" class="form-control">
+                        </div>
+                        <div class="col-md-2"> <!-- Prazo Fatal Até -->
+                            <label for="filter-fatal-deadline-ate" class="form-label">Prazo Fatal At&eacute;:</label>
+                            <input type="date" id="filter-fatal-deadline-ate" class="form-control">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end"> <!-- Botão -->
+                            <button type="button" id="apply-filters-btn" class="btn btn-info w-100">Aplicar Filtros</button>
                         </div>
                     </form>
                 </div>

@@ -81,7 +81,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
     *   Tipos: Pizza (Status), Barras **Horizontais** (Advogado, Tipo de Ação) para melhor legibilidade.
     *   Ajuste visual (offset) aplicado aos datalabels do gráfico "Processos por Tipo de Ação".
     *   Renderização otimizada (gráficos em abas não ativas são renderizados quando a aba é mostrada).
-*   ⏳ **Busca e filtros adicionais:** Filtro por "intervalo de prazo específico" na tabela não está implementado.
+*   ✅ **Filtro por intervalo de Prazo Fatal:** Permite filtrar processos no dashboard especificando um período "De" e "Até" para o Prazo Fatal.
 
 ### 7. Integração com Telegram
 
