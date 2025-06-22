@@ -247,7 +247,9 @@ def get_legal_processes(
     client_id: Optional[int] = None,
     lawyer_id: Optional[int] = None,
     action_type: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[str] = None, # Este 'status' é o parâmetro de filtro, não o módulo fastapi.status
+    fatal_deadline_de: Optional[date] = None,
+    fatal_deadline_ate: Optional[date] = None,
     db: Session = Depends(get_db),
     current_user: LawyerResponse = Depends(get_current_user)
 ):
@@ -258,8 +260,12 @@ def get_legal_processes(
         query = query.filter(process_model.LegalProcessDB.lawyer_id == lawyer_id)
     if action_type:
         query = query.filter(process_model.LegalProcessDB.action_type.contains(action_type))
-    if status:
+    if status: # Este 'status' é o parâmetro de filtro
         query = query.filter(process_model.LegalProcessDB.status == status)
+    if fatal_deadline_de:
+        query = query.filter(process_model.LegalProcessDB.fatal_deadline >= fatal_deadline_de)
+    if fatal_deadline_ate:
+        query = query.filter(process_model.LegalProcessDB.fatal_deadline <= fatal_deadline_ate)
     return query.all()
 
 @app.get("/processes/{process_id}", response_model=LegalProcess)
