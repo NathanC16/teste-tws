@@ -153,11 +153,13 @@
                         </div>
                         <div class="col-md-2"> <!-- Prazo Fatal De -->
                             <label for="filter-fatal-deadline-de" class="form-label">Prazo Fatal De:</label>
-                            <input type="date" id="filter-fatal-deadline-de" class="form-control">
+                            <input type="text" id="filter-fatal-deadline-de" class="form-control" placeholder="dd/mm/aaaa">
+                            <div class="invalid-feedback" id="filter-fatal-deadline-de-error"></div>
                         </div>
                         <div class="col-md-2"> <!-- Prazo Fatal Até -->
                             <label for="filter-fatal-deadline-ate" class="form-label">Prazo Fatal At&eacute;:</label>
-                            <input type="date" id="filter-fatal-deadline-ate" class="form-control">
+                            <input type="text" id="filter-fatal-deadline-ate" class="form-control" placeholder="dd/mm/aaaa">
+                            <div class="invalid-feedback" id="filter-fatal-deadline-ate-error"></div>
                         </div>
                         <div class="col-md-2 d-flex align-items-end"> <!-- Botão -->
                             <button type="button" id="apply-filters-btn" class="btn btn-info w-100">Aplicar Filtros</button>

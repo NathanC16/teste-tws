@@ -133,3 +133,12 @@
 .col-md-5 > h3:first-child {
     margin-top: 0.5rem; /* Reduz a margem superior para o primeiro h3 na coluna */
 }
+
+/* Estilo para adicionar scroll às listas em index.html */
+.list-scrollable-index {
+    max-height: 400px; /* Altura máxima antes de mostrar o scroll. Ajuste se necessário. */
+    overflow-y: auto;  /* Adiciona scroll vertical quando o conteúdo excede max-height */
+    padding: 10px;     /* Adiciona um pequeno preenchimento interno */
+    border: 1px solid #eee; /* Uma borda sutil para delimitar a área de scroll */
+    border-radius: 0.25rem; /* Consistente com outros elementos Bootstrap */
+}
