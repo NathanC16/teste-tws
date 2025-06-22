@@ -72,23 +72,29 @@ class LawyerBase(BaseModel):
         # Opcionalmente, permite pontos na parte numérica para o primeiro formato: 123.456SP
         # Mas não para o formato com barra, para simplificar.
 
-        # Padrão: NNNNNUF ou NNN.NNNUF (sem barra)
-        pattern_num_uf = r"^\d{1,3}(\.?\d{3})?[A-Z]{2}$"
-        # Padrão: NNNNN/UF (com barra)
-        pattern_num_barra_uf = r"^\d{1,6}\/[A-Z]{2}$"
+        # Padrão ajustado:
+        # 1. NNNNNNSP (1 a 6 dígitos seguidos por 2 letras) - SEM pontos.
+        # 2. NNNNNN/SP (1 a 6 dígitos, seguido por / e 2 letras)
 
-        # Converte para maiúsculas para facilitar a validação da UF
-        value_upper = value.upper()
+        value_upper = value.upper() # Converte para maiúsculas para facilitar a validação da UF
 
-        if not (re.match(pattern_num_uf, value_upper) or re.match(pattern_num_barra_uf, value_upper)):
-            raise ValueError(
-                "Formato da OAB inválido. Use formatos como '12345SP', '123.456SP', ou '12345/SP'."
-            )
-
-        # Normaliza removendo o ponto para armazenamento, se presente no primeiro padrão
+        # Remove pontos para normalizar formatos como 123.456SP para 123456SP antes da validação principal
+        # Isso também significa que o valor armazenado não terá pontos se este formato for usado.
         if '.' in value_upper and '/' not in value_upper:
             value_upper = value_upper.replace('.', '')
 
+        # Padrão: 1 a 6 dígitos seguidos por 2 letras maiúsculas (Ex: 1SP, 123SP, 123456SP)
+        pattern_num_uf_simple = r"^\d{1,6}[A-Z]{2}$"
+        # Padrão: 1 a 6 dígitos, seguido por / e 2 letras maiúsculas (Ex: 1/SP, 123/SP, 123456/SP)
+        pattern_num_barra_uf = r"^\d{1,6}\/[A-Z]{2}$"
+
+        if not (re.match(pattern_num_uf_simple, value_upper) or re.match(pattern_num_barra_uf, value_upper)):
+            raise ValueError(
+                "Formato da OAB inválido. Use formatos como '12345SP' ou '12345/SP'. "
+                "Pontos na parte numérica (ex: 123.456SP) são aceitos na entrada e removidos."
+            )
+
+        # Retorna o valor normalizado (sem pontos, se o formato original os tinha e não tinha barra)
         return value_upper
 
 
