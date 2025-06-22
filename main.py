@@ -40,37 +40,43 @@ scheduler = BackgroundScheduler(timezone="America/Sao_Paulo") # Use a relevant t
 
 @app.on_event("startup")
 async def startup_event(): # Tornar o evento de startup async
-    # Schedule jobs
-    # For daily deadlines, run once a day, e.g., at 8:00 AM
-    scheduler.add_job(check_and_notify_daily_deadlines_async, 'cron', hour=8, minute=0)
-
-    # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
-    # (or more frequently if needed, but daily is often sufficient)
-    scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'cron', hour=8, minute=30)
-
-    # For testing purposes, you might want to run them more frequently:
-    # scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=1)
-    # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'interval', minutes=2)
-
-    # Ensure bot is initialized before scheduler starts, as jobs might run immediately if misconfigured
-    # or if the scheduler was stopped and restarted with pending jobs.
-    # The get_telegram_bot() in telegram_bot.py now handles its own initialization.
-    # We can optionally explicitly initialize here if desired, but it's not strictly necessary
-    # if jobs always call get_telegram_bot().
-    # from telegram_bot import initialize_bot_instance
-    # await initialize_bot_instance() # Initialize bot on startup
-
-    scheduler.start()
     app_logger = logging.getLogger(__name__)
-    app_logger.info("Scheduler started and jobs added.")
-    print("Scheduler started and jobs added for notifications.") # For Uvicorn console visibility
+    # Temporariamente comentado para diagnosticar problema de login
+    # # Schedule jobs
+    # # For daily deadlines, run once a day, e.g., at 8:00 AM
+    # scheduler.add_job(check_and_notify_daily_deadlines_async, 'cron', hour=8, minute=0)
+
+    # # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
+    # # (or more frequently if needed, but daily is often sufficient)
+    # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'cron', hour=8, minute=30)
+
+    # # For testing purposes, you might want to run them more frequently:
+    # # scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=1)
+    # # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'interval', minutes=2)
+
+    # from telegram_bot import initialize_bot_instance # Mova o import para dentro se for usar
+    # await initialize_bot_instance() # Initialize bot on startup
+    # app_logger.info("Telegram bot initialized on startup.")
+
+    # scheduler.start()
+    # app_logger.info("Scheduler started and jobs added.")
+    # print("Scheduler started and jobs added for notifications.") # For Uvicorn console visibility
+    app_logger.info("Startup event completed (scheduler and bot init TEMPORARILY COMMENTED OUT for login debug).")
+    print("Startup event completed (scheduler and bot init TEMPORARILY COMMENTED OUT for login debug).")
+
 
 @app.on_event("shutdown")
 def shutdown_event():
-    scheduler.shutdown()
-    app_logger = logging.getLogger(__name__)
-    app_logger.info("Scheduler shut down.")
-    print("Scheduler shut down.") # For Uvicorn console visibility
+    # if scheduler.running: # Verifique se o scheduler está rodando antes de desligar
+    #    scheduler.shutdown()
+    #    app_logger = logging.getLogger(__name__)
+    #    app_logger.info("Scheduler shut down.")
+    #    print("Scheduler shut down.") # For Uvicorn console visibility
+    # else:
+    #    app_logger = logging.getLogger(__name__)
+    #    app_logger.info("Scheduler was not running or already shut down.")
+    #    print("Scheduler was not running or already shut down.")
+    pass # Temporariamente não faz nada no shutdown se o scheduler não iniciou
 
 # Include routers
 app.include_router(auth_router.router)
