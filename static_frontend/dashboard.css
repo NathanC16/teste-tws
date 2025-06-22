@@ -31,12 +31,18 @@ body {
     margin-top: 1rem;
 }
 .table thead.table-dark th { /* Cabeçalho da tabela mais escuro */
+    /* position: sticky; top: 0; z-index: 10; movido para thead */
     background-color: #343a40; /* Cor escura padrão do Bootstrap */
     color: #fff;
     border-color: #454d55; /* Um pouco mais claro que o fundo para a borda */
+}
+
+.table thead.table-dark { /* Aplicando sticky ao thead */
     position: sticky;
     top: 0;
     z-index: 10; /* Garante que o cabeçalho fique sobre o conteúdo da tabela */
+    /* A cor de fundo já é herdada ou definida pelos th, mas pode ser reforçada aqui se necessário */
+    /* background-color: #343a40; */
 }
 
 /* Alertas de Prazos */
