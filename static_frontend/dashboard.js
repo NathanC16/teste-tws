@@ -467,11 +467,7 @@ function renderLawyerChart() {
         },
         plugins: {
             datalabels: {
-                anchor: 'end',
-                align: 'right',
-                offset: -4, // Ajusta para dentro da barra
-                color: '#fff', // Cor do texto do datalabel
-                formatter: (value, ctx) => value
+                display: false // Oculta os datalabels para este gráfico
             }
         }
     };
@@ -503,11 +499,7 @@ function renderActionTypeChart() {
         },
         plugins: {
             datalabels: {
-                anchor: 'end',
-                align: 'right',
-                offset: -4, // Ajusta para dentro da barra
-                color: '#fff', // Cor do texto do datalabel
-                formatter: (value, ctx) => value
+                display: false // Oculta os datalabels para este gráfico
             }
         }
     };
