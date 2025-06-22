@@ -86,9 +86,9 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 
 ### 7. Integração com Telegram
 
-*   ⏳ **Notificações diárias com prazos do dia:** Pendente.
-*   ⏳ **Notificação antecipada (ex: 5 dias antes do prazo fatal):** Pendente.
-*   ⏳ **Possibilidade de envio automático de movimentações de processo:** Pendente.
+*   ✅ **Notificações diárias com prazos do dia:** Implementado. Advogados recebem alertas para `delivery_deadline` ou `fatal_deadline` no dia corrente.
+*   ✅ **Notificação antecipada (ex: X dias antes do prazo fatal):** Implementado. Advogados recebem alertas para `fatal_deadline` com antecedência configurável via `.env` (`TELEGRAM_ADVANCE_NOTIFICATION_DAYS`).
+*   ⏳ **Possibilidade de envio automático de movimentações de processo:** Pendente (Considerado funcionalidade extra/futura).
 
 ### 8. Automação com IA (mínimo viável)
 

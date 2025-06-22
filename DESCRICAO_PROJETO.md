@@ -100,8 +100,8 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Tipos de Notificação:**
     *   Prazos do dia (para `delivery_deadline` ou `fatal_deadline` no dia corrente).
     *   Prazos próximos (antecedência de X dias para `fatal_deadline`).
-*   **Implementação:** Configurar bot no Telegram, armazenar token, desenvolver lógica no backend (provavelmente tarefas agendadas) para envio.
-*   **Status Atual:** A ser desenvolvido. Campo `telegram_id` existe no modelo de Advogado.
+*   **Implementação:** Bot do Telegram configurado (`telegram_bot.py`) para interagir com a API do Telegram. Lógica de notificações para prazos do dia e prazos futuros implementada em `core/notifications.py`. As notificações são agendadas e disparadas automaticamente pela aplicação FastAPI usando `APScheduler` em background. As variáveis de ambiente `TELEGRAM_BOT_TOKEN` (para o token do bot) e `TELEGRAM_ADVANCE_NOTIFICATION_DAYS` (para configurar a antecedência das notificações de prazos fatais) são usadas para a configuração. O campo `telegram_id` no modelo de Advogado (que deve ser o Chat ID numérico do Telegram do advogado) é usado para direcionar as mensagens.
+*   **Status Atual:** Implementado (Backend, lógica de agendamento e envio de notificações). Testes de envio real dependem da correta configuração das variáveis de ambiente e do `telegram_id` dos advogados.
 
 ### 7. Automação Mínima com Inteligência Artificial (IA) - Uma Funcionalidade Obrigatória
 

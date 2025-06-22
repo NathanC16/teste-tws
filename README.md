@@ -20,6 +20,7 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
     *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos possui **barra de scroll vertical** e **cabeçalho fixo (sticky)** para melhor navegação.
     *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels). Gráficos de barras no dashboard agora são **horizontais** para melhor visualização.
     *   Requer login para acesso.
+*   **Notificações Automáticas via Telegram:** Alertas sobre prazos do dia e prazos fatais futuros são enviados automaticamente aos advogados responsáveis, utilizando seus IDs do Telegram cadastrados. A frequência e antecedência são configuráveis.
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
 *   **Preparação para Análise de IA:** Adição do campo `data_conclusao_real` nos processos, que é populado com dados sintéticos, visando futuras análises e previsões.
 
@@ -34,6 +35,8 @@ Para uma lista detalhada de todas as funcionalidades e seu status de implementa�
     *   PyMySQL: Driver Python puro para MySQL.
     *   Uvicorn: Servidor ASGI para FastAPI.
     *   Pydantic: Para validação de dados.
+    *   APScheduler: Para agendamento de tarefas em background (notificações).
+    *   python-telegram-bot: Para integração com a API do Telegram.
 *   **Banco de Dados:**
     *   MySQL: Banco de dados padrão da aplicação (requer configuração via arquivo `.env` e driver `PyMySQL`).
     *   SQLite: Pode ser usado como alternativa para desenvolvimento local rápido (requer modificação manual em `database.py` e instalação do driver apropriado se não for o `sqlite3` embutido).
@@ -185,7 +188,12 @@ Com o MySQL Server instalado e configurado conforme o guia acima, siga os próxi
     DATABASE_URL="mysql+pymysql://myuser:mypassword@localhost:3306/mydatabase"
     ```
     A aplicação irá falhar ao iniciar se esta variável não estiver corretamente configurada.
-    O arquivo `.env.example` (e consequentemente o seu `.env`) também contém placeholders para `TELEGRAM_BOT_TOKEN` e `TELEGRAM_ADVANCE_NOTIFICATION_DAYS`. Estes devem ser configurados para habilitar a funcionalidade de notificações via Telegram, uma vez que ela seja completamente implementada.
+    O arquivo `.env.example` (e consequentemente o seu `.env`) também contém as seguintes variáveis para a funcionalidade de notificações via Telegram:
+    *   `TELEGRAM_BOT_TOKEN`: Token do seu bot do Telegram. Essencial para as notificações funcionarem.
+    *   `TELEGRAM_ADVANCE_NOTIFICATION_DAYS`: Número de dias de antecedência para enviar alertas sobre prazos fatais futuros (padrão é 5 se não especificado).
+    *   `TELEGRAM_TEST_CHAT_ID`: ID numérico do chat do Telegram para onde o script `teste_telegram_notifications.py` enviará mensagens de teste. Este ID pode ser obtido, por exemplo, conversando com o `@userinfobot` no Telegram.
+
+    Os advogados devem ter seus IDs numéricos do Telegram (Chat IDs) cadastrados no campo "ID do Telegram" (na interface de gerenciamento de advogados) para receberem as notificações.
 
 3.  **Criação das Tabelas:**
     As tabelas do banco de dados são criadas automaticamente pela aplicação na primeira vez que ela é iniciada, com base nos modelos definidos em `models/`.
@@ -340,8 +348,7 @@ Para referência sobre o histórico de commits e a tradução de prefixos de men
 ## Próximos Passos (Visão Geral da Versão Estável)
 
 Consulte o `DESCRICAO_PROJETO.md` para o detalhamento completo. As próximas grandes funcionalidades incluem:
-*   Integração com o Telegram para notificações (configuração base realizada, funcionalidade de envio pendente).
 *   Implementação da funcionalidade de Inteligência Artificial obrigatória.
-*   (Revisar `DESCRICAO_PROJETO.md` e `FUNCIONALIDADES_PROJETO.md` para outras funcionalidades pendentes da versão estável)
+*   (Revisar `DESCRICAO_PROJETO.md` e `FUNCIONALIDADES_PROJETO.md` para outras funcionalidades pendentes da versão estável, como "Possibilidade de envio automático de movimentações de processo" via Telegram, que é uma extensão da funcionalidade de notificação já implementada).
 
 ```
