@@ -73,7 +73,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 
 *   ✅ **Visão Geral com Cards de Resumo:** Exibição de totais (Processos Ativos, Prazos Fatais Próximos, Total de Advogados, Total de Clientes).
 *   ✅ **Alertas de Prazos Próximos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias.
-*   ✅ **Tabela de Processos Detalhada:** Listagem de processos com informações chave, incluindo pesquisa local na tabela para filtrar os dados exibidos. Adicionada **barra de scroll vertical** à tabela para melhor navegação com muitos registros.
+*   ✅ **Tabela de Processos Detalhada:** Listagem de processos com informações chave, incluindo pesquisa local na tabela para filtrar os dados exibidos. Adicionada **barra de scroll vertical** à tabela e **cabeçalho fixo (sticky)** para melhor navegação com muitos registros.
 *   ✅ **Filtros de Processos (via API):** Permite filtrar a lista de processos exibida na tabela por Status, Advogado e Cliente.
 *   ✅ **Filtro por intervalo de Prazo Fatal:** Permite filtrar processos no dashboard especificando um período "De" e "Até" para o Prazo Fatal (campos de texto com formato "dd/mm/aaaa" e validação no cliente).
 *   ✅ **Gráficos de Acompanhamento:**

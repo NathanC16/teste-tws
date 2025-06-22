@@ -17,7 +17,7 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
 *   **Dashboard Interativo (`dashboard.html`):** Um painel de controle visual para acompanhamento gerencial, incluindo:
     *   Cards de resumo com indicadores chave.
     *   Alertas de prazos importantes.
-    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos agora possui **barra de scroll vertical** para melhor navegação.
+    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos possui **barra de scroll vertical** e **cabeçalho fixo (sticky)** para melhor navegação.
     *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels). Gráficos de barras no dashboard agora são **horizontais** para melhor visualização.
     *   Requer login para acesso.
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
