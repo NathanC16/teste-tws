@@ -77,7 +77,7 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   **Cards de Resumo:** Exibição de totais (Processos Ativos, Prazos Fatais Próximos, Total de Advogados, Total de Clientes).
     *   **Alertas de Prazos:** Listagem destacada de processos com prazos fatais nos próximos 7 dias, com indicação visual de urgência.
     *   **Filtros de Processos:** Permite filtrar a lista de processos exibida na tabela por Status, Advogado, Cliente, e **intervalo de Prazo Fatal** (campos de texto "dd/mm/aaaa" com validação no cliente), consultando a API.
-    *   **Tabela de Processos:** Listagem dos processos com informações chave. Inclui campo de **pesquisa local** para filtrar dinamicamente os dados já carregados na tabela. A tabela agora possui uma **barra de scroll vertical** quando o conteúdo excede uma altura máxima, melhorando a usabilidade.
+    *   **Tabela de Processos:** Listagem dos processos com informações chave. Inclui campo de **pesquisa local** para filtrar dinamicamente os dados já carregados na tabela. A tabela possui uma **barra de scroll vertical** quando o conteúdo excede uma altura máxima, e o **cabeçalho da tabela permanece fixo (sticky)** durante a rolagem, melhorando a usabilidade.
     *   **Gráficos para Acompanhamento:**
         *   Processos por Status (Gráfico de Pizza).
         *   Processos por Advogado (Gráfico de Barras **Horizontais**).
