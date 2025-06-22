@@ -47,13 +47,20 @@ class LawyerBase(BaseModel):
     @classmethod
     def validate_telegram_id(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
+            return None # Retorna None explicitamente se o valor for None
+
+        # Verifica se é um ID numérico (Chat ID)
+        if re.match(r"^-?\d+$", value): # Permite IDs negativos para grupos/canais e positivos para usuários
             return value
-        if not re.match(r"^@[a-zA-Z0-9_]{3,31}$", value): # Usernames de 3 a 31 caracteres após @
-            raise ValueError(
-                "ID do Telegram inválido. Deve começar com '@' seguido por 3 a 31 "
-                "caracteres alfanuméricos ou underscores (ex: @usuario123)."
-            )
-        return value
+
+        # Verifica se é um username no formato @username
+        if re.match(r"^@[a-zA-Z0-9_]{3,31}$", value):
+            return value
+
+        raise ValueError(
+            "ID do Telegram inválido. Deve ser um ID numérico ou um username no formato '@usuario' "
+            "(3 a 31 caracteres alfanuméricos ou underscores)."
+        )
 
     @field_validator('oab')
     @classmethod

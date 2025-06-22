@@ -42,7 +42,7 @@ except ValueError:
     APP_TELEGRAM_ADVANCE_NOTIFICATION_DAYS = 5
 
 # Constantes para dados de teste
-TEST_LAWYER_OAB = "TEST001TG"
+TEST_LAWYER_OAB = "TEST01SP" # OAB de teste corrigida para formato válido
 TEST_LAWYER_EMAIL = "telegram_tester@example.com"
 TEST_LAWYER_NAME = "Advogado Teste Telegram"
 TEST_CLIENT_NAME = "Cliente Teste Notificações" # Nome mais genérico
