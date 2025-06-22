@@ -43,7 +43,7 @@ except ValueError:
 TEST_LAWYER_OAB = "TEST001TG"
 TEST_LAWYER_EMAIL = "telegram_tester@example.com"
 TEST_LAWYER_NAME = "Advogado Teste Telegram"
-TEST_CLIENT_NAME = "Cliente Teste Notificações Telegram"
+TEST_CLIENT_NAME = "Cliente Teste Notificações" # Nome mais genérico
 
 def verify_env_vars():
     """Verifica se as variáveis de ambiente críticas estão configuradas."""
@@ -95,7 +95,7 @@ def setup_test_data(db: Session):
     client = db.query(ClientDB).filter(ClientDB.name == TEST_CLIENT_NAME).first()
     if not client:
         logger.info(f"Criando cliente de teste: {TEST_CLIENT_NAME}")
-        client = ClientDB(name=TEST_CLIENT_NAME, area_of_expertise=AreaOfExpertiseEnum.REGULATORIO_ENERGIA.value)
+        client = ClientDB(name=TEST_CLIENT_NAME, area_of_expertise=AreaOfExpertiseEnum.REGULATORIO.value) # Corrigido aqui
         db.add(client)
         try:
             db.commit()
