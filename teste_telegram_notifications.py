@@ -7,13 +7,15 @@ from sqlalchemy.orm import Session
 # Carregar variáveis de ambiente do .env ANTES de importar outros módulos do projeto
 load_dotenv()
 
+import asyncio # Import asyncio
 # Importações do projeto
 from database import SessionLocal, engine, Base
 from models.lawyer import LawyerDB
 from models.client import ClientDB, AreaOfExpertiseEnum
 from models.legal_process import LegalProcessDB
 from core.security import get_password_hash # Para hashear senhas de teste
-from core.notifications import check_and_notify_daily_deadlines, check_and_notify_upcoming_fatal_deadlines
+# Importar as versões async das funções de notificação
+from core.notifications import check_and_notify_daily_deadlines_async, check_and_notify_upcoming_fatal_deadlines_async
 from telegram_bot import TELEGRAM_BOT_TOKEN # Importar SOMENTE TELEGRAM_BOT_TOKEN
 
 # Configuração básica de logging para o script de teste
@@ -170,16 +172,17 @@ def setup_test_data(db: Session):
         raise
     logger.info("Configuração de dados de teste concluída.")
 
-def run_notification_checks():
-    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS DO DIA ==\n" + "="*60)
-    check_and_notify_daily_deadlines()
-    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS DO DIA CONCLUÍDA ==\n" + "="*60)
+
+async def run_notification_checks_async(): # Renomeada para async e chamadas atualizadas
+    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) ==\n" + "="*60)
+    await check_and_notify_daily_deadlines_async()
+    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) CONCLUÍDA ==\n" + "="*60)
 
     logger.info("\n\n") # Espaçamento
 
-    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS ==\n" + "="*60)
-    check_and_notify_upcoming_fatal_deadlines()
-    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS CONCLUÍDA ==\n" + "="*60)
+    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) ==\n" + "="*60)
+    await check_and_notify_upcoming_fatal_deadlines_async()
+    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) CONCLUÍDA ==\n" + "="*60)
 
 if __name__ == "__main__":
     logger.info("Iniciando script de teste de notificações do Telegram...")
@@ -194,7 +197,7 @@ if __name__ == "__main__":
     try:
         db = SessionLocal()
         setup_test_data(db)
-        run_notification_checks()
+        asyncio.run(run_notification_checks_async()) # Executar a função async com asyncio.run()
         logger.info("\nScript de teste de notificações concluído.")
         logger.info("Verifique os logs acima e seu chat do Telegram (se configurado para envio real).")
         logger.info("Os dados de teste permanecem no banco de dados para inspeção.")

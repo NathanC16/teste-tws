@@ -1,9 +1,10 @@
 import logging
+import asyncio # Import asyncio
 from datetime import date, timedelta
 from sqlalchemy.orm import Session, joinedload
 from models.legal_process import LegalProcessDB
 from models.lawyer import LawyerDB
-from telegram_bot import send_telegram_message, TELEGRAM_ADVANCE_NOTIFICATION_DAYS
+from telegram_bot import send_telegram_message, TELEGRAM_ADVANCE_NOTIFICATION_DAYS # send_telegram_message é agora async
 from database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -74,16 +75,75 @@ def check_and_notify_daily_deadlines():
     finally:
         next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado
 
-def check_and_notify_upcoming_fatal_deadlines():
+
+async def check_and_notify_daily_deadlines_async(): # Renomeada para async
     """
-    Checks for processes with fatal deadlines approaching and notifies the responsible lawyer.
+    Checks for processes with deadlines today and notifies the responsible lawyer. (Async version)
+    """
+    db_gen = get_db_session()
+    db: Session = next(db_gen)
+    today = date.today()
+
+    logger.info(f"[ASYNC] Verificando prazos do dia: {today.strftime('%d/%m/%Y')}")
+
+    try:
+        processes_due_today = db.query(LegalProcessDB).options(
+            joinedload(LegalProcessDB.lawyer),
+            joinedload(LegalProcessDB.client)
+        ).filter(
+            LegalProcessDB.status == 'ativo',
+            (LegalProcessDB.delivery_deadline == today) | (LegalProcessDB.fatal_deadline == today)
+        ).all()
+
+        if not processes_due_today:
+            logger.info("[ASYNC] Nenhum processo com prazo para hoje.")
+            return
+
+        for process in processes_due_today:
+            lawyer = process.lawyer
+            client_name = process.client.name if process.client else "Cliente não especificado"
+
+            if lawyer and lawyer.telegram_id:
+                deadline_type = []
+                if process.delivery_deadline == today:
+                    deadline_type.append("Entrega")
+                if process.fatal_deadline == today:
+                    deadline_type.append("Fatal")
+
+                deadline_type_str = " e ".join(deadline_type)
+
+                message = (
+                    f"📢 ALERTA DE PRAZO PARA HOJE ({today.strftime('%d/%m/%Y')})!\n\n"
+                    f"📄 Nº Processo: {process.process_number}\n"
+                    f"👤 Cliente: {client_name}\n"
+                    f"⚖️ Tipo de Prazo: {deadline_type_str}\n"
+                    f"📝 Ação: {process.action_type or 'Não especificada'}"
+                )
+
+                logger.info(f"[ASYNC] Preparando para enviar notificação para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
+                await send_telegram_message(lawyer.telegram_id, message) # Await a chamada async
+
+            elif not lawyer:
+                logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) não possui advogado responsável cadastrado.")
+            elif not lawyer.telegram_id:
+                logger.info(f"[ASYNC] Advogado {lawyer.name} (ID: {lawyer.id}) do processo {process.process_number} não possui Telegram ID cadastrado.")
+
+    except Exception as e:
+        logger.error(f"[ASYNC] Erro ao verificar prazos do dia: {e}", exc_info=True)
+    finally:
+        next(db_gen, None)
+
+
+async def check_and_notify_upcoming_fatal_deadlines_async(): # Renomeada para async
+    """
+    Checks for processes with fatal deadlines approaching and notifies the responsible lawyer. (Async version)
     """
     db_gen = get_db_session()
     db: Session = next(db_gen)
     today = date.today()
     limit_date = today + timedelta(days=TELEGRAM_ADVANCE_NOTIFICATION_DAYS)
 
-    logger.info(f"Verificando prazos fatais futuros entre {today.strftime('%d/%m/%Y')} e {limit_date.strftime('%d/%m/%Y')} ({TELEGRAM_ADVANCE_NOTIFICATION_DAYS} dias de antecedência).")
+    logger.info(f"[ASYNC] Verificando prazos fatais futuros entre {today.strftime('%d/%m/%Y')} e {limit_date.strftime('%d/%m/%Y')} ({TELEGRAM_ADVANCE_NOTIFICATION_DAYS} dias de antecedência).")
 
     try:
         upcoming_processes = db.query(LegalProcessDB).options(
@@ -112,12 +172,11 @@ def check_and_notify_upcoming_fatal_deadlines():
                     f"📝 Ação: {process.action_type or 'Não especificada'}"
                 )
 
-                logger.info(f"Preparando para enviar notificação de prazo fatal futuro para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                send_telegram_message(lawyer.telegram_id, message)
-                # logger.info(f"SIMULAÇÃO DE NOTIFICAÇÃO: Para {lawyer.name} ({lawyer.telegram_id}) - Processo {process.process_number} - Prazo fatal em {process.fatal_deadline.strftime('%d/%m/%Y')}.")
+                logger.info(f"[ASYNC] Preparando para enviar notificação de prazo fatal futuro para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
+                await send_telegram_message(lawyer.telegram_id, message) # Await a chamada async
 
             elif not lawyer:
-                logger.warning(f"Processo {process.process_number} (ID: {process.id}) com prazo fatal futuro não possui advogado responsável.")
+                logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) com prazo fatal futuro não possui advogado responsável.")
             elif not lawyer.telegram_id:
                 logger.info(f"Advogado {lawyer.name} (ID: {lawyer.id}) do processo {process.process_number} (prazo fatal futuro) não possui Telegram ID.")
 
