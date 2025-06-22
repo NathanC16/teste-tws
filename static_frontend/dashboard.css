@@ -34,6 +34,9 @@ body {
     background-color: #343a40; /* Cor escura padrão do Bootstrap */
     color: #fff;
     border-color: #454d55; /* Um pouco mais claro que o fundo para a borda */
+    position: sticky;
+    top: 0;
+    z-index: 10; /* Garante que o cabeçalho fique sobre o conteúdo da tabela */
 }
 
 /* Alertas de Prazos */
