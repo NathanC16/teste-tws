@@ -152,6 +152,8 @@ def shutdown_event():
 
 # Include routers
 app.include_router(auth_router.router)
+from routers import admin as admin_router # Importar o novo router admin
+app.include_router(admin_router.router) # Incluir o router admin
 
 # Montar diretório de arquivos estáticos
 app.mount("/frontend", StaticFiles(directory="static_frontend"), name="frontend")
