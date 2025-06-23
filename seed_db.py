@@ -137,43 +137,77 @@ def create_synthetic_data(db: Session):
     # Ajustar NUM_LAWYERS para não contar o admin e o test_user se eles já foram adicionados
     # e queremos exatamente NUM_LAWYERS advogados *aleatórios* além desses.
     # Se NUM_LAWYERS é o total desejado incluindo admin e test_user, a lógica precisa de ajuste.
-    # Por simplicidade, vamos assumir que NUM_LAWYERS é para os *adicionais* aleatórios.
+    # Por simplicidade, vamos assumir que NUM_LAWYERS é para os *adicionais* aleatórios,
+    # além do admin e do 'advogado' de teste.
 
-    num_existing_special_lawyers = 0
-    if admin_user: num_existing_special_lawyers += 1
-    if test_user_lawyer and test_user_lawyer.oab != ADMIN_OAB : num_existing_special_lawyers +=1 # Evitar contar duas vezes se admin for o test_user
+    # Lista para armazenar nicknames já usados neste batch do seed para evitar colisões locais.
+    # Não previne colisão com usernames já existentes no DB se o seed for rodado múltiplas vezes
+    # sem limpar o DB, mas a constraint unique no DB pegaria isso.
+    used_nicknames_in_batch = set()
+    if admin_user and admin_user.username:
+        used_nicknames_in_batch.add(admin_user.username.lower())
+    if test_user_lawyer and test_user_lawyer.username:
+        used_nicknames_in_batch.add(test_user_lawyer.username.lower())
 
-    actual_num_random_lawyers_to_create = NUM_LAWYERS
-    # Se NUM_LAWYERS for o total, então: actual_num_random_lawyers_to_create = NUM_LAWYERS - num_existing_special_lawyers
-    # Mas a descrição original do NUM_LAWYERS parece ser para os aleatórios.
+    print(f"Gerando {NUM_LAWYERS} advogados aleatórios adicionais...")
+    default_lawyer_password = "advogado" # Senha padrão para advogados gerados
+    hashed_default_password = get_password_hash(default_lawyer_password)
 
-    print(f"Gerando {actual_num_random_lawyers_to_create} advogados aleatórios...")
     for i in range(NUM_LAWYERS):
-        ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
-        # Gerar uma OAB que não seja ADMIN
-        while True:
-            oab_number_part = str(random.randint(1, 999999)).zfill(random.randint(3,6))
-            oab_uf_part = random.choice(ufs)
-            generated_oab = f"{oab_number_part}{oab_uf_part}"
-            if generated_oab.upper() != ADMIN_OAB: # Verificar apenas contra ADMIN_OAB
+        lawyer_name = fake.name()
+
+        # Gerar Nickname
+        base_nickname = "".join(lawyer_name.lower().split()) # Nome minúsculo sem espaços
+        if len(base_nickname) > 18: # Limitar tamanho base para dar espaço a sufixos
+            base_nickname = base_nickname[:18]
+
+        nickname_candidate = base_nickname
+        suffix_counter = 1
+        while nickname_candidate in used_nicknames_in_batch or len(nickname_candidate) < 3:
+            if len(base_nickname) > 18 - len(str(suffix_counter)): # Evitar que fique muito longo
+                 base_nickname = base_nickname[:18 - len(str(suffix_counter))]
+            nickname_candidate = f"{base_nickname}{suffix_counter}"
+            suffix_counter += 1
+            if suffix_counter > 100: # Evitar loop infinito em caso extremo
+                nickname_candidate = fake.unique.user_name()[:20] # Fallback para user_name do Faker
+                if len(nickname_candidate) < 3: nickname_candidate = nickname_candidate + "123" # garantir tamanho minimo
+                nickname_candidate = nickname_candidate[:20] # Truncar novamente
                 break
 
-        # Gerar um email único que não seja dos usuários padrão
-        generated_email = fake.unique.email()
-        while generated_email == ADMIN_EMAIL: # Verificar apenas contra ADMIN_EMAIL
-            generated_email = fake.unique.email()
+        used_nicknames_in_batch.add(nickname_candidate)
 
-        # Gerar senha aleatória para advogados aleatórios
-        random_password = fake.password(length=12)
-        hashed_random_password = get_password_hash(random_password)
+        # Gerar OAB única (que não seja do admin ou do test_user)
+        generated_oab = ""
+        while True:
+            oab_number_part = str(random.randint(1000, 999999)).zfill(6) # 6 dígitos para OAB
+            oab_uf_part = random.choice(['SP', 'RJ', 'MG', 'BA', 'RS', 'PR', 'SC', 'GO', 'ES', 'PE']) # UFs comuns
+            generated_oab = f"{oab_number_part}{oab_uf_part}"
+            if generated_oab.upper() != ADMIN_OAB and generated_oab.upper() != TEST_USER_OAB:
+                # Checar se já existe no DB (opcional, mas bom para robustez se o seed rodar várias vezes)
+                # existing_oab_in_db = db.query(LawyerDB).filter(LawyerDB.oab == generated_oab).first()
+                # if not existing_oab_in_db:
+                # break
+                break # Simplificado por agora, unique constraint no DB pegará
+
+        # Gerar Email único
+        generated_email = ""
+        email_attempts = 0
+        while email_attempts < 100: # Evitar loop infinito
+            generated_email = fake.unique.email()
+            if generated_email != ADMIN_EMAIL and generated_email != TEST_USER_EMAIL:
+                break
+            email_attempts +=1
+        if generated_email == ADMIN_EMAIL or generated_email == TEST_USER_EMAIL : # Fallback se não conseguir único
+             generated_email = f"lawyer{i}_{fake.lexify(text='????')}@example.com"
+
 
         lawyer_data = {
-            "name": fake.name(),
+            "name": lawyer_name,
+            "username": nickname_candidate,
             "oab": generated_oab,
             "email": generated_email,
-            "telegram_id": None, # Garantir que IDs de Telegram falsos não sejam gerados por padrão
-            "hashed_password": hashed_random_password
-            # campo is_admin removido
+            "telegram_id": None,
+            "hashed_password": hashed_default_password
         }
 
         temp_lawyer = LawyerDB(**lawyer_data)

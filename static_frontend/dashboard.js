@@ -540,22 +540,22 @@ async function fetchCurrentUserForDashboard() {
             console.log('[Dashboard Debug] Usuário atual do dashboard:', dashboardCurrentUser);
 
             // Mostrar link "Minhas Configurações" para todos os usuários logados
-            const userSettingsNavItemDashboard = document.getElementById('user-settings-nav-item-dashboard'); // ID do HTML atualizado
-            if (userSettingsNavItemDashboard) {
-                if (dashboardCurrentUser) { // Se existe um usuário logado
-                    userSettingsNavItemDashboard.style.display = 'list-item';
-                    // Ajustar o texto e href do link
-                    const linkElement = userSettingsNavItemDashboard.querySelector('a');
-                    if (linkElement) {
+            const userSettingsNavItem = document.getElementById('user-settings-nav-item-dashboard');
+            if (userSettingsNavItem) {
+                if (dashboardCurrentUser) {
+                    userSettingsNavItem.style.display = 'list-item';
+                    const linkElement = userSettingsNavItem.querySelector('a');
+                    if (linkElement) { // Garantir que o link interno exista
                         linkElement.textContent = 'Minhas Configurações';
                         linkElement.href = '/frontend/user_settings.html';
                     }
-                    console.log("[Dashboard.js] Link 'Minhas Configurações' VISÍVEL para dashboard.html.");
+                    // console.log("[Dashboard.js] Link 'Minhas Configurações' VISÍVEL para dashboard.html."); // Log já existente ou similar
                 } else {
-                    userSettingsNavItemDashboard.style.display = 'none';
+                    userSettingsNavItem.style.display = 'none';
                 }
             } else {
-                console.warn("[Dashboard.js] user-settings-nav-item-dashboard não encontrado no DOM de dashboard.html. Verifique o HTML.");
+                // Este log já existe e é útil:
+                // console.warn("[Dashboard.js] user-settings-nav-item-dashboard não encontrado no DOM de dashboard.html. Verifique o HTML.");
             }
 
             return true;

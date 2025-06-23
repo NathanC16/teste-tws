@@ -15,7 +15,7 @@ class LawyerDB(Base):
     name = Column(String(100), index=True)  # Comprimento 100
     oab = Column(String(20), unique=True, index=True) # Comprimento 20
     email = Column(String(100), unique=True, index=True) # Comprimento 100
-    username = Column(String(50), unique=True, index=True, nullable=True) # Campo username adicionado na task anterior
+    username = Column(String(50), unique=True, index=True, nullable=False) # Nickname, agora obrigatório
     telegram_id = Column(String(50), nullable=True) # Comprimento 50
     hashed_password = Column(String(255), nullable=False)
     # Coluna is_admin removida
@@ -27,19 +27,20 @@ class LawyerBase(BaseModel):
     name: str
     oab: str
     email: EmailStr
-    username: Optional[str] = None # Adicionado campo username
+    username: str # Nickname, agora obrigatório
     telegram_id: Optional[str] = None
 
-    # Validador para o campo username
     @field_validator('username')
     @classmethod
-    def validate_username(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
+    def validate_username(cls, value: str) -> str: # value agora é str, não Optional[str]
+        if not value: # Checagem adicional para string vazia, embora nullable=False no DB deva pegar
+            raise ValueError("Nickname (username) não pode ser vazio.")
         # Verifica se o username é alfanumérico e tem entre 3 e 20 caracteres
+        # Mantendo o regex atual que permite maiúsculas/minúsculas e números.
+        # Para forçar minúsculas, o frontend ou a lógica de geração de nickname se encarregaria disso.
         if not re.match(r"^[a-zA-Z0-9]{3,20}$", value):
             raise ValueError(
-                "Username inválido. Deve ser alfanumérico e ter entre 3 e 20 caracteres."
+                "Nickname inválido. Deve ser alfanumérico (letras e números), sem espaços, e ter entre 3 e 20 caracteres."
             )
         return value
 
