@@ -500,6 +500,8 @@ def get_legal_processes(
     db: Session = Depends(get_db),
     current_user: lawyer_model.LawyerDB = Depends(get_current_user) # Alterado para lawyer_model.LawyerDB
 ):
+    from core.analytics import calculate_lawyer_delay_statistics, get_process_delay_risk
+
     query = db.query(process_model.LegalProcessDB)
 
     # Se o usuário não for admin, filtre sempre pelos seus próprios processos
@@ -521,7 +523,33 @@ def get_legal_processes(
         query = query.filter(process_model.LegalProcessDB.fatal_deadline >= fatal_deadline_de)
     if fatal_deadline_ate:
         query = query.filter(process_model.LegalProcessDB.fatal_deadline <= fatal_deadline_ate)
-    return query.all()
+
+    processes_db = query.all()
+
+    # Calcular estatísticas de atraso dos advogados
+    # Idealmente, isso poderia ser cacheado ou calculado menos frequentemente se for custoso
+    lawyer_delay_stats = calculate_lawyer_delay_statistics(db)
+
+    # Enriquecer cada processo com o risco de atraso
+    processes_with_risk = []
+    for process_db_item in processes_db:
+        # Converter o objeto SQLAlchemy para o modelo Pydantic LegalProcess
+        # para que possamos adicionar o campo delay_risk.
+        # O FastAPI faria isso automaticamente na serialização da resposta,
+        # mas como precisamos modificar o objeto antes, fazemos manualmente.
+        process_pydantic = LegalProcess.model_validate(process_db_item) # Usar model_validate em Pydantic v2
+
+        lawyer_stats_for_process = lawyer_delay_stats.get(process_db_item.lawyer_id)
+
+        if lawyer_stats_for_process:
+            # A função get_process_delay_risk em analytics.py espera lawyer_id e o dict de stats completo
+            process_pydantic.delay_risk = get_process_delay_risk(process_db_item.lawyer_id, lawyer_delay_stats)
+        else:
+            process_pydantic.delay_risk = "N/A" # Advogado não encontrado no dict de estatísticas (improvável se stats são de todos os advogados)
+
+        processes_with_risk.append(process_pydantic)
+
+    return processes_with_risk
 
 @app.get("/processes/{process_id}", response_model=LegalProcess)
 def get_legal_process(process_id: int, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):

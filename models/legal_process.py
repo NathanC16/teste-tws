@@ -60,6 +60,7 @@ class LegalProcessCreate(LegalProcessBase):
 
 class LegalProcess(LegalProcessBase):
     id: int
+    delay_risk: Optional[str] = None # Novo campo para risco de atraso IA
 
     class Config:
         from_attributes = True # Alterado de orm_mode = True para Pydantic v2
