@@ -523,16 +523,71 @@ function renderCharts() { // Chamada principal modificada
 }
 
 // --- Inicialização ---
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Dashboard Debug] DOMContentLoaded - Verificando token...');
-    if (!getToken()) {
-        console.log('[Dashboard Debug] Nenhum token encontrado. Redirecionando para login.html.');
-        window.location.href = 'login.html';
-        return; // Impede a execução de fetchAllData se não houver token
+// Variável global para armazenar currentUser no dashboard
+let dashboardCurrentUser = null;
+
+async function fetchCurrentUserForDashboard() {
+    const token = getToken();
+    if (!token) {
+        console.log('[Dashboard Debug] Nenhum token, redirecionando para login.');
+        logout(); // Usa a função de logout que redireciona
+        return false;
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/users/me`, { headers: getAuthHeaders() });
+        if (response.ok) {
+            dashboardCurrentUser = await response.json();
+            console.log('[Dashboard Debug] Usuário atual do dashboard:', dashboardCurrentUser);
+
+            // Adicionar link de Configurações do Admin se for o admin
+            if (dashboardCurrentUser && (dashboardCurrentUser.oab === "00001SP" || dashboardCurrentUser.username === "admin")) {
+                const navbarNav = document.querySelector('#navbarNav .navbar-nav');
+                // Tenta encontrar o botão de logout pela ID específica do dashboard
+                const logoutButtonLi = document.getElementById('logout-button-dashboard')?.closest('li.nav-item');
+
+                if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-dashboard')) {
+                    const adminSettingsLi = document.createElement('li');
+                    adminSettingsLi.className = 'nav-item';
+                    adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-dashboard" href="/frontend/admin_settings.html">Config. Admin</a>`;
+
+                    // Insere antes do botão de logout
+                    navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
+                    console.log('[Dashboard Debug] Link Config. Admin adicionado à navbar.');
+                } else {
+                    if (!navbarNav) console.warn('[Dashboard Debug] Navbar #navbarNav não encontrada.');
+                    if (!logoutButtonLi) console.warn('[Dashboard Debug] Botão de logout (logout-button-dashboard) ou seu <li> pai não encontrado.');
+                    if (document.getElementById('admin-settings-nav-link-dashboard')) console.log('[Dashboard Debug] Link Config. Admin já existe.');
+                }
+            }
+            return true;
+        } else {
+            console.error('[Dashboard Debug] Falha ao validar token ou buscar dados do usuário:', response.status);
+            logout();
+            return false;
+        }
+    } catch (error) {
+        console.error('[Dashboard Debug] Erro na requisição /users/me para dashboard:', error);
+        logout();
+        return false;
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', async () => { // Tornar async para aguardar fetchCurrentUserForDashboard
+    console.log('[Dashboard Debug] DOMContentLoaded - Verificando token e usuário...');
+
+    const userIsValid = await fetchCurrentUserForDashboard();
+    if (!userIsValid) {
+        // Se o usuário não for válido (ou seja, fetchCurrentUserForDashboard já redirecionou para login),
+        // não prosseguir com o restante da inicialização do dashboard.
+        console.log('[Dashboard Debug] Usuário inválido ou não autenticado. Interrompendo inicialização do dashboard.');
+        return;
     }
 
-    console.log('[Dashboard Debug] Token encontrado. Chamando fetchAllData...');
-    fetchAllData();
+    // O restante da lógica de inicialização do dashboard (fetchAllData, listeners, etc.)
+    // só deve prosseguir se o usuário for válido.
+    console.log('[Dashboard Debug] Usuário válido. Prosseguindo com fetchAllData e configuração dos listeners...');
+    fetchAllData(); // Agora só é chamado se o usuário for válido
 
     if(applyFiltersBtn) {
         applyFiltersBtn.addEventListener('click', () => {

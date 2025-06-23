@@ -127,6 +127,23 @@ async function fetchAndSetCurrentUser_forIndexPage() {
         if (response.ok) {
             currentUser = await response.json();
             updateUIForIndexPage(true);
+
+            // Adicionar link de Configurações do Admin se for o admin
+            if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
+                const navbarNav = document.querySelector('#navbarNav .navbar-nav');
+                const logoutButtonLi = document.getElementById('logout-button-index')?.closest('li.nav-item') ||
+                                     document.getElementById('logout-button')?.closest('li.nav-item');
+
+                if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-index')) {
+                    const adminSettingsLi = document.createElement('li');
+                    adminSettingsLi.className = 'nav-item';
+                    adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-index" href="/frontend/admin_settings.html">Config. Admin</a>`;
+
+                    // Insere antes do botão de logout
+                    navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
+                }
+            }
+
             // Fetch initial data for index.html
             await populateLawyerOptions();
             await populateClientOptions();
