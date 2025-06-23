@@ -235,6 +235,49 @@ async function fetchLawyers() {
     } catch (error) { console.error('Falha ao buscar advogados:', error); if(document.getElementById('lawyers-list')) document.getElementById('lawyers-list').innerHTML = '<p>Erro ao carregar.</p>'; }
 }
 
+// --- Lógica de Busca ao Vivo ---
+function setupLiveSearch(inputId, listSelector) {
+    const searchInput = document.getElementById(inputId);
+    if (!searchInput) {
+        // console.warn(`Elemento de busca não encontrado: ${inputId}`); // Logs removidos para produção
+        return;
+    }
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const items = document.querySelectorAll(listSelector);
+        items.forEach((item) => {
+            const itemText = item.textContent.toLowerCase();
+            const isMatch = itemText.includes(searchTerm);
+            if (isMatch) {
+                item.classList.remove('d-none');
+            } else {
+                item.classList.add('d-none');
+            }
+        });
+    });
+    searchInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchInput.blur();
+        }
+    });
+}
+
+// --- Lógica de Clique no Ícone de Busca ---
+function setupSearchIconClick(iconId, inputId) {
+    const iconElement = document.getElementById(iconId);
+    const inputElement = document.getElementById(inputId);
+    if (iconElement && inputElement) {
+        iconElement.addEventListener('click', function() {
+            inputElement.focus();
+        });
+    } else {
+        // if (!iconElement) console.warn(`Elemento do ícone de busca não encontrado: ${iconId}`); // Logs removidos
+        // if (!inputElement) console.warn(`Elemento de input de busca não encontrado: ${inputId}`);
+    }
+}
+
+
 // --- Lógica para Modal de Redefinir Senha (Admin) ---
 let lawyerIdToResetPassword = null;
 let adminResetPasswordModalInstance = null;
