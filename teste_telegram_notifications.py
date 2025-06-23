@@ -72,6 +72,7 @@ def setup_test_data(db: Session):
         logger.info(f"Criando advogado de teste: {TEST_LAWYER_NAME} (OAB: {TEST_LAWYER_OAB})")
         lawyer = LawyerDB(
             name=TEST_LAWYER_NAME,
+            username="testtelegramuser", # USERNAME ADICIONADO
             oab=TEST_LAWYER_OAB,
             email=TEST_LAWYER_EMAIL,
             telegram_id=APP_TELEGRAM_TEST_CHAT_ID, # Usa o valor lido do .env
@@ -79,10 +80,23 @@ def setup_test_data(db: Session):
         )
         db.add(lawyer)
     else:
-        logger.info(f"Advogado de teste {TEST_LAWYER_NAME} já existe. Atualizando telegram_id se necessário.")
+        logger.info(f"Advogado de teste {TEST_LAWYER_NAME} já existe. Verificando/Atualizando telegram_id e username.")
+        updated = False
         if lawyer.telegram_id != APP_TELEGRAM_TEST_CHAT_ID:
             lawyer.telegram_id = APP_TELEGRAM_TEST_CHAT_ID
             logger.info(f"Telegram ID do advogado de teste atualizado para: {APP_TELEGRAM_TEST_CHAT_ID}")
+            updated = True
+        if not lawyer.username: # Adiciona username se não existir
+            lawyer.username = "testtelegramuser"
+            logger.info(f"Username do advogado de teste definido para: testtelegramuser")
+            updated = True
+        elif lawyer.username != "testtelegramuser": # Corrige se o username existir mas for diferente
+            logger.warning(f"Advogado de teste encontrado com username '{lawyer.username}', atualizando para 'testtelegramuser'.")
+            lawyer.username = "testtelegramuser"
+            updated = True
+
+        # if updated: # Commitar apenas se houve alteração (opcional, db.commit() lidará bem de qualquer forma)
+        #     pass
 
     try:
         db.commit()
