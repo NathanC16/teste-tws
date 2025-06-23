@@ -220,9 +220,16 @@ async function fetchLawyers() {
         const lawyersListDiv = document.getElementById('lawyers-list');
         lawyersListDiv.innerHTML = '';
         lawyers.forEach(lawyer => {
-            // Não renderizar o usuário admin na lista de advogados
+            // Não renderizar o usuário admin na lista de advogados (ele não se gerencia por aqui)
             if (lawyer.oab === "00001SP" || lawyer.username === "admin") {
-                return; // Pula este advogado
+                return; // Pula o admin
+            }
+
+            const isAdmin = currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin");
+            let adminButtons = '';
+            if (isAdmin) {
+                // Botão de redefinir senha - apenas para admin e não para si mesmo
+                adminButtons += `<button class="btn btn-sm btn-outline-warning ms-2 btn-admin-reset-password" data-lawyer-id="${lawyer.id}" data-lawyer-name="${escapedName}" data-lawyer-oab="${escapedOab}">Redefinir Senha</button>`;
             }
 
             const li = document.createElement('li');
@@ -247,11 +254,95 @@ async function fetchLawyers() {
                 <div class="item-actions ms-3">
                     <button class="btn btn-sm btn-outline-primary btn-edit-lawyer" data-id="${lawyer.id}" data-name="${escapedName}" data-oab="${escapedOab}" data-email="${escapedEmail}" data-telegram="${escapedTelegramId}">Editar</button>
                     ${deleteButtonHtml}
+                    ${adminButtons} <!-- Adiciona o botão de redefinir senha aqui -->
                 </div>`;
             lawyersListDiv.appendChild(li);
         });
     } catch (error) { console.error('Falha ao buscar advogados:', error); if(document.getElementById('lawyers-list')) document.getElementById('lawyers-list').innerHTML = '<p>Erro ao carregar.</p>'; }
 }
+
+// --- Lógica para Modal de Redefinir Senha (Admin) ---
+let lawyerIdToResetPassword = null;
+let adminResetPasswordModalInstance = null;
+
+function initializeAdminResetPasswordModal() {
+    const modalElement = document.getElementById('adminResetPasswordModal');
+    if (modalElement) {
+        adminResetPasswordModalInstance = new bootstrap.Modal(modalElement);
+
+        const saveButton = document.getElementById('adminSaveNewPasswordBtn');
+        if (saveButton) {
+            saveButton.addEventListener('click', async () => {
+                const newPasswordEl = document.getElementById('admin-reset-new-password');
+                const confirmPasswordEl = document.getElementById('admin-reset-confirm-password');
+                const feedbackDiv = document.getElementById('adminResetPasswordFeedback');
+
+                clearFieldError('admin-reset-new-password'); // Limpa erros anteriores
+                clearFieldError('admin-reset-confirm-password');
+                if(feedbackDiv) feedbackDiv.textContent = ''; feedbackDiv.className = 'mt-2';
+
+                const newPassword = newPasswordEl.value;
+                const confirmPassword = confirmPasswordEl.value;
+
+                if (!newPassword || newPassword.length < 6) {
+                    showFieldError('admin-reset-new-password', 'Nova senha deve ter pelo menos 6 caracteres.');
+                    newPasswordEl.focus();
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showFieldError('admin-reset-confirm-password', 'As senhas não coincidem.');
+                    confirmPasswordEl.focus();
+                    return;
+                }
+
+                if (lawyerIdToResetPassword) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/admin/lawyers/${lawyerIdToResetPassword}/reset-password`, {
+                            method: 'POST',
+                            headers: getAuthHeaders(),
+                            body: JSON.stringify({ new_password: newPassword })
+                        });
+                        if (response.ok) {
+                            const result = await response.json();
+                            if(feedbackDiv) {
+                                feedbackDiv.textContent = result.message || "Senha redefinida com sucesso!";
+                                feedbackDiv.className = 'mt-2 alert alert-success';
+                            } else {
+                                alert(result.message || "Senha redefinida com sucesso!");
+                            }
+                            newPasswordEl.value = ''; // Limpa campos
+                            confirmPasswordEl.value = '';
+                            setTimeout(() => {
+                                if (adminResetPasswordModalInstance) adminResetPasswordModalInstance.hide();
+                                if(feedbackDiv) feedbackDiv.textContent = ''; feedbackDiv.className = 'mt-2';
+                            }, 3000);
+                        } else {
+                            const errorData = await response.json();
+                            const detail = errorData.detail || `Erro ${response.status} ao redefinir senha.`;
+                            if(feedbackDiv) {
+                                feedbackDiv.textContent = detail;
+                                feedbackDiv.className = 'mt-2 alert alert-danger';
+                            } else {
+                                alert(detail);
+                            }
+                            console.error("Erro ao redefinir senha:", errorData);
+                        }
+                    } catch (e) {
+                        console.error("Exceção ao redefinir senha:", e);
+                        if(feedbackDiv) {
+                            feedbackDiv.textContent = "Erro de comunicação ao redefinir senha.";
+                            feedbackDiv.className = 'mt-2 alert alert-danger';
+                        } else {
+                             alert("Erro de comunicação ao redefinir senha.");
+                        }
+                    }
+                }
+            });
+        }
+    }
+}
+
+
 async function loadAreasOfExpertise() {
     const clientAreaOfExpertiseSelect = document.getElementById('clientAreaOfExpertiseSelect');
     if (!clientAreaOfExpertiseSelect) return;
@@ -488,11 +579,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('lawyer-telegram').value = target.dataset.telegram;
                 if(cancelLawyerUpdateBtnEl) cancelLawyerUpdateBtnEl.style.display = 'inline-block';
                 document.getElementById('lawyer-name').focus();
-            } else if (target.classList.contains('btn-delete-lawyer')) deleteLawyer(target.dataset.id);
+            } else if (target.classList.contains('btn-delete-lawyer')) {
+                 deleteLawyer(target.dataset.id);
+            } else if (target.classList.contains('btn-admin-reset-password')) {
+                lawyerIdToResetPassword = target.dataset.lawyerId;
+                const lawyerName = target.dataset.lawyerName;
+                const lawyerOab = target.dataset.lawyerOab;
+                const modalLawyerInfo = document.getElementById('resetPasswordLawyerInfo');
+                if (modalLawyerInfo) {
+                    modalLawyerInfo.textContent = `${lawyerName} (OAB: ${lawyerOab})`;
+                }
+                // Limpar campos de senha e feedback do modal antes de mostrar
+                const newPassEl = document.getElementById('admin-reset-new-password');
+                const confirmPassEl = document.getElementById('admin-reset-confirm-password');
+                const feedbackDiv = document.getElementById('adminResetPasswordFeedback');
+                if(newPassEl) newPassEl.value = '';
+                if(confirmPassEl) confirmPassEl.value = '';
+                if(feedbackDiv) { feedbackDiv.textContent = ''; feedbackDiv.className = 'mt-2'; }
+                clearFieldError('admin-reset-new-password');
+                clearFieldError('admin-reset-confirm-password');
+
+                if (adminResetPasswordModalInstance) {
+                    adminResetPasswordModalInstance.show();
+                } else {
+                    console.error("Instância do modal de redefinição de senha não encontrada.");
+                }
+            }
         });
          if(cancelLawyerUpdateBtnEl) cancelLawyerUpdateBtnEl.addEventListener('click', () => {
             if(lawyerFormEl) lawyerFormEl.reset(); clearAllFormErrors(lawyerFormEl); if(lawyerIdInputEl) lawyerIdInputEl.value = ''; cancelLawyerUpdateBtnEl.style.display = 'none';
         });
+
+        initializeAdminResetPasswordModal(); // Chamar a inicialização do modal
 
         // Clientes
         const clientFormEl = document.getElementById('client-form');
