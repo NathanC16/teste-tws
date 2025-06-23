@@ -90,3 +90,9 @@ h4 {
     max-height: 500px; /* Define uma altura máxima. Ajuste conforme necessário. */
     overflow-y: auto;  /* Mostra a barra de scroll vertical apenas se o conteúdo exceder max-height */
 }
+
+.chart-scroll-container {
+    max-height: 400px; /* Altura máxima antes da rolagem */
+    overflow-y: auto;  /* Adiciona barra de rolagem vertical se necessário */
+    position: relative; /* Necessário para que o Chart.js funcione bem com tooltips em contêineres de rolagem */
+}
