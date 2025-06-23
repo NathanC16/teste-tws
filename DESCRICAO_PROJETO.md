@@ -67,10 +67,24 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   Verificação de token para acesso a rotas da API e páginas frontend.
     *   Mecanismo de logout.
 *   **Status Atual:**
-    *   **Backend:** Implementado endpoint `/auth/token` para login. Segurança de senha com hashing (bcrypt). Endpoint `/auth/users/me` para obter dados do usuário logado.
-    *   **Frontend:** Lógica de login em `login.html`. Token JWT armazenado no `localStorage`. Cabeçalhos de autorização `Bearer token` enviados nas requisições API. Funcionalidade de logout implementada nas páginas `index.html` e `dashboard.html`. Redirecionamento para login se não autenticado.
+    *   **Backend:** Implementado endpoint `/auth/token` para login. Segurança de senha com hashing (bcrypt). Endpoint `/auth/users/me` para obter dados do usuário logado. Endpoint `PUT /auth/users/me/settings` para que usuários atualizem seus próprios dados (nome, email, telegram_id, senha).
+    *   **Frontend:** Lógica de login em `login.html`. Token JWT armazenado no `localStorage`. Cabeçalhos de autorização `Bearer token` enviados nas requisições API. Funcionalidade de logout implementada em todas as páginas autenticadas. Redirecionamento para login se não autenticado.
+    *   **Níveis de Acesso:**
+        *   **Admin:** Acesso total a todos os dados e funcionalidades.
+        *   **Advogado Padrão:** Acesso restrito aos seus próprios processos (visualização, criação, edição, exclusão). Pode gerenciar suas próprias configurações de perfil.
+    *   **Criação Automática de Usuários Essenciais:** O usuário 'admin' (OAB '00001SP') e um usuário de teste 'advogado' (OAB '12345SP') são criados automaticamente no startup da aplicação se não existirem.
 
-### 5. Painel Home / Resumo Gerencial (Frontend)
+### 5. Configurações de Usuário (Frontend - `user_settings.html`)
+
+*   **Funcionalidade:** Permitir que todos os usuários logados gerenciem suas próprias informações de perfil.
+*   **Componentes:**
+    *   Visualização de dados não editáveis (Username, OAB).
+    *   Formulário para atualizar dados editáveis (Nome, Email, ID do Telegram).
+    *   Formulário para alterar a senha (requer senha atual).
+*   **Acesso:** Link "Minhas Configurações" disponível na barra de navegação para todos os usuários logados.
+*   **Status Atual:** Implementado (`static_frontend/user_settings.html`, `static_frontend/user_settings.js`).
+
+### 6. Painel Home / Resumo Gerencial (Frontend)
 
 *   **Funcionalidade:** Apresentar uma visão geral e facilitar o acompanhamento dos processos. Requer autenticação.
 *   **Componentes:**
@@ -90,20 +104,20 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   Chart.js 3.7 e `chartjs-plugin-datalabels` (para renderização dos gráficos e exibição de rótulos de dados).
 *   **Status Atual:** Implementado (`static_frontend/dashboard.html`, `dashboard.js`, `dashboard.css`).
     *   Busca dados da API (requerendo autenticação) para processos, advogados e clientes.
-    *   Renderiza todos os componentes listados: cards, alertas, filtros (incluindo intervalo de datas para Prazo Fatal), tabela (com pesquisa local e scroll) e gráficos (em abas, horizontais para barras, com datalabels).
+    *   Renderiza todos os componentes listados: cards, alertas, filtros (incluindo intervalo de datas para Prazo Fatal), tabela (com pesquisa local e scroll, e dados restritos para não-admins) e gráficos (em abas, horizontais para barras, com datalabels).
     *   A interface é servida em `/frontend/dashboard.html`.
-*   **Navegação:** Inclui barra de navegação global com links para "Gerenciamento de Dados", "Painel Home" e botão de "Sair" (logout).
+*   **Navegação:** Inclui barra de navegação global com links para "Gerenciamento de Dados", "Painel Home", "Minhas Configurações" e botão de "Sair" (logout).
 
-### 6. Integração com Telegram (Notificações Essenciais)
+### 7. Integração com Telegram (Notificações Essenciais)
 
 *   **Funcionalidade:** Enviar notificações automáticas aos advogados sobre seus prazos.
 *   **Tipos de Notificação:**
     *   Prazos do dia (para `delivery_deadline` ou `fatal_deadline` no dia corrente).
     *   Prazos próximos (antecedência de X dias para `fatal_deadline`).
-*   **Implementação:** Bot do Telegram configurado (`telegram_bot.py`) para interagir com a API do Telegram. Lógica de notificações para prazos do dia e prazos futuros implementada em `core/notifications.py`. As notificações são agendadas e disparadas automaticamente pela aplicação FastAPI usando `APScheduler` em background. As variáveis de ambiente `TELEGRAM_BOT_TOKEN` (para o token do bot) e `TELEGRAM_ADVANCE_NOTIFICATION_DAYS` (para configurar a antecedência das notificações de prazos fatais) são usadas para a configuração. O campo `telegram_id` no modelo de Advogado (que deve ser o Chat ID numérico do Telegram do advogado) é usado para direcionar as mensagens.
-*   **Status Atual:** Implementado (Backend, lógica de agendamento e envio de notificações). Testes de envio real dependem da correta configuração das variáveis de ambiente e do `telegram_id` dos advogados.
+*   **Implementação:** Bot do Telegram configurado (`telegram_bot.py`) para interagir com a API do Telegram (usando `async/await` com `python-telegram-bot` v20+). Lógica de notificações para prazos do dia e prazos futuros implementada em `core/notifications.py` (também `async`). As notificações são agendadas e disparadas automaticamente pela aplicação FastAPI usando `APScheduler` em background, que foi configurado para lidar com jobs assíncronos. As variáveis de ambiente `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADVANCE_NOTIFICATION_DAYS` e `TELEGRAM_TEST_CHAT_ID` (para o script de teste `teste_telegram_notifications.py`) são usadas. O campo `telegram_id` no modelo de Advogado (Chat ID numérico) é usado para direcionar as mensagens.
+*   **Status Atual:** Implementado e testado.
 
-### 7. Automação Mínima com Inteligência Artificial (IA) - Uma Funcionalidade Obrigatória
+### 8. Automação Mínima com Inteligência Artificial (IA) - Uma Funcionalidade Obrigatória
 
 *   **Funcionalidade:** Implementar *uma* das seguintes opções de forma básica:
     *   **Opção A: Previsão de Atrasos:** Modelo simples para prever probabilidade de atraso. Nota: A preparação de dados para esta funcionalidade foi iniciada com a inclusão do campo `data_conclusao_real` no modelo de processos.
@@ -111,14 +125,15 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Implementação:** Escolher opção, preparar dados (se necessário), treinar modelo simples, integrar ao backend.
 *   **Status Atual:** A ser desenvolvido.
 
-### 8. Requisitos Técnicos da Versão Estável
+### 9. Requisitos Técnicos da Versão Estável
 
 *   **Backend:** Python com FastAPI.
 *   **Banco de Dados:** MySQL (Padrão). SQLite pode ser usado como alternativa para desenvolvimento local.
-*   **Integração:** API do Telegram.
+*   **Integração:** API do Telegram (via `python-telegram-bot`).
+*   **Agendamento de Tarefas:** APScheduler.
 *   **Frontend:** HTML, CSS, Vanilla JavaScript.
 
-### 9. Gerenciamento de Dados (Frontend - `index.html`)
+### 10. Gerenciamento de Dados (Frontend - `index.html`)
 
 *   **Funcionalidade:** Prover uma interface de usuário para gerenciamento direto (CRUD) das entidades base: Advogados, Clientes e Processos Jurídicos. Requer autenticação.
     *   Listagem, criação, edição e exclusão para cada entidade. As listas agora possuem **barras de scroll vertical** para melhor navegação com grande volume de dados.

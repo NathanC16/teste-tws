@@ -17,12 +17,17 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
 *   **Dashboard Interativo (`dashboard.html`):** Um painel de controle visual para acompanhamento gerencial, incluindo:
     *   Cards de resumo com indicadores chave.
     *   Alertas de prazos importantes.
-    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos possui **barra de scroll vertical** e **cabeçalho fixo (sticky)** para melhor navegação.
+    *   Lista de processos filtrável (via API por status, advogado, cliente) e com pesquisa local. A tabela de processos possui **barra de scroll vertical** e **cabeçalho fixo (sticky)** para melhor navegação. Para advogados padrão, esta lista exibe apenas seus próprios processos.
     *   Gráficos detalhados (Processos por Status, Advogado, Tipo de Ação) organizados em abas e com exibição de valores/porcentagens diretamente nos elementos gráficos (datalabels). Gráficos de barras no dashboard agora são **horizontais** para melhor visualização.
-    *   Requer login para acesso.
+    *   Requer login para acesso. Card "Total Advogados" exclui o usuário admin da contagem.
+*   **Controle de Acesso Baseado em Função:**
+    *   **Admin:** Acesso total a todos os dados e funcionalidades.
+    *   **Advogado Padrão:** Visualiza e gerencia apenas seus próprios processos.
+*   **Página de Configurações de Usuário (`user_settings.html`):** Permite que todos os usuários logados atualizem seus próprios dados de perfil (nome, email, ID do Telegram) e alterem suas senhas.
 *   **Notificações Automáticas via Telegram:** Alertas sobre prazos do dia e prazos fatais futuros são enviados automaticamente aos advogados responsáveis, utilizando seus IDs do Telegram cadastrados. A frequência e antecedência são configuráveis.
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
 *   **Preparação para Análise de IA:** Adição do campo `data_conclusao_real` nos processos, que é populado com dados sintéticos, visando futuras análises e previsões.
+*   **Criação Automática de Usuários Iniciais:** O usuário `admin` (OAB `00001SP`) e um usuário de teste `advogado` (OAB `12345SP`) são criados automaticamente no primeiro startup da aplicação se não existirem, facilitando a configuração inicial.
 
 Para uma lista detalhada de todas as funcionalidades e seu status de implementação, consulte o arquivo `FUNCIONALIDADES_PROJETO.md`.
 
@@ -49,6 +54,8 @@ Para uma lista detalhada de todas as funcionalidades e seu status de implementa�
     *   `chartjs-plugin-datalabels` (para exibir valores nos gráficos)
 *   **Documentação:**
     *   Markdown (`DESCRICAO_PROJETO.md`, `FUNCIONALIDADES_PROJETO.md`, `README.md`)
+*   **Testes:**
+    *   Script de teste dedicado (`teste_telegram_notifications.py`) para a funcionalidade de notificações do Telegram.
 
 ## Pré-requisitos
 
@@ -191,12 +198,15 @@ Com o MySQL Server instalado e configurado conforme o guia acima, siga os próxi
     O arquivo `.env.example` (e consequentemente o seu `.env`) também contém as seguintes variáveis para a funcionalidade de notificações via Telegram:
     *   `TELEGRAM_BOT_TOKEN`: Token do seu bot do Telegram. Essencial para as notificações funcionarem.
     *   `TELEGRAM_ADVANCE_NOTIFICATION_DAYS`: Número de dias de antecedência para enviar alertas sobre prazos fatais futuros (padrão é 5 se não especificado).
-    *   `TELEGRAM_TEST_CHAT_ID`: ID numérico do chat do Telegram para onde o script `teste_telegram_notifications.py` enviará mensagens de teste. Este ID pode ser obtido, por exemplo, conversando com o `@userinfobot` no Telegram.
+    *   `TELEGRAM_TEST_CHAT_ID`: ID numérico do chat do Telegram para onde o script `teste_telegram_notifications.py` enviará mensagens de teste. Este ID pode ser obtido, por exemplo, conversando com o `@userinfobot` no Telegram. É usado apenas pelo script de teste.
 
-    Os advogados devem ter seus IDs numéricos do Telegram (Chat IDs) cadastrados no campo "ID do Telegram" (na interface de gerenciamento de advogados) para receberem as notificações.
+    Os advogados devem ter seus IDs numéricos do Telegram (Chat IDs) cadastrados no campo "ID do Telegram" (através da página "Minhas Configurações") para receberem as notificações.
 
-3.  **Criação das Tabelas:**
+3.  **Criação das Tabelas e Usuários Iniciais:**
     As tabelas do banco de dados são criadas automaticamente pela aplicação na primeira vez que ela é iniciada, com base nos modelos definidos em `models/`.
+    Adicionalmente, no primeiro startup, os seguintes usuários são criados automaticamente se não existirem:
+    *   **Admin:** Username `admin`, OAB `00001SP`, Senha `admin`.
+    *   **Advogado de Teste:** Username `advogado`, OAB `12345SP`, Senha `advogado`.
 
 ### Alternativa para Desenvolvimento Local Rápido (SQLite)
 
@@ -234,20 +244,24 @@ A API estará disponível em `http://127.0.0.1:8000`.
 
 O sistema utiliza um mecanismo de login para acesso às funcionalidades de gerenciamento de dados. Não há funcionalidade de registro público de usuários; as contas de usuário (advogados) são gerenciadas internamente.
 
-**Credenciais de Acesso Padrão (Administrador):**
+**Credenciais de Acesso Padrão:**
 
-Para acessar o sistema, utilize as seguintes credenciais, que são criadas automaticamente pelo script `seed_db.py`:
+A aplicação cria automaticamente os seguintes usuários no primeiro startup, se não existirem:
 
-*   **Login (OAB ou Username):** `00001SP` OU `admin`
-*   **Senha:** `admin`
+*   **Administrador:**
+    *   Login (OAB ou Username): `00001SP` OU `admin`
+    *   Senha: `admin`
+*   **Usuário de Teste Padrão (Advogado):**
+    *   Login (OAB ou Username): `12345SP` OU `advogado`
+    *   Senha: `advogado`
 
-Recomenda-se fortemente alterar a senha padrão do usuário "ADMIN" (OAB `00001SP`, username `admin`) se esta aplicação for utilizada em um ambiente mais sério ou de produção. Atualmente, a funcionalidade de alteração de senha não está implementada na interface, mas a senha pode ser alterada diretamente no banco de dados ou por meio de um script de gerenciamento.
+Recomenda-se fortemente alterar as senhas padrão desses usuários através da página "Minhas Configurações" após o primeiro login, especialmente se a aplicação for utilizada em um ambiente mais sério.
 
-O script `seed_db.py` também cria outros advogados com senhas aleatórias para fins de preenchimento de dados de exemplo. Estes usuários não são destinados a login no sistema na configuração atual, mas podem ser usados para testar listagens e associações de processos.
+O script `seed_db.py` (descrito abaixo) também garante a criação desses usuários e pode adicionar outros advogados com senhas aleatórias para um volume maior de dados.
 
-## Populando o Banco de Dados com Dados de Teste (Opcional)
+## Populando o Banco de Dados com Dados de Teste Adicionais (Opcional)
 
-Para facilitar os testes e a demonstração da aplicação, foi incluído um script (`seed_db.py`) que utiliza a biblioteca Faker para popular o banco de dados com dados sintéticos (advogados, clientes e processos). Este script também cria o usuário administrador padrão mencionado acima.
+Os usuários admin e "advogado" de teste são criados automaticamente no startup da aplicação. Para uma base de dados mais rica com múltiplos clientes, outros advogados e um volume maior de processos para testes mais amplos, pode-se usar o script `seed_db.py`. Ele utiliza a biblioteca Faker para popular o banco.
 
 **Pré-requisitos:**
 *   Certifique-se de que as dependências do projeto estão instaladas, incluindo `Faker` (conforme `requirements.txt`).
@@ -332,15 +346,18 @@ Para uma visão detalhada do escopo completo do projeto, suas diferentes versõe
 │   ├── __init__.py
 │   └── auth.py             # Endpoints de autenticação (`/token`, `/users/me`)
 ├── seed_db.py              # Script para popular o banco de dados com dados sintéticos (inclui usuário admin)
-├── telegram_bot.py         # Módulo para interações com o Telegram Bot (configuração inicial)
+    ├── telegram_bot.py         # Módulo para interações com o Telegram Bot (async)
+    ├── teste_telegram_notifications.py # Script para teste manual das notificações Telegram
 └── static_frontend/        # Arquivos da interface web
     ├── dashboard.css       # Estilos para o painel
     ├── dashboard.html      # Painel Home / Resumo Gerencial
     ├── dashboard.js        # Lógica JavaScript para o painel
     ├── index.html          # Interface de Gerenciamento de Dados
     ├── login.html          # Página de Login
-    ├── script.js           # Lógica JavaScript para index.html e login.html (compartilhada)
-    └── style.css           # Estilos para index.html e login.html (compartilhados)
+    ├── user_settings.html  # Página de Configurações do Usuário
+    ├── user_settings.js    # Lógica JavaScript para user_settings.html
+    ├── script.js           # Lógica JavaScript principal para index.html (e partes de login.html)
+    └── style.css           # Estilos compartilhados
 ```
 
 Para referência sobre o histórico de commits e a tradução de prefixos de mensagens ou nomes de branch que foram feitos em inglês no início do projeto, consulte o arquivo `COMMITS_A_TRADUZIR.md`.
