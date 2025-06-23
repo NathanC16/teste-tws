@@ -190,83 +190,90 @@ async function fetchLawyers() {
         if (response.status === 401) { logout(); return; }
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const lawyers = await response.json();
-        const lawyersListDiv = document.getElementById('lawyers-list');
-        lawyersListDiv.innerHTML = '';
+        const lawyersTableBody = document.getElementById('lawyers-table-body'); // ID do tbody da tabela
+        if (!lawyersTableBody) {
+            console.error("Elemento lawyers-table-body não encontrado!");
+            return;
+        }
+        lawyersTableBody.innerHTML = ''; // Limpar conteúdo anterior
 
         const isAdminUser = currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin");
 
         lawyers.forEach(lawyer => {
+            if (lawyer.oab === "00001SP" || lawyer.username === "admin") { // Não listar o admin user para gerenciamento
+                return;
+            }
+
             const escapedName = lawyer.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedOab = lawyer.oab.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedEmail = lawyer.email.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedTelegramId = (lawyer.telegram_id || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedUsername = (lawyer.username || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
-            if (lawyer.oab === "00001SP" || lawyer.username === "admin") { // Não listar o admin user para gerenciamento
-                return;
-            }
+            const tr = lawyersTableBody.insertRow();
 
-            let adminButtons = '';
+            // Coluna Nome (Nickname)
+            const cellName = tr.insertCell();
+            cellName.innerHTML = `<strong>${lawyer.name}</strong><br><small>(Nickname: ${lawyer.username || 'N/A'})</small>`;
+
+            // Coluna Detalhes (OAB, Email, Telegram)
+            const cellDetails = tr.insertCell();
+            cellDetails.innerHTML = `<small>OAB: ${lawyer.oab}<br>Email: ${lawyer.email}<br>Telegram: ${lawyer.telegram_id || 'N/A'}</small>`;
+
+            // Coluna Ações
+            const cellActions = tr.insertCell();
+            cellActions.style.verticalAlign = "middle";
+            let actionsHtml = `
+                <button class="btn btn-sm btn-outline-primary btn-edit-lawyer"
+                        data-id="${lawyer.id}"
+                        data-name="${escapedName}"
+                        data-oab="${escapedOab}"
+                        data-email="${escapedEmail}"
+                        data-username="${escapedUsername}"
+                        data-telegram="${escapedTelegramId}">Editar</button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn ms-1" data-id="${lawyer.id}">Excluir</button>`;
+
             if (isAdminUser) {
-                adminButtons += `<button class="btn btn-sm btn-outline-warning ms-2 btn-admin-reset-password" data-lawyer-id="${lawyer.id}" data-lawyer-name="${escapedName}" data-lawyer-oab="${escapedOab}">Redefinir Senha</button>`;
+                actionsHtml += `<button class="btn btn-sm btn-outline-warning ms-1 btn-admin-reset-password" data-lawyer-id="${lawyer.id}" data-lawyer-name="${escapedName}" data-lawyer-oab="${escapedOab}">Redefinir Senha</button>`;
             }
-
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-
-            let deleteButtonHtml = `<button class="btn btn-sm btn-outline-danger btn-delete-lawyer delete-btn" data-id="${lawyer.id}">Excluir</button>`;
-
-            li.innerHTML = `
-                <div class="flex-grow-1">
-                    <strong>${lawyer.name}</strong> (Nickname: ${lawyer.username || 'N/A'})<br>
-                    <small>OAB: ${lawyer.oab} | Email: ${lawyer.email} | Telegram: ${lawyer.telegram_id || 'N/A'}</small>
-                </div>
-                <div class="item-actions ms-3">
-                    <button class="btn btn-sm btn-outline-primary btn-edit-lawyer"
-                            data-id="${lawyer.id}"
-                            data-name="${escapedName}"
-                            data-oab="${escapedOab}"
-                            data-email="${escapedEmail}"
-                            data-username="${escapedUsername}"
-                            data-telegram="${escapedTelegramId}">Editar</button>
-                    ${deleteButtonHtml}
-                    ${adminButtons}
-                </div>`;
-            lawyersListDiv.appendChild(li);
+            cellActions.innerHTML = actionsHtml;
         });
-    } catch (error) { console.error('Falha ao buscar advogados:', error); if(document.getElementById('lawyers-list')) document.getElementById('lawyers-list').innerHTML = '<p>Erro ao carregar.</p>'; }
+    } catch (error) {
+        console.error('Falha ao buscar advogados:', error);
+        const lawyersTableBody = document.getElementById('lawyers-table-body');
+        if(lawyersTableBody) lawyersTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Erro ao carregar advogados.</td></tr>';
+    }
 }
 
-// --- Lógica de Busca ao Vivo ---
-function setupLiveSearch(inputId, listSelector) {
+// --- Lógica de Busca em Tabelas para Index.html ---
+function setupTableSearchIndex(inputId, tableBodyId) {
     const searchInput = document.getElementById(inputId);
+    const tableBody = document.getElementById(tableBodyId);
+
     if (!searchInput) {
-        console.warn(`Search input not found: ${inputId}`);
+        console.warn(`Search input not found for table: ${inputId}`);
         return;
     }
-    // Tenta pegar o contêiner principal da lista primeiro. Ex: '#lawyers-list' de '#lawyers-list .list-group-item'
-    const listContainerSelector = listSelector.split(' ')[0];
-    const listContainer = document.querySelector(listContainerSelector);
-
-    if (!listContainer) {
-        console.warn(`List container for selector '${listSelector}' (using '${listContainerSelector}') not found.`);
+    if (!tableBody) {
+        console.warn(`Table body not found: ${tableBodyId}`);
         return;
     }
-
-    // O seletor para os itens dentro do contêiner. Ex: '.list-group-item'
-    const itemSelectorInsideContainer = listSelector.substring(listContainerSelector.length).trim();
 
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
-        // Busca os itens dentro do contêiner da lista já encontrado
-        const items = listContainer.querySelectorAll(itemSelectorInsideContainer);
+        const rows = tableBody.getElementsByTagName('tr');
 
-        items.forEach((item) => {
-            const itemText = item.textContent.toLowerCase();
-            const isMatch = itemText.includes(searchTerm);
-            item.style.display = isMatch ? '' : 'none';
-        });
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(searchTerm)) {
+                row.classList.remove('d-none');
+            } else {
+                row.classList.add('d-none');
+            }
+        }
     });
+
     searchInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -370,31 +377,40 @@ async function loadAreasOfExpertise() {
     } catch (error) { console.error('Falha ao buscar áreas de atuação:', error); clientAreaOfExpertiseSelect.innerHTML = '<option value="">Erro</option>'; }
 }
 async function fetchClients() {
-    if (!getToken() || !document.getElementById('clients-list')) return;
+    const clientsTableBody = document.getElementById('clients-table-body');
+    if (!getToken() || !clientsTableBody) {
+        if (!clientsTableBody) console.error("Elemento clients-table-body não encontrado!");
+        return;
+    }
     try {
         const response = await fetch(`${API_BASE_URL}/clients/`, { headers: getAuthHeaders() });
         if (response.status === 401) { logout(); return; }
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const clients = await response.json();
-        const clientsListDiv = document.getElementById('clients-list');
-        clientsListDiv.innerHTML = '';
+        clientsTableBody.innerHTML = ''; // Limpar conteúdo anterior
         clients.forEach(client => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
             const escapedClientName = client.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedArea = client.area_of_expertise.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            li.innerHTML = `
-                <div class="flex-grow-1">
-                    <strong>${client.name}</strong><br>
-                    <small>Área: ${client.area_of_expertise}</small>
-                </div>
-                <div class="item-actions ms-3">
-                    <button class="btn btn-sm btn-outline-primary btn-edit-client" data-id="${client.id}" data-name="${escapedClientName}" data-area="${escapedArea}">Editar</button>
-                    <button class="btn btn-sm btn-outline-danger btn-delete-client delete-btn" data-id="${client.id}">Excluir</button>
-                </div>`;
-            clientsListDiv.appendChild(li);
+
+            const tr = clientsTableBody.insertRow();
+
+            // Coluna Nome/Razão Social
+            tr.insertCell().textContent = client.name;
+
+            // Coluna Área de Atuação
+            tr.insertCell().textContent = client.area_of_expertise;
+
+            // Coluna Ações
+            const cellActions = tr.insertCell();
+            cellActions.style.verticalAlign = "middle";
+            cellActions.innerHTML = `
+                <button class="btn btn-sm btn-outline-primary btn-edit-client" data-id="${client.id}" data-name="${escapedClientName}" data-area="${escapedArea}">Editar</button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-client delete-btn ms-1" data-id="${client.id}">Excluir</button>`;
         });
-    } catch (error) { console.error('Falha ao buscar clientes:', error); if(document.getElementById('clients-list')) document.getElementById('clients-list').innerHTML = '<p>Erro ao carregar.</p>'; }
+    } catch (error) {
+        console.error('Falha ao buscar clientes:', error);
+        if(clientsTableBody) clientsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Erro ao carregar clientes.</td></tr>';
+    }
 }
 async function populateLawyerOptions() {
     const processLawyerSelect = document.getElementById('process-lawyer');
@@ -429,37 +445,71 @@ async function populateClientOptions() {
     } catch (error) { console.error('Falha ao buscar clientes para select:', error); return []; }
 }
 async function fetchProcesses() {
-    const processesListDiv = document.getElementById('processes-list');
-    if (!getToken() || !processesListDiv) return;
+    const processesTableBody = document.getElementById('processes-table-body');
+    if (!getToken() || !processesTableBody) {
+        if(!processesTableBody) console.error("Elemento processes-table-body não encontrado!");
+        return;
+    }
     try {
         const response = await fetch(`${API_BASE_URL}/processes/`, { headers: getAuthHeaders() });
         if (response.status === 401) { logout(); return; }
         if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const processes = await response.json();
-        processesListDiv.innerHTML = '';
-        const lawyerMap = allLawyers.reduce((map, lawyer) => { map[lawyer.id] = lawyer.name; return map; }, {});
-        const clientMap = allClients.reduce((map, client) => { map[client.id] = client.name; return map; }, {});
+        processesTableBody.innerHTML = ''; // Limpar conteúdo anterior
+
+        // Certifique-se que allLawyers e allClients estão populados.
+        // Idealmente, fetchLawyers e fetchClients deveriam ser chamados antes e garantir que allLawyers/allClients são preenchidos.
+        // Para este exemplo, assumimos que já foram preenchidos e são arrays.
+        const lawyerMap = Array.isArray(allLawyers) ? allLawyers.reduce((map, lawyer) => { map[lawyer.id] = lawyer.name; return map; }, {}) : {};
+        const clientMap = Array.isArray(allClients) ? allClients.reduce((map, client) => { map[client.id] = client.name; return map; }, {}) : {};
+
         processes.forEach(process => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex align-items-center';
             const escapedProcessNumber = process.process_number.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedStatus = process.status.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const escapedActionType = (process.action_type || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const dataConclusaoRealStr = process.data_conclusao_real ? formatDate(process.data_conclusao_real) : 'N/A';
 
-            li.innerHTML = `
-                <input type="checkbox" class="process-checkbox me-2" data-id="${process.id}" style="flex-shrink: 0;">
-                <div class="flex-grow-1">
-                    <strong>Nº: ${process.process_number}</strong> (Adv: ${lawyerMap[process.lawyer_id] || 'N/A'}, Cli: ${clientMap[process.client_id] || 'N/A'})<br>
-                    <small>Status: ${process.status} | Prazo Fatal: ${formatDate(process.fatal_deadline)} | Conclusão: ${dataConclusaoRealStr} | Tipo: ${process.action_type || 'N/A'}</small>
-                </div>
-                <div class="item-actions ms-3" style="flex-shrink: 0;">
-                    <button class="btn btn-sm btn-outline-primary btn-edit-process" data-id="${process.id}" data-number="${escapedProcessNumber}" data-lawyerid="${process.lawyer_id}" data-clientid="${process.client_id}" data-entrydate="${process.entry_date}" data-deliverydeadline="${process.delivery_deadline}" data-fataldeadline="${process.fatal_deadline}" data-status="${escapedStatus}" data-actiontype="${escapedActionType}" data-completiondate="${process.data_conclusao_real || ''}">Editar</button>
-                    <button class="btn btn-sm btn-outline-danger btn-delete-process delete-btn" data-id="${process.id}">Excluir</button>
-                </div>`;
-            processesListDiv.appendChild(li);
+            const tr = processesTableBody.insertRow();
+
+            // Coluna Sel. (Checkbox)
+            const cellCheckbox = tr.insertCell();
+            cellCheckbox.innerHTML = `<input type="checkbox" class="process-checkbox" data-id="${process.id}" style="vertical-align: middle;">`;
+            cellCheckbox.style.textAlign = "center";
+
+
+            // Coluna Nº Processo
+            tr.insertCell().textContent = process.process_number;
+            // Coluna Advogado
+            tr.insertCell().textContent = lawyerMap[process.lawyer_id] || 'N/A';
+            // Coluna Cliente
+            tr.insertCell().textContent = clientMap[process.client_id] || 'N/A';
+            // Coluna Status
+            tr.insertCell().textContent = process.status;
+            // Coluna Prazo Fatal
+            tr.insertCell().textContent = formatDate(process.fatal_deadline);
+            // Coluna Tipo Ação
+            tr.insertCell().textContent = process.action_type || 'N/A';
+
+            // Coluna Ações
+            const cellActions = tr.insertCell();
+            cellActions.style.verticalAlign = "middle";
+            cellActions.innerHTML = `
+                <button class="btn btn-sm btn-outline-primary btn-edit-process"
+                        data-id="${process.id}"
+                        data-number="${escapedProcessNumber}"
+                        data-lawyerid="${process.lawyer_id}"
+                        data-clientid="${process.client_id}"
+                        data-entrydate="${process.entry_date}"
+                        data-deliverydeadline="${process.delivery_deadline}"
+                        data-fataldeadline="${process.fatal_deadline}"
+                        data-status="${escapedStatus}"
+                        data-actiontype="${escapedActionType}"
+                        data-completiondate="${process.data_conclusao_real || ''}">Editar</button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-process delete-btn ms-1" data-id="${process.id}">Excluir</button>`;
         });
-    } catch (error) { console.error('Falha ao buscar processos:', error); processesListDiv.innerHTML = '<p>Erro ao carregar.</p>'; }
+    } catch (error) {
+        console.error('Falha ao buscar processos:', error);
+        if(processesTableBody) processesTableBody.innerHTML = '<tr><td colspan="8" class="text-center">Erro ao carregar processos.</td></tr>'; // colspan=8 (7 colunas + checkbox)
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -537,7 +587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lawyerOabCrudInputEl = document.getElementById('lawyer-oab');
         const lawyerEmailInputEl = document.getElementById('lawyer-email');
         const lawyerTelegramInputEl = document.getElementById('lawyer-telegram');
-        const lawyersListDivEl = document.getElementById('lawyers-list');
+        const lawyersTableBodyEl = document.getElementById('lawyers-table-body'); // ATUALIZADO AQUI
         const cancelLawyerUpdateBtnEl = document.getElementById('cancel-lawyer-update');
 
         if (lawyerFormEl) {
@@ -593,8 +643,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        if(lawyersListDivEl) { lawyersListDivEl.addEventListener('click', (event) => {
-            const target = event.target;
+        if(lawyersTableBodyEl) { lawyersTableBodyEl.addEventListener('click', (event) => { // ATUALIZADO AQUI
+            const target = event.target.closest('button'); // Garantir que pegamos o botão, mesmo se o clique for no ícone dentro dele
+            if (!target) return; // Se o clique não foi em um botão ou perto dele
+
             if (target.classList.contains('btn-edit-lawyer')) {
                 document.getElementById('lawyer-id').value = target.dataset.id;
                 document.getElementById('lawyer-name').value = target.dataset.name;
@@ -638,28 +690,148 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Clientes
         const clientFormEl = document.getElementById('client-form');
-        if (clientFormEl) { /* ... (lógica form clientes) ... */ }
-        const clientsListDivEl = document.getElementById('clients-list');
-        if (clientsListDivEl) { /* ... (listener lista clientes) ... */ }
+        // Handler do form de cliente (simplificado, pois a lógica interna do form não muda)
+        if (clientFormEl) {
+            clientFormEl.addEventListener('submit', async (event) => {
+                event.preventDefault(); clearAllFormErrors(clientFormEl);
+                const id = document.getElementById('client-id').value;
+                const name = document.getElementById('client-name').value.trim();
+                const area = document.getElementById('clientAreaOfExpertiseSelect').value;
+                if (!name || !area) {
+                    if(!name) showFieldError('client-name', "Nome é obrigatório.");
+                    if(!area) showFieldError('client-area', "Área é obrigatória."); // Assumindo client-area-error
+                    return;
+                }
+                const clientData = { name, area_of_expertise: area };
+                try {
+                    let response; const headers = getAuthHeaders();
+                    if (id) { response = await fetch(`${API_BASE_URL}/clients/${id}`, { method: 'PUT', headers, body: JSON.stringify(clientData) }); }
+                    else { response = await fetch(`${API_BASE_URL}/clients/`, { method: 'POST', headers, body: JSON.stringify(clientData) }); }
+                    if (response.status === 401) { alert("Sessão expirada."); logout(); return; }
+                    if (!response.ok) { const errorData = await response.json(); alert(`Erro: ${errorData.detail || response.status}`); throw new Error(errorData.detail); }
+                    clientFormEl.reset(); clearAllFormErrors(clientFormEl); document.getElementById('client-id').value = '';
+                    document.getElementById('cancel-client-update').style.display = 'none';
+                    fetchClients(); populateClientOptions();
+                    alert(`Cliente ${id ? 'atualizado' : 'adicionado'}!`);
+                } catch (e) { console.error('Falha ao salvar cliente:', e); if (!document.querySelector('#client-form .is-invalid')) alert('Falha ao salvar cliente.');}
+            });
+        }
+
+        const clientsTableBodyEl = document.getElementById('clients-table-body'); // ATUALIZADO AQUI
+        if (clientsTableBodyEl) {
+            clientsTableBodyEl.addEventListener('click', (event) => { // ATUALIZADO AQUI
+                const target = event.target.closest('button');
+                if (!target) return;
+
+                if (target.classList.contains('btn-edit-client')) {
+                    document.getElementById('client-id').value = target.dataset.id;
+                    document.getElementById('client-name').value = target.dataset.name;
+                    document.getElementById('clientAreaOfExpertiseSelect').value = target.dataset.area;
+                    document.getElementById('cancel-client-update').style.display = 'inline-block';
+                    document.getElementById('client-name').focus();
+                } else if (target.classList.contains('btn-delete-client')) {
+                    deleteClient(target.dataset.id);
+                }
+            });
+        }
         const cancelClientUpdateBtnEl = document.getElementById('cancel-client-update');
-        if (cancelClientUpdateBtnEl) { /* ... */ }
+        if (cancelClientUpdateBtnEl) {
+            cancelClientUpdateBtnEl.addEventListener('click', () => {
+                if(clientFormEl) clientFormEl.reset();
+                clearAllFormErrors(clientFormEl);
+                document.getElementById('client-id').value = '';
+                cancelClientUpdateBtnEl.style.display = 'none';
+            });
+        }
 
 
         // Processos
         const processFormEl = document.getElementById('process-form');
-        if (processFormEl) { /* ... (lógica form processos) ... */ }
-        const processesListDivEl = document.getElementById('processes-list');
-        if (processesListDivEl) { /* ... (listener lista processos) ... */ }
+        const processIdInputEl = document.getElementById('process-id');
+        // (outros inputs do formulário de processo já são obtidos dentro do handler)
+
+        if (processFormEl) {
+            processFormEl.addEventListener('submit', async (event) => {
+                event.preventDefault(); clearAllFormErrors(processFormEl);
+                const id = processIdInputEl.value;
+                const processData = {
+                    process_number: document.getElementById('process-number').value.trim(),
+                    lawyer_id: parseInt(document.getElementById('process-lawyer').value),
+                    client_id: parseInt(document.getElementById('process-client').value),
+                    entry_date: parseDisplayDate(document.getElementById('process-entry-date').value.trim()),
+                    delivery_deadline: parseDisplayDate(document.getElementById('process-delivery-deadline').value.trim()),
+                    fatal_deadline: parseDisplayDate(document.getElementById('process-fatal-deadline').value.trim()),
+                    data_conclusao_real: parseDisplayDate(document.getElementById('process-completion-date').value.trim()) || null,
+                    status: document.getElementById('process-status').value.trim(),
+                    action_type: document.getElementById('process-action-type').value.trim() || null,
+                };
+
+                // Validações básicas (outras são feitas no backend)
+                let hasError = false;
+                if (!processData.process_number) { showFieldError('process-number', 'Número do processo é obrigatório.'); hasError = true; }
+                if (!processData.lawyer_id) { /* Idealmente, validar se é um número válido. O select deve garantir isso. */ }
+                if (!processData.client_id) { /* Idem */ }
+                if (!document.getElementById('process-entry-date').value.trim()) { showFieldError('process-entry-date', 'Data de entrada é obrigatória.'); hasError=true;}
+                if (!document.getElementById('process-delivery-deadline').value.trim()) { showFieldError('process-delivery-deadline', 'Prazo de entrega é obrigatório.'); hasError=true;}
+                if (!document.getElementById('process-fatal-deadline').value.trim()) { showFieldError('process-fatal-deadline', 'Prazo fatal é obrigatório.'); hasError=true;}
+                if (hasError) return;
+
+                try {
+                    let response; const headers = getAuthHeaders();
+                    if (id) { response = await fetch(`${API_BASE_URL}/processes/${id}`, { method: 'PUT', headers, body: JSON.stringify(processData) }); }
+                    else { response = await fetch(`${API_BASE_URL}/processes/`, { method: 'POST', headers, body: JSON.stringify(processData) }); }
+                    if (response.status === 401) { alert("Sessão expirada."); logout(); return; }
+                    if (!response.ok) { const errorData = await response.json(); alert(`Erro: ${errorData.detail || response.status}`); throw new Error(errorData.detail); }
+                    processFormEl.reset(); clearAllFormErrors(processFormEl); processIdInputEl.value = '';
+                    document.getElementById('cancel-process-update').style.display = 'none';
+                    fetchProcesses();
+                    alert(`Processo ${id ? 'atualizado' : 'adicionado'}!`);
+                } catch (e) { console.error('Falha ao salvar processo:', e); if (!document.querySelector('#process-form .is-invalid')) alert('Falha ao salvar processo.');}
+            });
+        }
+
+        const processesTableBodyEl = document.getElementById('processes-table-body'); // ATUALIZADO AQUI
+        if (processesTableBodyEl) {
+            processesTableBodyEl.addEventListener('click', (event) => { // ATUALIZADO AQUI
+                const target = event.target.closest('button'); // Pega o botão mais próximo
+                if (target && target.classList.contains('btn-edit-process')) {
+                    processIdInputEl.value = target.dataset.id;
+                    document.getElementById('process-number').value = target.dataset.number;
+                    document.getElementById('process-lawyer').value = target.dataset.lawyerid;
+                    document.getElementById('process-client').value = target.dataset.clientid;
+                    document.getElementById('process-entry-date').value = formatDate(target.dataset.entrydate);
+                    document.getElementById('process-delivery-deadline').value = formatDate(target.dataset.deliverydeadline);
+                    document.getElementById('process-fatal-deadline').value = formatDate(target.dataset.fataldeadline);
+                    document.getElementById('process-completion-date').value = target.dataset.completiondate ? formatDate(target.dataset.completiondate) : '';
+                    document.getElementById('process-status').value = target.dataset.status;
+                    document.getElementById('process-action-type').value = target.dataset.actiontype;
+                    document.getElementById('cancel-process-update').style.display = 'inline-block';
+                    document.getElementById('process-number').focus();
+                } else if (target && target.classList.contains('btn-delete-process')) {
+                    deleteProcess(target.dataset.id);
+                }
+                // O clique no checkbox é tratado separadamente se necessário, ou não precisa de handler aqui.
+            });
+        }
         const cancelProcessUpdateBtnEl = document.getElementById('cancel-process-update');
-        if (cancelProcessUpdateBtnEl) { /* ... */ }
+        if (cancelProcessUpdateBtnEl) {
+            cancelProcessUpdateBtnEl.addEventListener('click', () => {
+                if(processFormEl) processFormEl.reset();
+                clearAllFormErrors(processFormEl);
+                processIdInputEl.value = '';
+                cancelProcessUpdateBtnEl.style.display = 'none';
+            });
+        }
         const deleteSelectedProcessesBtnEl = document.getElementById('delete-selected-processes-btn');
-        if (deleteSelectedProcessesBtnEl) { /* ... */ }
+        if (deleteSelectedProcessesBtnEl) {
+            deleteSelectedProcessesBtnEl.addEventListener('click', handleDeleteSelectedProcesses);
+        }
 
 
-        // Lógica de Busca ao Vivo
-        setupLiveSearch('search-lawyers', '#lawyers-list .list-group-item');
-        setupLiveSearch('search-clients', '#clients-list .list-group-item');
-        setupLiveSearch('search-processes', '#processes-list .list-group-item');
+        // Lógica de Busca em Tabelas
+        setupTableSearchIndex('search-lawyers', 'lawyers-table-body');
+        setupTableSearchIndex('search-clients', 'clients-table-body');
+        setupTableSearchIndex('search-processes', 'processes-table-body');
         setupSearchIconClick('search-lawyers-icon', 'search-lawyers');
         setupSearchIconClick('search-clients-icon', 'search-clients');
         setupSearchIconClick('search-processes-icon', 'search-processes');
