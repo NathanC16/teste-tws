@@ -184,7 +184,11 @@ let allLawyers = [];
 let allClients = [];
 
 async function fetchLawyers() {
-    if (!getToken() || !document.getElementById('lawyers-list')) return;
+    const lawyersTableBody = document.getElementById('lawyers-table-body'); // Obter o tbody primeiro
+    if (!getToken() || !lawyersTableBody) { // Usar lawyersTableBody na condição
+        if (!lawyersTableBody) console.error("Elemento lawyers-table-body não encontrado em fetchLawyers!");
+        return;
+    }
     try {
         const response = await fetch(`${API_BASE_URL}/lawyers/`, { headers: getAuthHeaders() });
         if (response.status === 401) { logout(); return; }
