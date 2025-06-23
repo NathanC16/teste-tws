@@ -128,31 +128,24 @@ async function fetchAndSetCurrentUser_forIndexPage() {
             currentUser = await response.json();
             updateUIForIndexPage(true);
 
-            // Adicionar link de Configurações do Admin se for o admin
-            if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
-                console.log("[Script.js] Usuário é admin. Tentando adicionar link 'Config. Admin'. CurrentUser:", currentUser);
-                const navbarNav = document.querySelector('#navbarNav .navbar-nav');
-                const logoutButtonLi = document.getElementById('logout-button-index')?.closest('li.nav-item') ||
-                                     document.getElementById('logout-button')?.closest('li.nav-item');
+            updateUIForIndexPage(true);
 
-                console.log("[Script.js] NavbarNav encontrado:", navbarNav);
-                console.log("[Script.js] LogoutButtonLi encontrado:", logoutButtonLi);
-
-                if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-index')) {
-                    const adminSettingsLi = document.createElement('li');
-                    adminSettingsLi.className = 'nav-item';
-                    adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-index" href="/frontend/admin_settings.html">Config. Admin</a>`;
-
-                    navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
-                    console.log("[Script.js] Link 'Config. Admin' adicionado para index.html.");
+            // Mostrar/Esconder link de Configurações do Admin
+            const adminSettingsNavItemIndex = document.getElementById('admin-settings-nav-item-index');
+            if (adminSettingsNavItemIndex) {
+                if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
+                    adminSettingsNavItemIndex.style.display = 'list-item'; // Ou 'block' ou '' dependendo do CSS
+                    console.log("[Script.js] Link 'Config. Admin' VISÍVEL para index.html.");
                 } else {
-                    if (!navbarNav) console.warn("[Script.js] NavbarNav (#navbarNav .navbar-nav) não encontrado para index.html.");
-                    if (!logoutButtonLi) console.warn("[Script.js] LogoutButtonLi não encontrado para index.html.");
-                    if (document.getElementById('admin-settings-nav-link-index')) console.log("[Script.js] Link 'Config. Admin' para index.html já existe.");
+                    adminSettingsNavItemIndex.style.display = 'none';
+                    console.log("[Script.js] Link 'Config. Admin' ESCONDIDO para index.html.");
                 }
             } else {
-                console.log("[Script.js] Usuário não é admin ou currentUser não definido. Link 'Config. Admin' não será adicionado. CurrentUser:", currentUser);
+                console.warn("[Script.js] admin-settings-nav-item-index não encontrado no DOM de index.html.");
             }
+
+            // Remover os logs de depuração anteriores para a criação dinâmica, se ainda existirem.
+            // console.log("[Script.js] Usuário é admin...", etc.); // Remover estas linhas se existirem
 
             // Fetch initial data for index.html
             await populateLawyerOptions();
