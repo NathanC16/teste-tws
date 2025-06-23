@@ -28,6 +28,7 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
 *   **Preparação para Análise de IA:** Adição do campo `data_conclusao_real` nos processos, que é populado com dados sintéticos, visando futuras análises e previsões.
 *   **Criação Automática de Usuários Iniciais:** O usuário `admin` (OAB `00001SP`) e um usuário de teste `advogado` (OAB `12345SP`) são criados automaticamente no primeiro startup da aplicação se não existirem, facilitando a configuração inicial.
+    *   **Previsão de Atrasos com IA (MVP):** Implementação de um modelo estatístico simples para analisar o histórico de processos e prever possíveis riscos de atraso em processos ativos.
 
 Para uma lista detalhada de todas as funcionalidades e seu status de implementação, consulte o arquivo `FUNCIONALIDADES_PROJETO.md`.
 

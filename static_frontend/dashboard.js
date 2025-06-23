@@ -261,6 +261,19 @@ function renderProcessTable(processesToRender) {
         row.insertCell().textContent = formatDate(process.fatal_deadline);
         row.insertCell().textContent = process.status || 'N/A';
         row.insertCell().textContent = process.action_type || 'N/A';
+
+        // Nova célula para Risco de Atraso
+        const riskCell = row.insertCell();
+        const riskValue = process.delay_risk || "N/A";
+        riskCell.textContent = riskValue;
+        if (riskValue === "Alto") {
+            riskCell.style.color = "red";
+            riskCell.style.fontWeight = "bold";
+        } else if (riskValue === "Médio") {
+            riskCell.style.color = "orange";
+        } else if (riskValue === "Baixo") {
+            riskCell.style.color = "green";
+        }
     });
 }
 

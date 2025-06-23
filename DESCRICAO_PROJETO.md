@@ -122,8 +122,11 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
 *   **Funcionalidade:** Implementar *uma* das seguintes opções de forma básica:
     *   **Opção A: Previsão de Atrasos:** Modelo simples para prever probabilidade de atraso. Nota: A preparação de dados para esta funcionalidade foi iniciada com a inclusão do campo `data_conclusao_real` no modelo de processos.
     *   **Opção B: Classificação/Resumo Automático:** Ferramenta para gerar resumo curto ou classificar tipo de ação com base no nome/descrição do processo.
-*   **Implementação:** Escolher opção, preparar dados (se necessário), treinar modelo simples, integrar ao backend.
-*   **Status Atual:** A ser desenvolvido.
+*   **Implementação (Foco MVP):**
+    *   A Opção A (Previsão de Atrasos) será o foco inicial para o MVP.
+    *   Será desenvolvido um modelo estatístico simples para analisar o histórico de conclusão de processos (considerando `delivery_deadline` vs `data_conclusao_real`).
+    *   Este modelo atribuirá um indicador de risco de atraso a processos ativos, auxiliando na priorização e gestão proativa.
+*   **Status Atual:** Em planejamento e desenvolvimento inicial.
 
 ### 9. Requisitos Técnicos da Versão Estável
 
