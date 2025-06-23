@@ -160,7 +160,12 @@ async function fetchLawyers() {
         const lawyers = await response.json();
         const lawyersListDiv = document.getElementById('lawyers-list');
         lawyersListDiv.innerHTML = '';
-        lawyers.forEach(lawyer => { /* ... (render lawyer list item) ... */
+        lawyers.forEach(lawyer => {
+            // Não renderizar o usuário admin na lista de advogados
+            if (lawyer.oab === "00001SP" || lawyer.username === "admin") {
+                return; // Pula este advogado
+            }
+
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
             const escapedName = lawyer.name.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
