@@ -25,8 +25,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/frontend/dashboard.html">Painel Home</a>
                     </li>
-                    <li class="nav-item" id="admin-settings-nav-item-index" style="display: none;">
-                        <a class="nav-link" href="/frontend/admin_settings.html">Config. Admin</a>
+                    <!-- Link para Configurações do Usuário - ID e HREF corrigidos -->
+                    <li class="nav-item" id="user-settings-nav-item-index" style="display: none;">
+                        <a class="nav-link" href="/frontend/user_settings.html">Minhas Configurações</a>
                     </li>
                     <li class="nav-item">
                         <button id="logout-button-index" class="btn btn-outline-danger nav-link" style="border: none;">
@@ -40,33 +41,26 @@
 
     <div class="container">
 
-        <!-- Seção de Login Removida daqui, movida para login.html -->
-
-        <!-- Seção de Informações do Usuário / Logout -->
         <div id="user-info-section" class="my-3 p-3 border rounded shadow-sm" style="display:none;">
             <p>Logado como: <span id="user-oab-display"></span></p>
             <button id="logout-button" class="btn btn-danger btn-sm">Logout</button>
         </div>
 
-        <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
         <div id="main-content" style="display:none;">
             <h1 class="text-center my-4">Gerenciador de Processos Jurídicos</h1>
 
-            <!-- Seção de Advogados -->
-            <section id="lawyers-section" class="mb-5 p-4 border rounded shadow-sm">
+            <section id="lawyers-section" class="mb-5 p-4 border rounded shadow-sm" style="display: block;"> <!-- display:block por padrão, JS controla -->
                 <h2><i class="fas fa-gavel me-2"></i>Advogados</h2>
                 <div class="row">
-                    <div class="col-md-8"> <!-- Coluna para a lista -->
+                    <div class="col-md-8">
                         <h3>Lista de Advogados</h3>
                         <div class="input-group mb-3">
                             <span class="input-group-text" id="search-lawyers-icon"><i class="fas fa-search"></i></span>
                             <input type="text" id="search-lawyers" class="form-control" placeholder="Buscar advogados por nome, OAB, email...">
                         </div>
-                        <div id="lawyers-list" class="list-group list-scrollable-index">
-                            <!-- Lista de advogados será populada aqui com classes de list-group-item -->
-                        </div>
+                        <div id="lawyers-list" class="list-group list-scrollable-index"></div>
                     </div>
-                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                    <div class="col-md-4">
                         <h3>Adicionar/Atualizar Advogado</h3>
                         <form id="lawyer-form">
                             <input type="hidden" id="lawyer-id">
@@ -99,21 +93,18 @@
 
             <hr class="my-5">
 
-            <!-- Seção de Clientes -->
-            <section id="clients-section" class="mb-5 p-4 border rounded shadow-sm">
+            <section id="clients-section" class="mb-5 p-4 border rounded shadow-sm" style="display: block;"> <!-- display:block por padrão, JS controla -->
                 <h2><i class="fas fa-users me-2"></i>Clientes</h2>
                 <div class="row">
-                    <div class="col-md-8"> <!-- Coluna para a lista -->
+                    <div class="col-md-8">
                         <h3>Lista de Clientes</h3>
                         <div class="input-group mb-3">
                             <span class="input-group-text" id="search-clients-icon"><i class="fas fa-search"></i></span>
                             <input type="text" id="search-clients" class="form-control" placeholder="Buscar clientes por nome/razão social, área...">
                         </div>
-                        <div id="clients-list" class="list-group list-scrollable-index">
-                            <!-- Lista de clientes será populada aqui -->
-                        </div>
+                        <div id="clients-list" class="list-group list-scrollable-index"></div>
                     </div>
-                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                    <div class="col-md-4">
                         <h3>Adicionar/Atualizar Cliente</h3>
                         <form id="client-form">
                             <input type="hidden" id="client-id">
@@ -138,11 +129,10 @@
 
             <hr class="my-5">
 
-            <!-- Seção de Processos Jurídicos -->
             <section id="processes-section" class="mb-5 p-4 border rounded shadow-sm">
                 <h2><i class="fas fa-file-alt me-2"></i>Processos Jurídicos</h2>
                 <div class="row">
-                    <div class="col-md-8"> <!-- Coluna para a lista e botão de exclusão -->
+                    <div class="col-md-8">
                         <h3>Lista de Processos</h3>
                         <div class="input-group mb-3">
                             <span class="input-group-text" id="search-processes-icon"><i class="fas fa-search"></i></span>
@@ -151,11 +141,9 @@
                         <div style="margin-bottom: 10px;">
                             <button type="button" id="delete-selected-processes-btn" class="btn btn-danger mt-3"><i class="fas fa-trash-alt me-2"></i>Excluir Processos Selecionados</button>
                         </div>
-                        <div id="processes-list" class="list-group list-scrollable-index">
-                            <!-- Lista de processos será populada aqui -->
-                        </div>
+                        <div id="processes-list" class="list-group list-scrollable-index"></div>
                     </div>
-                    <div class="col-md-4"> <!-- Coluna para o formulário -->
+                    <div class="col-md-4">
                         <h3>Adicionar/Atualizar Processo</h3>
                         <form id="process-form">
                             <input type="hidden" id="process-id">
@@ -166,27 +154,27 @@
                             </div>
                             <div class="mb-3">
                                 <label for="process-lawyer" class="form-label">Advogado Responsável:</label>
-                                <select class="form-select" id="process-lawyer" required>
-                                    <!-- Opções de advogados serão populadas aqui -->
-                                </select>
+                                <select class="form-select" id="process-lawyer" required></select>
+                                <!-- <small class="form-text text-muted" id="process-lawyer-note"></small> -->
                             </div>
                             <div class="mb-3">
                                 <label for="process-client" class="form-label">Cliente:</label>
-                                <select class="form-select" id="process-client" required>
-                                    <!-- Opções de clientes serão populadas aqui -->
-                                </select>
+                                <select class="form-select" id="process-client" required></select>
                             </div>
                             <div class="mb-3">
                                 <label for="process-entry-date" class="form-label">Data de Entrada:</label>
                                 <input type="text" class="form-control" id="process-entry-date" required placeholder="dd/mm/aaaa">
+                                <div class="invalid-feedback" id="process-entry-date-error"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="process-delivery-deadline" class="form-label">Prazo para Entrega:</label>
                                 <input type="text" class="form-control" id="process-delivery-deadline" required placeholder="dd/mm/aaaa">
+                                <div class="invalid-feedback" id="process-delivery-deadline-error"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="process-fatal-deadline" class="form-label">Prazo Fatal:</label>
                                 <input type="text" class="form-control" id="process-fatal-deadline" required placeholder="dd/mm/aaaa">
+                                <div class="invalid-feedback" id="process-fatal-deadline-error"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="process-completion-date" class="form-label">Data de Conclusão Real:</label>
