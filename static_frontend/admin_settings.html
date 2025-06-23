@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações do Administrador - Gestão Jurídica</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS (pode usar o style.css principal ou um específico) -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .form-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: .25rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Gestão Jurídica</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/frontend/index.html">Gerenciamento de Dados</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/frontend/dashboard.html">Painel Home</a>
+                    </li>
+                    <!-- O link para Config. Admin será adicionado dinamicamente aqui pelo JS se o usuário for admin -->
+                    <li class="nav-item" id="admin-settings-nav-item" style="display: none;">
+                        <a class="nav-link active" aria-current="page" href="/frontend/admin_settings.html">Config. Admin</a>
+                    </li>
+                    <li class="nav-item">
+                        <button id="logout-button-admin-settings" class="btn btn-outline-danger nav-link" style="border: none;">
+                            <i class="fas fa-sign-out-alt me-1"></i>Sair
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <h2 class="mb-4 text-center">Configurações do Administrador</h2>
+
+                <!-- Seção de Informações do Admin -->
+                <div class="form-section">
+                    <h4>Informações da Conta</h4>
+                    <dl class="row">
+                        <dt class="col-sm-3">Nome:</dt>
+                        <dd class="col-sm-9" id="admin-name-display">-</dd>
+
+                        <dt class="col-sm-3">Username:</dt>
+                        <dd class="col-sm-9" id="admin-username-display">-</dd>
+
+                        <dt class="col-sm-3">OAB:</dt>
+                        <dd class="col-sm-9" id="admin-oab-display">-</dd>
+                    </dl>
+                </div>
+
+                <!-- Formulário para Alterar Email e Telegram ID -->
+                <div class="form-section">
+                    <h4>Atualizar Contato</h4>
+                    <form id="update-contact-form">
+                        <div class="mb-3">
+                            <label for="admin-email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="admin-email" required>
+                            <div class="invalid-feedback" id="admin-email-error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin-telegram" class="form-label">ID do Telegram (opcional):</label>
+                            <input type="text" class="form-control" id="admin-telegram" placeholder="@username ou ID numérico">
+                            <div class="invalid-feedback" id="admin-telegram-error"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar Contato</button>
+                        <div id="update-contact-feedback" class="mt-2"></div>
+                    </form>
+                </div>
+
+                <!-- Formulário para Alterar Senha -->
+                <div class="form-section">
+                    <h4>Alterar Senha</h4>
+                    <form id="update-password-form">
+                        <div class="mb-3">
+                            <label for="admin-current-password" class="form-label">Senha Atual:</label>
+                            <input type="password" class="form-control" id="admin-current-password" required>
+                            <div class="invalid-feedback" id="admin-current-password-error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin-new-password" class="form-label">Nova Senha:</label>
+                            <input type="password" class="form-control" id="admin-new-password" required>
+                            <div class="invalid-feedback" id="admin-new-password-error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin-confirm-password" class="form-label">Confirmar Nova Senha:</label>
+                            <input type="password" class="form-control" id="admin-confirm-password" required>
+                            <div class="invalid-feedback" id="admin-confirm-password-error"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Alterar Senha</button>
+                        <div id="update-password-feedback" class="mt-2"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Script específico para a página de configurações do admin -->
+    <script src="admin_settings.js"></script>
+</body>
+</html>
