@@ -240,14 +240,31 @@ async function fetchLawyers() {
 // --- Lógica de Busca ao Vivo ---
 function setupLiveSearch(inputId, listSelector) {
     const searchInput = document.getElementById(inputId);
-    if (!searchInput) return;
+    if (!searchInput) {
+        console.warn(`Search input not found: ${inputId}`);
+        return;
+    }
+    // Tenta pegar o contêiner principal da lista primeiro. Ex: '#lawyers-list' de '#lawyers-list .list-group-item'
+    const listContainerSelector = listSelector.split(' ')[0];
+    const listContainer = document.querySelector(listContainerSelector);
+
+    if (!listContainer) {
+        console.warn(`List container for selector '${listSelector}' (using '${listContainerSelector}') not found.`);
+        return;
+    }
+
+    // O seletor para os itens dentro do contêiner. Ex: '.list-group-item'
+    const itemSelectorInsideContainer = listSelector.substring(listContainerSelector.length).trim();
+
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase();
-        const items = document.querySelectorAll(listSelector);
+        // Busca os itens dentro do contêiner da lista já encontrado
+        const items = listContainer.querySelectorAll(itemSelectorInsideContainer);
+
         items.forEach((item) => {
             const itemText = item.textContent.toLowerCase();
             const isMatch = itemText.includes(searchTerm);
-            item.style.display = isMatch ? '' : 'none'; // Usar display para ocultar/mostrar
+            item.style.display = isMatch ? '' : 'none';
         });
     });
     searchInput.addEventListener('keydown', function(event) {
