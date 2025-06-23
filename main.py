@@ -214,20 +214,33 @@ def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), curren
     # Let's assume this endpoint will be refactored later for proper admin creation.
     # For now, to make it runnable, we'll add a placeholder hashed_password.
     # This is NOT secure for a real application.
-    placeholder_hashed_password = get_password_hash("default_password_needs_change")
+    # placeholder_hashed_password = get_password_hash("default_password_needs_change") # Removido
+    # Nickname (username) é agora obrigatório e vem de lawyer_in.username
+    # Senha padrão para novos advogados criados pelo admin
+    default_password_for_new_lawyers = "advogado"
+    hashed_password = get_password_hash(default_password_for_new_lawyers)
+
+    # Adicionar verificação de unicidade do username (Nickname)
+    existing_lawyer_username = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.username == lawyer_in.username).first()
+    if existing_lawyer_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nickname (username) já registrado."
+        )
 
     db_lawyer = lawyer_model.LawyerDB(
         **lawyer_in.model_dump(),
-        hashed_password=placeholder_hashed_password # Placeholder!
-        # is_admin field removed
+        hashed_password=hashed_password # Senha padrão "advogado"
     )
     db.add(db_lawyer)
     try:
         db.commit()
         db.refresh(db_lawyer)
-    except IntegrityError:
+    except IntegrityError: # Captura outras violações de unicidade (OAB, email) que podem não ter sido pegas acima
         db.rollback()
-        raise HTTPException(status_code=400, detail="Erro: Advogado com este OAB ou Email já existe.")
+        # A mensagem de erro do Pydantic para username já é específica.
+        # Esta é uma mensagem genérica para OAB/email se a verificação explícita falhar ou para outras constraints.
+        raise HTTPException(status_code=400, detail="Erro ao criar advogado. Verifique se OAB, Email ou Nickname já existem.")
     return db_lawyer
 
 @app.get("/lawyers/", response_model=List[LawyerResponse])
@@ -266,19 +279,35 @@ def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Dep
 
     # Verificar duplicação de email ou OAB se estiverem sendo alterados
     if 'email' in update_data and update_data['email'] != db_lawyer_to_update.email:
-        existing_email = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.email == update_data['email']).first()
+        existing_email = db.query(lawyer_model.LawyerDB).filter(
+            lawyer_model.LawyerDB.email == update_data['email'],
+            lawyer_model.LawyerDB.id != lawyer_id # Excluir o próprio usuário da checagem
+        ).first()
         if existing_email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email já registrado por outro usuário.")
 
     if 'oab' in update_data and update_data['oab'] != db_lawyer_to_update.oab:
-        existing_oab = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.oab == update_data['oab']).first()
+        existing_oab = db.query(lawyer_model.LawyerDB).filter(
+            lawyer_model.LawyerDB.oab == update_data['oab'],
+            lawyer_model.LawyerDB.id != lawyer_id # Excluir o próprio usuário da checagem
+        ).first()
         if existing_oab:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAB já registrada por outro usuário.")
-        # Não permitir que o admin altere a OAB do admin principal para algo diferente de "00001SP"
-        # ou o username para algo diferente de "admin", se este fosse o campo.
-        if db_lawyer_to_update.oab == "00001SP" and update_data['oab'] != "00001SP":
+        if db_lawyer_to_update.oab == "00001SP" and update_data['oab'] != "00001SP": # Protege OAB do admin
              raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A OAB do administrador principal não pode ser alterada para um valor diferente de '00001SP'.")
 
+    # Verificar e lidar com a atualização do username (Nickname)
+    if 'username' in update_data and update_data['username'] != db_lawyer_to_update.username:
+        # Admin não pode mudar o username do "Admin User" por aqui.
+        if db_lawyer_to_update.username == "admin" and update_data['username'] != "admin":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="O Nickname (username) do administrador principal ('admin') não pode ser alterado por este endpoint.")
+
+        existing_username = db.query(lawyer_model.LawyerDB).filter(
+            lawyer_model.LawyerDB.username == update_data['username'],
+            lawyer_model.LawyerDB.id != lawyer_id # Excluir o próprio usuário da checagem
+        ).first()
+        if existing_username:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname (username) já registrado por outro usuário.")
 
     for key, value in update_data.items():
         setattr(db_lawyer_to_update, key, value)

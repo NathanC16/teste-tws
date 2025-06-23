@@ -17,12 +17,26 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    # Tenta encontrar o advogado pelo username primeiro
-    db_lawyer = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.username == form_data.username).first()
+    from sqlalchemy import func # Importar func para func.lower()
 
-    # Se não encontrar pelo username, tenta pela OAB
+    # Tenta encontrar o advogado pelo username (Nickname) de forma case-insensitive
+    db_lawyer = db.query(lawyer_models.LawyerDB).filter(
+        func.lower(lawyer_models.LawyerDB.username) == func.lower(form_data.username)
+    ).first()
+
+    # Se não encontrar pelo username, tenta pela OAB (convertendo a entrada para maiúsculas, pois OABs são armazenadas em maiúsculas)
     if not db_lawyer:
-        db_lawyer = db.query(lawyer_models.LawyerDB).filter(lawyer_models.LawyerDB.oab == form_data.username).first()
+        db_lawyer = db.query(lawyer_models.LawyerDB).filter(
+            lawyer_models.LawyerDB.oab == form_data.username.upper()
+        ).first()
+
+    # Se ainda não encontrou, pode ser que o usuário digitou a OAB em minúsculas e a primeira query (username) pegou por acaso
+    # se o username fosse igual à OAB em minúsculas. Uma checagem final mais explícita:
+    if not db_lawyer:
+        db_lawyer = db.query(lawyer_models.LawyerDB).filter(
+             lawyer_models.LawyerDB.oab == form_data.username # Sem .upper() para o caso de já estar correta
+        ).first()
+
 
     # Verifica se o advogado foi encontrado e se a senha está correta
     if not db_lawyer or not verify_password(form_data.password, db_lawyer.hashed_password):

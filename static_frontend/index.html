@@ -70,6 +70,12 @@
                                 <div class="invalid-feedback" id="lawyer-name-error"></div>
                             </div>
                             <div class="mb-3">
+                                <label for="lawyer-username" class="form-label">Nickname (para login):</label>
+                                <input type="text" class="form-control" id="lawyer-username" required minlength="3" maxlength="20" pattern="^[a-zA-Z0-9]+$">
+                                <small class="form-text text-muted">3-20 caracteres alfanuméricos, sem espaços.</small>
+                                <div class="invalid-feedback" id="lawyer-username-error"></div>
+                            </div>
+                            <div class="mb-3">
                                 <label for="lawyer-oab" class="form-label">OAB:</label>
                                 <input type="text" class="form-control" id="lawyer-oab" required>
                                 <div class="invalid-feedback" id="lawyer-oab-error"></div>
@@ -80,8 +86,8 @@
                                 <div class="invalid-feedback" id="lawyer-email-error"></div>
                             </div>
                             <div class="mb-3">
-                                <label for="lawyer-telegram" class="form-label">ID Telegram:</label>
-                                <input type="text" class="form-control" id="lawyer-telegram">
+                                <label for="lawyer-telegram" class="form-label">ID Telegram (opcional):</label>
+                                <input type="text" class="form-control" id="lawyer-telegram" placeholder="@username ou ID numérico">
                                 <div class="invalid-feedback" id="lawyer-telegram-error"></div>
                             </div>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Salvar Advogado</button>
