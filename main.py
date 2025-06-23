@@ -71,8 +71,48 @@ async def startup_event():
         app_logger.error(f"Erro durante a criação/verificação do usuário admin no startup: {e}", exc_info=True)
         db.rollback() # Garante rollback em caso de erro durante a criação do admin
     finally:
-        db.close() # Fecha a sessão do DB
+        db.close() # Fecha a sessão do DB usada para o admin
     # --- Fim da Criação automática do Admin User ---
+
+    # --- Criação automática do Usuário "advogado" para Testes ---
+    db_test_user: Session = next(get_db())
+    try:
+        test_user_username = "advogado"
+        test_user_oab = "12345SP" # OAB válida e única para teste
+        test_user_email = "advogado@example.com"
+
+        # Verificar se já existe por username ou OAB ou email
+        existing_test_user = db_test_user.query(lawyer_model.LawyerDB).filter(
+            (lawyer_model.LawyerDB.username == test_user_username) |
+            (lawyer_model.LawyerDB.oab == test_user_oab) |
+            (lawyer_model.LawyerDB.email == test_user_email)
+        ).first()
+
+        if not existing_test_user:
+            app_logger.info(f"Usuário de teste (Username: {test_user_username} / OAB: {test_user_oab}) não encontrado. Criando...")
+            hashed_password_test_user = get_password_hash("advogado")
+            new_test_user = lawyer_model.LawyerDB(
+                name="Advogado de Teste",
+                oab=test_user_oab,
+                email=test_user_email,
+                username=test_user_username,
+                hashed_password=hashed_password_test_user,
+                telegram_id=None
+            )
+            db_test_user.add(new_test_user)
+            db_test_user.commit()
+            app_logger.info(f"Usuário de teste (Username: {test_user_username} / OAB: {test_user_oab}) criado com sucesso.")
+        else:
+            app_logger.info(f"Usuário de teste (Username: {existing_test_user.username} / OAB: {existing_test_user.oab}) já existe.")
+    except IntegrityError as ie:
+        app_logger.warning(f"IntegrityError ao tentar criar usuário de teste (pode já existir parcialmente ou conflito de dados únicos): {ie}")
+        db_test_user.rollback()
+    except Exception as e:
+        app_logger.error(f"Erro durante a criação/verificação do usuário de teste no startup: {e}", exc_info=True)
+        db_test_user.rollback()
+    finally:
+        db_test_user.close() # Fecha a sessão do DB usada para o usuário de teste
+    # --- Fim da Criação automática do Usuário "advogado" ---
 
     # Initialize Telegram bot
     # Import here to avoid circular imports if telegram_bot itself imports something from main at module level
