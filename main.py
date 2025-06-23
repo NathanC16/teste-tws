@@ -42,6 +42,38 @@ scheduler = BackgroundScheduler(timezone="America/Sao_Paulo") # Use a relevant t
 async def startup_event():
     app_logger = logging.getLogger(__name__)
 
+    # --- Criação automática do Admin User ---
+    db: Session = next(get_db()) # Obtém uma sessão de DB
+    try:
+        admin_oab = "00001SP"
+        admin_username = "admin"
+        admin_user = db.query(lawyer_model.LawyerDB).filter(
+            (lawyer_model.LawyerDB.oab == admin_oab) | (lawyer_model.LawyerDB.username == admin_username)
+        ).first()
+
+        if not admin_user:
+            app_logger.info(f"Usuário admin (OAB: {admin_oab} / Username: {admin_username}) não encontrado. Criando...")
+            hashed_password = get_password_hash("admin")
+            new_admin = lawyer_model.LawyerDB(
+                name="Admin User",
+                oab=admin_oab,
+                email="admin@example.com", # Email padrão
+                username=admin_username,
+                hashed_password=hashed_password,
+                telegram_id=None # Admin não precisa de ID de telegram por padrão
+            )
+            db.add(new_admin)
+            db.commit()
+            app_logger.info(f"Usuário admin (OAB: {admin_oab} / Username: {admin_username}) criado com sucesso.")
+        else:
+            app_logger.info(f"Usuário admin (OAB: {admin_user.oab} / Username: {admin_user.username}) já existe.")
+    except Exception as e:
+        app_logger.error(f"Erro durante a criação/verificação do usuário admin no startup: {e}", exc_info=True)
+        db.rollback() # Garante rollback em caso de erro durante a criação do admin
+    finally:
+        db.close() # Fecha a sessão do DB
+    # --- Fim da Criação automática do Admin User ---
+
     # Initialize Telegram bot
     # Import here to avoid circular imports if telegram_bot itself imports something from main at module level
     from telegram_bot import initialize_bot_instance
