@@ -130,22 +130,31 @@ async function fetchAndSetCurrentUser_forIndexPage() {
 
             updateUIForIndexPage(true);
 
-            // Mostrar/Esconder link de Configurações do Admin
-            const adminSettingsNavItemIndex = document.getElementById('admin-settings-nav-item-index');
-            if (adminSettingsNavItemIndex) {
-                if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
-                    adminSettingsNavItemIndex.style.display = 'list-item'; // Ou 'block' ou '' dependendo do CSS
-                    console.log("[Script.js] Link 'Config. Admin' VISÍVEL para index.html.");
-                } else {
-                    adminSettingsNavItemIndex.style.display = 'none';
-                    console.log("[Script.js] Link 'Config. Admin' ESCONDIDO para index.html.");
+            // Mostrar link "Minhas Configurações" para todos os usuários logados
+            const userSettingsNavItemIndex = document.getElementById('user-settings-nav-item-index'); // ID do HTML atualizado
+            if (userSettingsNavItemIndex) {
+                if (currentUser) { // Se existe um usuário logado
+                    userSettingsNavItemIndex.style.display = 'list-item';
+                    // Ajustar o texto e href do link se ele foi copiado de admin_settings.html
+                    const linkElement = userSettingsNavItemIndex.querySelector('a');
+                    if (linkElement) {
+                        linkElement.textContent = 'Minhas Configurações';
+                        linkElement.href = '/frontend/user_settings.html';
+                    }
+                    console.log("[Script.js] Link 'Minhas Configurações' VISÍVEL para index.html.");
+                } else { // Isso não deve acontecer aqui, pois já teríamos redirecionado
+                    userSettingsNavItemIndex.style.display = 'none';
                 }
             } else {
-                console.warn("[Script.js] admin-settings-nav-item-index não encontrado no DOM de index.html.");
+                // Se o item da navbar em index.html não tiver o ID 'user-settings-nav-item-index'
+                // (por exemplo, se ainda for 'admin-settings-nav-item-index'), precisamos criar/ajustar.
+                // A abordagem atual espera que o HTML já tenha o item com o ID correto e display:none.
+                // Para este passo, vamos assumir que o HTML foi atualizado para ter:
+                // <li class="nav-item" id="user-settings-nav-item-index" style="display: none;">
+                //     <a class="nav-link" href="/frontend/user_settings.html">Minhas Configurações</a>
+                // </li>
+                console.warn("[Script.js] user-settings-nav-item-index não encontrado no DOM de index.html. Verifique o HTML.");
             }
-
-            // Remover os logs de depuração anteriores para a criação dinâmica, se ainda existirem.
-            // console.log("[Script.js] Usuário é admin...", etc.); // Remover estas linhas se existirem
 
             // Fetch initial data for index.html
             await populateLawyerOptions();
