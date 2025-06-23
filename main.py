@@ -347,17 +347,42 @@ def delete_client(client_id: int, db: Session = Depends(get_db), current_user: L
 # CRUD Endpoints for Legal Processes
 
 @app.post("/processes/", response_model=LegalProcess)
-def create_legal_process(process_in: LegalProcessCreate, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
-    # TODO (Future): Consider validating process_in.lawyer_id against current_user.id
-    # or automatically setting process_in.lawyer_id = current_user.id
-    lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == process_in.lawyer_id).first()
-    if not lawyer:
-        raise HTTPException(status_code=404, detail=f"Lawyer with id {process_in.lawyer_id} not found")
+def create_legal_process(process_in: LegalProcessCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)): # Alterado para lawyer_model.LawyerDB
+
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    final_lawyer_id = current_user.id
+
+    if is_admin:
+        # Se for admin, pode definir o lawyer_id a partir do payload, mas precisa existir
+        if process_in.lawyer_id:
+            target_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == process_in.lawyer_id).first()
+            if not target_lawyer:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Advogado com id {process_in.lawyer_id} não encontrado.")
+            final_lawyer_id = process_in.lawyer_id
+        else:
+            # Se admin não fornecer lawyer_id, pode-se atribuir a ele mesmo ou levantar erro.
+            # Por ora, vamos atribuir ao admin que está criando, ou exigir que seja explícito.
+            # Para simplificar, se admin e não especifica, usa o próprio ID do admin.
+            final_lawyer_id = current_user.id
+            # Ou: raise HTTPException(status_code=400, detail="Admin deve especificar um lawyer_id para o processo.")
+    else:
+        # Se não for admin, o lawyer_id é SEMPRE o do usuário logado
+        final_lawyer_id = current_user.id
+        if process_in.lawyer_id is not None and process_in.lawyer_id != current_user.id:
+            # Logar um aviso ou simplesmente ignorar, como decidido (ignorar e sobrescrever)
+            app_logger = logging.getLogger(__name__)
+            app_logger.warning(f"Usuário não-admin {current_user.username} tentou criar processo para lawyer_id {process_in.lawyer_id}. Será sobrescrito para {current_user.id}.")
+
+    # Validar client_id
     client = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == process_in.client_id).first()
     if not client:
-        raise HTTPException(status_code=404, detail=f"Client with id {process_in.client_id} not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cliente com id {process_in.client_id} não encontrado.")
 
-    db_process = process_model.LegalProcessDB(**process_in.model_dump())
+    # Criar o dicionário de dados para o novo processo, garantindo o lawyer_id correto
+    process_data = process_in.model_dump()
+    process_data['lawyer_id'] = final_lawyer_id
+
+    db_process = process_model.LegalProcessDB(**process_data)
     db.add(db_process)
     try:
         db.commit()
@@ -377,13 +402,21 @@ def get_legal_processes(
     fatal_deadline_de: Optional[date] = None,
     fatal_deadline_ate: Optional[date] = None,
     db: Session = Depends(get_db),
-    current_user: LawyerResponse = Depends(get_current_user)
+    current_user: lawyer_model.LawyerDB = Depends(get_current_user) # Alterado para lawyer_model.LawyerDB
 ):
     query = db.query(process_model.LegalProcessDB)
+
+    # Se o usuário não for admin, filtre sempre pelos seus próprios processos
+    # e ignore qualquer filtro lawyer_id que venha da query string.
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+
+    if not is_admin:
+        query = query.filter(process_model.LegalProcessDB.lawyer_id == current_user.id)
+    elif lawyer_id is not None: # Se for admin, permitir filtrar por lawyer_id
+        query = query.filter(process_model.LegalProcessDB.lawyer_id == lawyer_id)
+
     if client_id is not None:
         query = query.filter(process_model.LegalProcessDB.client_id == client_id)
-    if lawyer_id is not None:
-        query = query.filter(process_model.LegalProcessDB.lawyer_id == lawyer_id)
     if action_type:
         query = query.filter(process_model.LegalProcessDB.action_type.contains(action_type))
     if status: # Este 'status' é o parâmetro de filtro
@@ -405,19 +438,32 @@ def get_legal_process(process_id: int, db: Session = Depends(get_db), current_us
 def update_legal_process(process_id: int, process_update: LegalProcessCreate, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
     db_process = db.query(process_model.LegalProcessDB).filter(process_model.LegalProcessDB.id == process_id).first()
     if db_process is None:
-        raise HTTPException(status_code=404, detail="Legal process not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Processo legal não encontrado")
 
-    if process_update.lawyer_id != db_process.lawyer_id:
-        lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == process_update.lawyer_id).first()
-        if not lawyer:
-            raise HTTPException(status_code=404, detail=f"Lawyer with id {process_update.lawyer_id} not found")
-    # Validate client_id if updated
-    if process_update.client_id != db_process.client_id:
-        client = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == process_update.client_id).first()
-        if not client:
-            raise HTTPException(status_code=404, detail=f"Client with id {process_update.client_id} not found")
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+
+    # Se não for admin, verificar se é o dono do processo
+    if not is_admin and db_process.lawyer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Não autorizado a modificar este processo.")
 
     update_data = process_update.model_dump(exclude_unset=True)
+
+    # Se não for admin, impedir a alteração do lawyer_id
+    if not is_admin and 'lawyer_id' in update_data and update_data['lawyer_id'] != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Não autorizado a alterar o advogado responsável deste processo.")
+
+    # Se for admin e tentar mudar lawyer_id, validar o novo advogado
+    if is_admin and 'lawyer_id' in update_data and update_data['lawyer_id'] != db_process.lawyer_id:
+        new_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == update_data['lawyer_id']).first()
+        if not new_lawyer:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Novo advogado com id {update_data['lawyer_id']} não encontrado.")
+
+    # Validar client_id se estiver sendo alterado
+    if 'client_id' in update_data and update_data['client_id'] != db_process.client_id:
+        new_client = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == update_data['client_id']).first()
+        if not new_client:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Novo cliente com id {update_data['client_id']} não encontrado.")
+
     for key, value in update_data.items():
         setattr(db_process, key, value)
 
@@ -427,10 +473,17 @@ def update_legal_process(process_id: int, process_update: LegalProcessCreate, db
     return db_process
 
 @app.delete("/processes/{process_id}")
-def delete_legal_process(process_id: int, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
+def delete_legal_process(process_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)): # Alterado para lawyer_model.LawyerDB
     db_process = db.query(process_model.LegalProcessDB).filter(process_model.LegalProcessDB.id == process_id).first()
     if db_process is None:
-        raise HTTPException(status_code=404, detail="Legal process not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Processo legal não encontrado")
+
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+
+    # Se não for admin, verificar se é o dono do processo
+    if not is_admin and db_process.lawyer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Não autorizado a excluir este processo.")
+
     db.delete(db_process)
     db.commit()
-    return {"message": "Legal process deleted successfully"}
+    return {"message": "Processo legal excluído com sucesso"}

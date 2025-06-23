@@ -44,22 +44,36 @@ async def read_users_me(current_user: lawyer_models.LawyerDB = Depends(get_curre
     # FastAPI o converterá automaticamente para o modelo Pydantic Lawyer (com alias lawyer_models.Lawyer).
     return current_user
 
-# --- Admin Settings ---
+# --- User Settings ---
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 import re
 
-class AdminSettingsUpdate(BaseModel):
+class UserSettingsUpdate(BaseModel): # Renomeado de AdminSettingsUpdate
+    name: Optional[str] = None # Adicionado nome
     email: Optional[EmailStr] = None
-    telegram_id: Optional[str] = None
+    telegram_id: Optional[str] = None # Permitir string vazia para limpar
     current_password: Optional[str] = None
     new_password: Optional[str] = None
 
-    @field_validator('telegram_id')
+    @field_validator('name')
+    @classmethod
+    def validate_user_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None:
+            value = value.strip()
+            if not value: # Se após strip for vazio
+                raise ValueError("Nome não pode ser vazio se fornecido.")
+        return value
+
+    @field_validator('telegram_id', mode='before') # mode='before' para processar antes da validação de tipo
     @classmethod
     def validate_telegram_id(cls, value: Optional[str]) -> Optional[str]:
-        if value is None or value.strip() == "":
-            return None # Permitir limpar o campo
+        if value is None:
+            return None
+        value = value.strip()
+        if value == "": # Se string vazia, tratar como None para limpar o campo
+            return None
+
         # Verifica se é um ID numérico (Chat ID)
         if re.match(r"^-?\d+$", value):
             return value
@@ -67,50 +81,46 @@ class AdminSettingsUpdate(BaseModel):
         if re.match(r"^@[a-zA-Z0-9_]{3,31}$", value):
             return value
         raise ValueError(
-            "ID do Telegram inválido. Deve ser um ID numérico ou um username no formato '@usuario' (3-31 caracteres)."
+            "ID do Telegram inválido. Deve ser um ID numérico ou um username no formato '@usuario' (3-31 caracteres alfanuméricos ou underscores)."
         )
 
     @field_validator('new_password')
     @classmethod
-    def validate_new_password_strength(cls, value: Optional[str], values) -> Optional[str]:
-        # Este validador é chamado mesmo se new_password for None.
-        # values.data contém os campos já validados ou os valores brutos.
-        current_password = values.data.get('current_password')
+    def validate_new_password_strength(cls, value: Optional[str], info) -> Optional[str]:
+        # Anteriormente 'values', agora 'info' em Pydantic v2 para acessar outros campos
+        current_password = info.data.get('current_password')
         if value is not None: # Se new_password foi fornecido
             if not current_password:
                 raise ValueError("Senha atual é obrigatória para definir uma nova senha.")
             if len(value) < 6:
                 raise ValueError("Nova senha deve ter pelo menos 6 caracteres.")
-            if value == current_password:
-                raise ValueError("Nova senha não pode ser igual à senha atual.")
-        elif current_password and value is None:
-            # Se current_password foi fornecida mas new_password não, isso é um erro de lógica do cliente,
-            # mas o modelo não deve falhar aqui, apenas não fazer nada com a senha.
-            # A lógica do endpoint tratará disso.
-            pass
+            if value == current_password: # Não deve ser igual à senha atual
+                 raise ValueError("Nova senha não pode ser igual à senha atual.")
+        # Não há 'else' aqui, pois se new_password for None, não há o que validar sobre ele.
+        # A lógica de current_password ser fornecida sem new_password é tratada no endpoint.
         return value
 
 @router.put("/users/me/settings", response_model=lawyer_models.Lawyer)
-async def update_admin_settings(
-    settings_update: AdminSettingsUpdate,
+async def update_user_settings( # Renomeado de update_admin_settings
+    settings_update: UserSettingsUpdate, # Renomeado para UserSettingsUpdate
     db: Session = Depends(get_db),
     current_user: lawyer_models.LawyerDB = Depends(get_current_user)
 ):
-    # Garantir que apenas o admin principal possa usar este endpoint
-    if not (current_user.oab == "00001SP" or current_user.username == "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso negado. Apenas o administrador principal pode alterar estas configurações."
-        )
+    # Esta rota é para o usuário logado (/me/), então current_user é o usuário a ser atualizado.
+    # A restrição para admin foi removida, qualquer usuário pode atualizar seus próprios dados.
+    user_to_update = current_user
 
-    user_to_update = current_user # É o próprio admin
+    # Atualizar Nome
+    if settings_update.name is not None:
+        user_to_update.name = settings_update.name.strip() # .strip() já feito no validador
 
     # Atualizar Email
     if settings_update.email is not None:
         if settings_update.email != user_to_update.email:
+            # Verificar se o novo email já está em uso por OUTRO usuário
             existing_lawyer_email = db.query(lawyer_models.LawyerDB).filter(
                 lawyer_models.LawyerDB.email == settings_update.email,
-                lawyer_models.LawyerDB.id != user_to_update.id # Não comparar com o próprio usuário
+                lawyer_models.LawyerDB.id != user_to_update.id
             ).first()
             if existing_lawyer_email:
                 raise HTTPException(
@@ -121,14 +131,14 @@ async def update_admin_settings(
 
     # Atualizar Telegram ID
     # O validador Pydantic já tratou o formato e a limpeza (string vazia para None)
-    if settings_update.telegram_id is not None or settings_update.telegram_id == None and user_to_update.telegram_id is not None:
-         # Permite definir como None para limpar, ou atualizar se fornecido
+    # Apenas atualiza se o campo estiver presente no payload (mesmo que seja None para limpar)
+    if 'telegram_id' in settings_update.model_fields_set:
         user_to_update.telegram_id = settings_update.telegram_id
 
 
     # Atualizar Senha
-    if settings_update.new_password:
-        if not settings_update.current_password:
+    if settings_update.new_password: # Implica que current_password também foi validado pelo Pydantic se new_password foi fornecido
+        if not settings_update.current_password: # Dupla checagem, embora o validador Pydantic já deva ter pego
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Senha atual é obrigatória para definir uma nova senha."
@@ -138,8 +148,13 @@ async def update_admin_settings(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Senha atual incorreta."
             )
-        # Validação de força e igualdade já foi feita pelo Pydantic validator
         user_to_update.hashed_password = get_password_hash(settings_update.new_password)
+    elif settings_update.current_password and not settings_update.new_password:
+        # Caso onde current_password é fornecida mas new_password não.
+        # Isso pode ser um erro de UI, mas não deve causar falha aqui.
+        # Apenas ignoramos, pois não há nova senha para definir.
+        pass
+
 
     try:
         db.add(user_to_update)

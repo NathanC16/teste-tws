@@ -81,13 +81,73 @@ def create_synthetic_data(db: Session):
     #     print(f"Usuário Advogado Padrão '{STD_LAWYER_OAB}' já existe.") # Usar constante aqui
 
     created_lawyers = []
-    # Adicionar admin à lista se foi criado ou já existia e é necessário para processos
-    if admin_user: created_lawyers.append(admin_user)
-    # std_lawyer removido desta lista
+    # Adicionar admin à lista se foi criado ou já existia
+    if admin_user:
+        created_lawyers.append(admin_user)
+
+    # --- Criação/Verificação do Usuário "advogado" de Teste (Padrão) ---
+    # Este usuário também será criado pelo main.py no startup se não existir.
+    # O seed_db.py também o cria para garantir que ele exista se o seed for rodado isoladamente
+    # e para que possamos associar processos a ele aqui.
+    TEST_USER_USERNAME = "advogado"
+    TEST_USER_OAB = "12345SP" # Deve ser único e válido
+    TEST_USER_EMAIL = "advogado@example.com" # Deve ser único
+    TEST_USER_PASSWORD = "advogado"
+
+    test_user_lawyer = db.query(LawyerDB).filter(
+        (LawyerDB.username == TEST_USER_USERNAME) | (LawyerDB.oab == TEST_USER_OAB)
+    ).first()
+
+    if not test_user_lawyer:
+        hashed_password_test_user = get_password_hash(TEST_USER_PASSWORD)
+        test_user_lawyer = LawyerDB(
+            name="Advogado de Teste",
+            oab=TEST_USER_OAB,
+            email=TEST_USER_EMAIL,
+            username=TEST_USER_USERNAME,
+            hashed_password=hashed_password_test_user,
+            telegram_id=None
+        )
+        db.add(test_user_lawyer)
+        try:
+            db.commit()
+            db.refresh(test_user_lawyer)
+            print(f"Usuário de teste '{TEST_USER_USERNAME}' (OAB: {TEST_USER_OAB}) criado/verificado.")
+            created_lawyers.append(test_user_lawyer) # Adicionar à lista para distribuição de processos
+        except IntegrityError:
+            db.rollback()
+            print(f"Aviso: Conflito ao tentar criar usuário de teste '{TEST_USER_USERNAME}' (OAB: {TEST_USER_OAB}). Pode já existir com email conflitante. Tentando buscar novamente.")
+            test_user_lawyer = db.query(LawyerDB).filter(
+                (LawyerDB.username == TEST_USER_USERNAME) | (LawyerDB.oab == TEST_USER_OAB) | (LawyerDB.email == TEST_USER_EMAIL)
+            ).first()
+            if test_user_lawyer:
+                 print(f"Usuário de teste '{TEST_USER_USERNAME}' encontrado após conflito.")
+                 if not any(lawyer.id == test_user_lawyer.id for lawyer in created_lawyers): # Evitar duplicatas na lista
+                    created_lawyers.append(test_user_lawyer)
+            else:
+                print(f"ERRO: Não foi possível criar ou encontrar o usuário de teste '{TEST_USER_USERNAME}' após conflito.")
+    else:
+        print(f"Usuário de teste '{test_user_lawyer.username}' (OAB: {test_user_lawyer.oab}) já existe.")
+        if not any(lawyer.id == test_user_lawyer.id for lawyer in created_lawyers): # Adicionar se não estiver já na lista
+            created_lawyers.append(test_user_lawyer)
+
 
     created_clients = []
 
-    print(f"Gerando {NUM_LAWYERS} advogados aleatórios...")
+    # Ajustar NUM_LAWYERS para não contar o admin e o test_user se eles já foram adicionados
+    # e queremos exatamente NUM_LAWYERS advogados *aleatórios* além desses.
+    # Se NUM_LAWYERS é o total desejado incluindo admin e test_user, a lógica precisa de ajuste.
+    # Por simplicidade, vamos assumir que NUM_LAWYERS é para os *adicionais* aleatórios.
+
+    num_existing_special_lawyers = 0
+    if admin_user: num_existing_special_lawyers += 1
+    if test_user_lawyer and test_user_lawyer.oab != ADMIN_OAB : num_existing_special_lawyers +=1 # Evitar contar duas vezes se admin for o test_user
+
+    actual_num_random_lawyers_to_create = NUM_LAWYERS
+    # Se NUM_LAWYERS for o total, então: actual_num_random_lawyers_to_create = NUM_LAWYERS - num_existing_special_lawyers
+    # Mas a descrição original do NUM_LAWYERS parece ser para os aleatórios.
+
+    print(f"Gerando {actual_num_random_lawyers_to_create} advogados aleatórios...")
     for i in range(NUM_LAWYERS):
         ufs = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
         # Gerar uma OAB que não seja ADMIN
@@ -165,10 +225,38 @@ def create_synthetic_data(db: Session):
     process_statuses = ['ativo', 'suspenso', 'concluído', 'arquivado']
 
     if not created_lawyers or not created_clients:
-        print("Não foi possível criar processos pois não há advogados ou clientes gerados.")
+        print("Não foi possível criar processos pois não há advogados ou clientes suficientes gerados.")
         return
 
+    # Garantir que test_user_lawyer (advogado@example.com) tenha alguns processos
+    num_processes_for_test_user = 0
+    if test_user_lawyer and test_user_lawyer.id:
+        print(f"Atribuindo aproximadamente 10% dos processos (ou pelo menos 5, máx 10) ao usuário de teste '{test_user_lawyer.username}' (ID: {test_user_lawyer.id}).")
+        target_processes_for_test_user = max(5, min(10, int(NUM_PROCESSES * 0.1)))
+    else:
+        target_processes_for_test_user = 0
+        print(f"Usuário de teste 'advogado' não encontrado ou sem ID, não serão atribuídos processos específicos a ele.")
+
+
     for i in range(NUM_PROCESSES):
+        assigned_lawyer_id = None
+        # Atribuir os primeiros 'target_processes_for_test_user' processos ao test_user_lawyer
+        if test_user_lawyer and test_user_lawyer.id and num_processes_for_test_user < target_processes_for_test_user:
+            assigned_lawyer_id = test_user_lawyer.id
+            num_processes_for_test_user += 1
+        else:
+            # Para os demais, escolher aleatoriamente da lista `created_lawyers`
+            # que pode incluir o admin, o test_user (para mais alguns processos), e os aleatórios.
+            if created_lawyers: # Certificar que a lista não está vazia
+                assigned_lawyer_id = random.choice(created_lawyers).id
+            else: # Fallback muito improvável, mas seguro
+                print("ERRO: Lista created_lawyers está vazia na atribuição aleatória de processos.")
+                continue
+
+        if assigned_lawyer_id is None: # Segurança adicional
+            print(f"AVISO: Não foi possível determinar um advogado para o processo {i}. Pulando.")
+            continue
+
         entry_date = fake.date_between(start_date='-2y', end_date='today')
         # Prazo de entrega entre 15 e 90 dias após a entrada
         delivery_deadline = entry_date + timedelta(days=random.randint(15, 90))
@@ -206,8 +294,8 @@ def create_synthetic_data(db: Session):
             data_conclusao_real = max(data_conclusao_real, entry_date + timedelta(days=1))
 
         process = LegalProcessDB(
-            process_number=f"CNJ-{random.randint(1000000,9999999)}-{random.randint(10,99)}.{datetime.now().year}.{random.randint(1,9)}.{random.randint(10,99)}.{random.randint(1000,9999)}",
-            lawyer_id=random.choice(created_lawyers).id,
+            process_number=f"CNJ-{random.randint(1000000,9999999)}-{random.randint(10,99)}.{datetime.now().year}.{random.randint(1,9)}.{random.randint(10,99)}.{random.randint(1000,9999)}", # Garantir unicidade se necessário
+            lawyer_id=assigned_lawyer_id, # Usar o ID do advogado determinado acima
             client_id=random.choice(created_clients).id,
             entry_date=entry_date,
             delivery_deadline=delivery_deadline,

@@ -539,21 +539,24 @@ async function fetchCurrentUserForDashboard() {
             dashboardCurrentUser = await response.json();
             console.log('[Dashboard Debug] Usuário atual do dashboard:', dashboardCurrentUser);
 
-            // Mostrar/Esconder link de Configurações do Admin
-            const adminSettingsNavItemDashboard = document.getElementById('admin-settings-nav-item-dashboard');
-            if (adminSettingsNavItemDashboard) {
-                if (dashboardCurrentUser && (dashboardCurrentUser.oab === "00001SP" || dashboardCurrentUser.username === "admin")) {
-                    adminSettingsNavItemDashboard.style.display = 'list-item'; // Ou 'block' ou ''
-                    console.log("[Dashboard.js] Link 'Config. Admin' VISÍVEL para dashboard.html.");
+            // Mostrar link "Minhas Configurações" para todos os usuários logados
+            const userSettingsNavItemDashboard = document.getElementById('user-settings-nav-item-dashboard'); // ID do HTML atualizado
+            if (userSettingsNavItemDashboard) {
+                if (dashboardCurrentUser) { // Se existe um usuário logado
+                    userSettingsNavItemDashboard.style.display = 'list-item';
+                    // Ajustar o texto e href do link
+                    const linkElement = userSettingsNavItemDashboard.querySelector('a');
+                    if (linkElement) {
+                        linkElement.textContent = 'Minhas Configurações';
+                        linkElement.href = '/frontend/user_settings.html';
+                    }
+                    console.log("[Dashboard.js] Link 'Minhas Configurações' VISÍVEL para dashboard.html.");
                 } else {
-                    adminSettingsNavItemDashboard.style.display = 'none';
-                    console.log("[Dashboard.js] Link 'Config. Admin' ESCONDIDO para dashboard.html.");
+                    userSettingsNavItemDashboard.style.display = 'none';
                 }
             } else {
-                console.warn("[Dashboard.js] admin-settings-nav-item-dashboard não encontrado no DOM de dashboard.html.");
+                console.warn("[Dashboard.js] user-settings-nav-item-dashboard não encontrado no DOM de dashboard.html. Verifique o HTML.");
             }
-
-            // Remover os logs de depuração anteriores para a criação dinâmica, se ainda existirem.
 
             return true;
         } else {
