@@ -541,23 +541,27 @@ async function fetchCurrentUserForDashboard() {
 
             // Adicionar link de Configurações do Admin se for o admin
             if (dashboardCurrentUser && (dashboardCurrentUser.oab === "00001SP" || dashboardCurrentUser.username === "admin")) {
+                console.log("[Dashboard.js] Usuário é admin. Tentando adicionar link 'Config. Admin'. CurrentUser:", dashboardCurrentUser);
                 const navbarNav = document.querySelector('#navbarNav .navbar-nav');
-                // Tenta encontrar o botão de logout pela ID específica do dashboard
                 const logoutButtonLi = document.getElementById('logout-button-dashboard')?.closest('li.nav-item');
+
+                console.log("[Dashboard.js] NavbarNav encontrado:", navbarNav);
+                console.log("[Dashboard.js] LogoutButtonLi encontrado:", logoutButtonLi);
 
                 if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-dashboard')) {
                     const adminSettingsLi = document.createElement('li');
                     adminSettingsLi.className = 'nav-item';
                     adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-dashboard" href="/frontend/admin_settings.html">Config. Admin</a>`;
 
-                    // Insere antes do botão de logout
                     navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
-                    console.log('[Dashboard Debug] Link Config. Admin adicionado à navbar.');
+                    console.log('[Dashboard.js] Link Config. Admin adicionado à navbar.');
                 } else {
-                    if (!navbarNav) console.warn('[Dashboard Debug] Navbar #navbarNav não encontrada.');
-                    if (!logoutButtonLi) console.warn('[Dashboard Debug] Botão de logout (logout-button-dashboard) ou seu <li> pai não encontrado.');
-                    if (document.getElementById('admin-settings-nav-link-dashboard')) console.log('[Dashboard Debug] Link Config. Admin já existe.');
+                    if (!navbarNav) console.warn('[Dashboard.js] Navbar #navbarNav .navbar-nav não encontrada.');
+                    if (!logoutButtonLi) console.warn('[Dashboard.js] LogoutButtonLi (logout-button-dashboard) não encontrado.');
+                    if (document.getElementById('admin-settings-nav-link-dashboard')) console.log('[Dashboard.js] Link Config. Admin para dashboard.html já existe.');
                 }
+            } else {
+                console.log("[Dashboard.js] Usuário não é admin ou dashboardCurrentUser não definido. Link 'Config. Admin' não será adicionado. CurrentUser:", dashboardCurrentUser);
             }
             return true;
         } else {

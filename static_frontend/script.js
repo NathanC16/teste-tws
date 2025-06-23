@@ -130,18 +130,28 @@ async function fetchAndSetCurrentUser_forIndexPage() {
 
             // Adicionar link de Configurações do Admin se for o admin
             if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
+                console.log("[Script.js] Usuário é admin. Tentando adicionar link 'Config. Admin'. CurrentUser:", currentUser);
                 const navbarNav = document.querySelector('#navbarNav .navbar-nav');
                 const logoutButtonLi = document.getElementById('logout-button-index')?.closest('li.nav-item') ||
                                      document.getElementById('logout-button')?.closest('li.nav-item');
+
+                console.log("[Script.js] NavbarNav encontrado:", navbarNav);
+                console.log("[Script.js] LogoutButtonLi encontrado:", logoutButtonLi);
 
                 if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-index')) {
                     const adminSettingsLi = document.createElement('li');
                     adminSettingsLi.className = 'nav-item';
                     adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-index" href="/frontend/admin_settings.html">Config. Admin</a>`;
 
-                    // Insere antes do botão de logout
                     navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
+                    console.log("[Script.js] Link 'Config. Admin' adicionado para index.html.");
+                } else {
+                    if (!navbarNav) console.warn("[Script.js] NavbarNav (#navbarNav .navbar-nav) não encontrado para index.html.");
+                    if (!logoutButtonLi) console.warn("[Script.js] LogoutButtonLi não encontrado para index.html.");
+                    if (document.getElementById('admin-settings-nav-link-index')) console.log("[Script.js] Link 'Config. Admin' para index.html já existe.");
                 }
+            } else {
+                console.log("[Script.js] Usuário não é admin ou currentUser não definido. Link 'Config. Admin' não será adicionado. CurrentUser:", currentUser);
             }
 
             // Fetch initial data for index.html
