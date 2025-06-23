@@ -15,8 +15,85 @@ NUM_LAWYERS = 50
 NUM_CLIENTS = 100
 NUM_PROCESSES = 250
 
+import re # Importar re para a função de normalização
+from unidecode import unidecode # Importar unidecode
+
 # Inicializa o Faker para dados em português do Brasil
 fake = Faker('pt_BR')
+
+def generate_valid_nickname(name: str, existing_nicknames: set, max_len: int = 20, min_len: int = 3) -> str:
+    """
+    Gera um nickname válido a partir de um nome, removendo acentos,
+    caracteres especiais (exceto letras e números), convertendo para minúsculas,
+    e tentando garantir unicidade adicionando um sufixo numérico se necessário.
+    """
+    # 1. Converter para minúsculas e remover acentos
+    normalized_name = unidecode(name.lower())
+    # 2. Remover espaços e manter apenas letras e números
+    base_nickname = re.sub(r'[^a-z0-9]', '', normalized_name)
+
+    # 3. Ajustar comprimento se necessário antes de verificar unicidade
+    if not base_nickname: # Se o nome não tiver caracteres alfanuméricos
+        base_nickname = fake.lexify(text='?????????', letters='abcdefghijklmnopqrstuvwxyz0123456789')[:random.randint(min_len, 10)]
+
+
+    # Truncar se exceder o comprimento máximo permitido menos espaço para sufixo (ex: _99)
+    # Deixar espaço para um sufixo como "_xyz" se necessário
+    # O validador Pydantic é de 3 a 20.
+    # Se base_nickname for muito longo, truncar para, por exemplo, 15-17 para dar espaço para sufixos.
+    if len(base_nickname) > max_len - 3: # Deixa espaço para _ e 2 dígitos
+         base_nickname = base_nickname[:max_len - 3]
+
+    # Garantir comprimento mínimo se ainda for muito curto após normalização
+    if len(base_nickname) < min_len:
+        needed_chars = min_len - len(base_nickname)
+        base_nickname += fake.lexify(text='?' * needed_chars, letters='abcdefghijklmnopqrstuvwxyz0123456789')
+
+
+    nickname_candidate = base_nickname[:max_len] # Garante que o base inicial não exceda max_len
+
+    suffix_counter = 1
+    while True:
+        # Validar formato e comprimento ANTES de checar no set
+        is_valid_format = bool(re.match(r"^[a-z0-9]{" + str(min_len) + "," + str(max_len) + r"}$", nickname_candidate))
+
+        if is_valid_format and nickname_candidate not in existing_nicknames:
+            break # Nickname válido e único encontrado
+
+        # Se inválido ou já existe, tenta gerar novo ou com sufixo
+        if suffix_counter > 100 : # Limite de tentativas com sufixos
+            # Fallback mais agressivo para garantir unicidade e formato
+            nickname_candidate = fake.unique.user_name().lower()
+            nickname_candidate = re.sub(r'[^a-z0-9]', '', nickname_candidate)
+            if len(nickname_candidate) < min_len : nickname_candidate += fake.lexify(text='?'*(min_len - len(nickname_candidate)))
+            nickname_candidate = nickname_candidate[:max_len]
+            # Se ainda colidir após este fallback, a constraint do DB pegará (muito raro)
+            if nickname_candidate not in existing_nicknames and \
+               re.match(r"^[a-z0-9]{" + str(min_len) + "," + str(max_len) + r"}$", nickname_candidate):
+                break
+            # Se o fallback do faker ainda não funcionar, gera um bem aleatório
+            nickname_candidate = "user" + str(random.randint(10000,999999))[:max_len-4] # "user" + até 16 digitos
+            # Recalcular para garantir que não colida com algo que por acaso seja "user" + numero
+            # Esta parte pode ser simplificada se a colisão for extremamente rara
+            # e deixada para a constraint do DB.
+            # Por simplicidade, vamos assumir que este fallback é suficientemente único.
+            if len(nickname_candidate) > max_len: nickname_candidate = nickname_candidate[:max_len]
+            if len(nickname_candidate) < min_len: nickname_candidate = (nickname_candidate + "xyzabc")[:min_len]
+
+            # Última checagem de formato antes de sair do loop de fallback
+            if not re.match(r"^[a-z0-9]{" + str(min_len) + "," + str(max_len) + r"}$", nickname_candidate):
+                 nickname_candidate = "generic" + str(random.randint(100,999)) # Último recurso
+            break # Sai do while após fallback final
+
+        # Tenta com sufixo numérico
+        # Garante que base_nickname + sufixo não exceda max_len
+        max_base_for_suffix = max_len - len(str(suffix_counter))
+        current_base = base_nickname[:max_base_for_suffix]
+        nickname_candidate = f"{current_base}{suffix_counter}"
+        suffix_counter += 1
+
+    existing_nicknames.add(nickname_candidate)
+    return nickname_candidate
 
 def create_synthetic_data(db: Session):
     # Apaga todas as tabelas existentes que são gerenciadas pelo Base.metadata
