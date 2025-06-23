@@ -173,7 +173,14 @@ def get_areas_of_expertise():
 
 @app.post("/lawyers/", response_model=LawyerResponse)
 def create_lawyer(lawyer_in: LawyerCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
-    # Any authenticated user can now create a "lawyer" (which is now just a user).
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem criar novos advogados."
+        )
+
+    # A lógica abaixo permanece, pois é para criação pelo admin
     # Note: lawyer_in is LawyerCreate, which doesn't include password.
     # This endpoint might need its own Pydantic model if admins should set passwords/is_admin status directly.
     # For now, this creates a lawyer without a password, which is problematic.
@@ -241,29 +248,61 @@ def get_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: lawy
 
 @app.put("/lawyers/{lawyer_id}", response_model=LawyerResponse)
 def update_lawyer(lawyer_id: int, lawyer_update: LawyerCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
-    # Note: LawyerCreate doesn't allow updating password.
-    # is_admin field is removed.
-    db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
-    if db_lawyer is None:
-        raise HTTPException(status_code=404, detail="Lawyer not found")
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        # Um não-admin não pode atualizar outros advogados.
+        # A atualização do próprio perfil (nome, email, telegram, senha) é feita via /auth/users/me/settings
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem atualizar dados de advogados."
+        )
+
+    # Lógica de atualização (apenas para admin)
+    db_lawyer_to_update = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
+    if db_lawyer_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Advogado não encontrado.")
 
     update_data = lawyer_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_lawyer, key, value)
 
-    db.add(db_lawyer)
+    # Verificar duplicação de email ou OAB se estiverem sendo alterados
+    if 'email' in update_data and update_data['email'] != db_lawyer_to_update.email:
+        existing_email = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.email == update_data['email']).first()
+        if existing_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email já registrado por outro usuário.")
+
+    if 'oab' in update_data and update_data['oab'] != db_lawyer_to_update.oab:
+        existing_oab = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.oab == update_data['oab']).first()
+        if existing_oab:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OAB já registrada por outro usuário.")
+        # Não permitir que o admin altere a OAB do admin principal para algo diferente de "00001SP"
+        # ou o username para algo diferente de "admin", se este fosse o campo.
+        if db_lawyer_to_update.oab == "00001SP" and update_data['oab'] != "00001SP":
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A OAB do administrador principal não pode ser alterada para um valor diferente de '00001SP'.")
+
+
+    for key, value in update_data.items():
+        setattr(db_lawyer_to_update, key, value)
+
+    db.add(db_lawyer_to_update)
     db.commit()
-    db.refresh(db_lawyer)
-    return db_lawyer
+    db.refresh(db_lawyer_to_update)
+    return db_lawyer_to_update
 
 @app.delete("/lawyers/{lawyer_id}")
 def delete_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)):
-    db_lawyer = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
-    if db_lawyer is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lawyer not found")
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem excluir advogados."
+        )
 
-    # Adicionar esta verificação:
-    if db_lawyer.oab == "00001SP" or db_lawyer.username == "admin":
+    db_lawyer_to_delete = db.query(lawyer_model.LawyerDB).filter(lawyer_model.LawyerDB.id == lawyer_id).first()
+    if db_lawyer_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Advogado não encontrado.")
+
+    # Proteção para não excluir o admin principal
+    if db_lawyer_to_delete.oab == "00001SP" or db_lawyer_to_delete.username == "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="O usuário admin principal não pode ser excluído."
@@ -285,7 +324,14 @@ def delete_lawyer(lawyer_id: int, db: Session = Depends(get_db), current_user: l
 # CRUD Endpoints for Clients
 
 @app.post("/clients/", response_model=Client)
-def create_client(client_in: ClientCreate, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
+def create_client(client_in: ClientCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)): # Alterado para lawyer_model.LawyerDB
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem criar novos clientes."
+        )
+
     db_client = client_model.ClientDB(**client_in.model_dump())
     db.add(db_client)
     try:
@@ -313,25 +359,44 @@ def get_client(client_id: int, db: Session = Depends(get_db), current_user: Lawy
     return db_client
 
 @app.put("/clients/{client_id}", response_model=Client)
-def update_client(client_id: int, client_update: ClientCreate, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
-    db_client = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == client_id).first()
-    if db_client is None:
-        raise HTTPException(status_code=404, detail="Client not found")
+def update_client(client_id: int, client_update: ClientCreate, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)): # Alterado
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem atualizar dados de clientes."
+        )
+
+    db_client_to_update = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == client_id).first()
+    if db_client_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado.")
 
     update_data = client_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
-        setattr(db_client, key, value)
+        setattr(db_client_to_update, key, value)
 
-    db.add(db_client)
-    db.commit()
-    db.refresh(db_client)
-    return db_client
+    db.add(db_client_to_update)
+    # Adicionar tratamento de erro para unicidade de nome de cliente, se aplicável
+    try:
+        db.commit()
+        db.refresh(db_client_to_update)
+    except IntegrityError: # Exemplo: se o nome do cliente for unique
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Erro ao atualizar cliente. Dados duplicados (ex: nome).")
+    return db_client_to_update
 
 @app.delete("/clients/{client_id}")
-def delete_client(client_id: int, db: Session = Depends(get_db), current_user: LawyerResponse = Depends(get_current_user)):
-    db_client = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == client_id).first()
-    if db_client is None:
-        raise HTTPException(status_code=404, detail="Client not found")
+def delete_client(client_id: int, db: Session = Depends(get_db), current_user: lawyer_model.LawyerDB = Depends(get_current_user)): # Alterado
+    is_admin = (current_user.oab == "00001SP" or current_user.username == "admin")
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem excluir clientes."
+        )
+
+    db_client_to_delete = db.query(client_model.ClientDB).filter(client_model.ClientDB.id == client_id).first()
+    if db_client_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente não encontrado.")
 
     # Verificar processos associados
     associated_processes = db.query(process_model.LegalProcessDB).filter(process_model.LegalProcessDB.client_id == client_id).count()
