@@ -40,7 +40,11 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Geração e uso de Token JWT:** Tokens JWT são gerados no login e usados para autenticar requisições à API.
 *   ✅ **Proteção de rotas da API:** Endpoints da API que requerem manipulação de dados são protegidos e exigem token JWT válido.
 *   ✅ **Logout:** Funcionalidade de logout implementada nas interfaces `index.html` e `dashboard.html`, limpando o token do cliente.
-*   ✅ **Páginas Frontend Protegidas:** As páginas `index.html` (gerenciamento) e `dashboard.html` verificam a existência de token e redirecionam para `login.html` se o token não for válido ou não existir.
+*   ✅ **Páginas Frontend Protegidas:** As páginas `index.html` (gerenciamento), `dashboard.html` e `user_settings.html` verificam a existência de token e redirecionam para `login.html` se o token não for válido ou não existir.
+*   ✅ **Níveis de Acesso (Backend):**
+    *   Admin (OAB `00001SP` ou username `admin`): Acesso total.
+    *   Advogado Padrão: Acesso restrito aos próprios processos para listagem, criação (auto-atribuído), edição e exclusão.
+*   ✅ **Criação Automática de Usuários Iniciais:** Usuário `admin` e usuário de teste `advogado` (OAB `12345SP`) são criados no startup da aplicação se não existirem.
 
 ### 4. Interface de Gerenciamento de Dados (`index.html`)
 
@@ -49,8 +53,9 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Pesquisa em Tempo Real:** Implementada para as listas de Advogados, Clientes e Processos. A pesquisa é acionada durante a digitação. Pressionar "Enter" remove o foco do campo de busca. Clicar no ícone de lupa foca no campo de busca.
 *   ✅ **Formatação de Datas ("dd/mm/aaaa"):** Formulários de criação/edição de processos aceitam datas no formato "dd/mm/aaaa" e as exibem nesse formato ao editar. A conversão para o formato ISO (yyyy-mm-dd) é feita antes do envio para a API.
 *   ✅ **Validação de Formulários no Cliente:** Implementada para campos como OAB, Telegram ID, e-mail, e formato das datas.
-*   ✅ **Layout e Navegação:** Interface organizada com Bootstrap, navegação global e feedback visual para o usuário.
+*   ✅ **Layout e Navegação:** Interface organizada com Bootstrap, navegação global (incluindo link para "Minhas Configurações") e feedback visual para o usuário.
 *   ✅ **Barras de Scroll nas Listas:** As listas de Advogados, Clientes e Processos agora possuem barras de scroll vertical para melhor navegação com grande volume de dados.
+*   ✅ **Filtragem do Admin:** O usuário "Admin User" não é exibido na lista de advogados gerenciáveis.
 
 ### 5. Módulo de Cadastro e Gerenciamento de Processos Jurídicos
 
@@ -68,6 +73,7 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 *   ✅ **Regra de Negócio:** `lawyer_id` e `client_id` devem existir (validação no backend).
 *   ✅ **Povoamento de `data_conclusao_real` no `seed_db.py`:** Script de popular dados agora preenche o campo `data_conclusao_real` para processos concluídos, simulando cenários de conclusão no prazo e com atraso, para futura análise de IA.
 *   ✅ **Volume de Dados de Teste Aumentado:** O script `seed_db.py` foi atualizado para gerar um volume 5x maior de dados (50 advogados, 100 clientes, 250 processos) para testes mais robustos.
+*   ✅ **Atribuição de Processos ao Usuário de Teste "advogado" no `seed_db.py`:** Uma parte dos processos gerados é especificamente atribuída ao usuário "advogado" (OAB `12345SP`) para facilitar testes de acesso restrito.
 
 ### 6. Painel Home / Resumo Gerencial (`dashboard.html`)
 
@@ -83,14 +89,25 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
     *   Tipos: Pizza (Status), Barras **Horizontais** (Advogado, Tipo de Ação) para melhor legibilidade.
     *   Ajuste visual (offset) aplicado aos datalabels do gráfico "Processos por Tipo de Ação".
     *   Renderização otimizada (gráficos em abas não ativas são renderizados quando a aba é mostrada).
+*   ✅ **Contagem Correta de Advogados:** O card "Total Advogados" no dashboard agora exclui o usuário admin da contagem.
 
-### 7. Integração com Telegram
+### 7. Configurações de Perfil do Usuário (`user_settings.html`)
+*   ✅ **Acesso Universal:** Todos os usuários logados podem acessar a página "Minhas Configurações" para gerenciar seus próprios dados.
+*   ✅ **Visualização de Dados:** Exibe nome, username (não editável), OAB (não editável), email e ID do Telegram.
+*   ✅ **Atualização de Perfil:** Permite ao usuário logado atualizar seu nome, email e ID do Telegram.
+    *   Validação de email (formato e unicidade, exceto para o próprio usuário).
+    *   Validação de ID do Telegram (formato `@username` ou numérico).
+*   ✅ **Alteração de Senha:** Permite ao usuário logado alterar sua própria senha, exigindo a senha atual e confirmação da nova senha.
+    *   Validação de força da nova senha e se é diferente da atual.
+    *   Logout automático após alteração de senha bem-sucedida.
+
+### 8. Integração com Telegram
 
 *   ✅ **Notificações diárias com prazos do dia:** Implementado. Advogados recebem alertas para `delivery_deadline` ou `fatal_deadline` no dia corrente.
 *   ✅ **Notificação antecipada (ex: X dias antes do prazo fatal):** Implementado. Advogados recebem alertas para `fatal_deadline` com antecedência configurável via `.env` (`TELEGRAM_ADVANCE_NOTIFICATION_DAYS`).
 *   ⏳ **Possibilidade de envio automático de movimentações de processo:** Pendente (Considerado funcionalidade extra/futura).
 
-### 8. Automação com IA (mínimo viável)
+### 9. Automação com IA (mínimo viável)
 
 *   ⏳ **Proposta:** Usar IA para prever possíveis atrasos ou gerar resumo automático. Nota: A preparação de dados para a "previsão de possíveis atrasos" foi iniciada com a inclusão do campo `data_conclusao_real` no modelo de processos.
 
