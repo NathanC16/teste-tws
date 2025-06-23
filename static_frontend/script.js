@@ -157,12 +157,42 @@ async function fetchAndSetCurrentUser_forIndexPage() {
             }
 
             // Fetch initial data for index.html
-            await populateLawyerOptions();
-            await populateClientOptions();
-            await loadAreasOfExpertise();
-            fetchLawyers();
-            fetchClients();
-            fetchProcesses();
+            await populateLawyerOptions(); // Chamado antes de controlar a UI com base no admin
+            await populateClientOptions(); // Chamado antes de controlar a UI com base no admin
+            await loadAreasOfExpertise(); // Para formulário de cliente
+
+            // Controlar visibilidade das seções e elementos com base no status de admin
+            const isAdmin = currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin");
+            const lawyersSection = document.getElementById('lawyers-section');
+            const clientsSection = document.getElementById('clients-section');
+            const processLawyerSelect = document.getElementById('process-lawyer');
+
+            if (isAdmin) {
+                if (lawyersSection) lawyersSection.style.display = 'block'; // Ou remover 'd-none'
+                if (clientsSection) clientsSection.style.display = 'block';
+                if (processLawyerSelect) processLawyerSelect.disabled = false;
+                console.log("[Script.js] Usuário é admin. Seções de Advogados e Clientes VISÍVEIS. Select de advogado HABILITADO.");
+            } else {
+                if (lawyersSection) lawyersSection.style.display = 'none';
+                if (clientsSection) clientsSection.style.display = 'none';
+                if (processLawyerSelect) {
+                    processLawyerSelect.value = currentUser.id; // Pré-seleciona o próprio advogado
+                    processLawyerSelect.disabled = true; // Desabilita a seleção
+                    // Adicionar um pequeno texto indicando que o processo será atribuído a ele
+                    let helpText = processLawyerSelect.parentNode.querySelector('.form-text');
+                    if (!helpText) {
+                        helpText = document.createElement('small');
+                        helpText.className = 'form-text text-muted';
+                        processLawyerSelect.parentNode.appendChild(helpText);
+                    }
+                    helpText.textContent = 'O processo será atribuído a você.';
+                }
+                console.log("[Script.js] Usuário NÃO é admin. Seções de Advogados e Clientes ESCONDIDAS. Select de advogado DESABILITADO e pré-selecionado.");
+            }
+
+            fetchLawyers(); // Buscar advogados (lista será filtrada na renderização se não for admin)
+            fetchClients(); // Buscar clientes (lista será filtrada na renderização se não for admin)
+            fetchProcesses(); // Processos já são filtrados pelo backend
             return true; // Indicate auth succeeded
         } else { // Covers 401 and other errors
             console.error('Falha ao validar token ou buscar dados do usuário:', response.status);
