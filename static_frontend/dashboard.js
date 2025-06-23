@@ -235,7 +235,10 @@ function renderSummaryCards() {
     }).length;
     processesNearDeadlineEl.textContent = nearDeadlineCount;
 
-    totalLawyersEl.textContent = allLawyers.length;
+    // Filtrar o admin antes de contar o total de advogados
+    const actualLawyers = allLawyers.filter(lawyer => lawyer.oab !== "00001SP" && lawyer.username !== "admin");
+    totalLawyersEl.textContent = actualLawyers.length;
+
     totalClientsEl.textContent = allClients.length;
 }
 
