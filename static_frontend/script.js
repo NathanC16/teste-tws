@@ -128,21 +128,24 @@ async function fetchAndSetCurrentUser_forIndexPage() {
             currentUser = await response.json();
             updateUIForIndexPage(true);
 
-            // Adicionar link de Configurações do Admin se for o admin
-            if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
-                const navbarNav = document.querySelector('#navbarNav .navbar-nav');
-                const logoutButtonLi = document.getElementById('logout-button-index')?.closest('li.nav-item') ||
-                                     document.getElementById('logout-button')?.closest('li.nav-item');
+            updateUIForIndexPage(true);
 
-                if (navbarNav && logoutButtonLi && !document.getElementById('admin-settings-nav-link-index')) {
-                    const adminSettingsLi = document.createElement('li');
-                    adminSettingsLi.className = 'nav-item';
-                    adminSettingsLi.innerHTML = `<a class="nav-link" id="admin-settings-nav-link-index" href="/frontend/admin_settings.html">Config. Admin</a>`;
-
-                    // Insere antes do botão de logout
-                    navbarNav.insertBefore(adminSettingsLi, logoutButtonLi);
+            // Mostrar/Esconder link de Configurações do Admin
+            const adminSettingsNavItemIndex = document.getElementById('admin-settings-nav-item-index');
+            if (adminSettingsNavItemIndex) {
+                if (currentUser && (currentUser.oab === "00001SP" || currentUser.username === "admin")) {
+                    adminSettingsNavItemIndex.style.display = 'list-item'; // Ou 'block' ou '' dependendo do CSS
+                    console.log("[Script.js] Link 'Config. Admin' VISÍVEL para index.html.");
+                } else {
+                    adminSettingsNavItemIndex.style.display = 'none';
+                    console.log("[Script.js] Link 'Config. Admin' ESCONDIDO para index.html.");
                 }
+            } else {
+                console.warn("[Script.js] admin-settings-nav-item-index não encontrado no DOM de index.html.");
             }
+
+            // Remover os logs de depuração anteriores para a criação dinâmica, se ainda existirem.
+            // console.log("[Script.js] Usuário é admin...", etc.); // Remover estas linhas se existirem
 
             // Fetch initial data for index.html
             await populateLawyerOptions();
