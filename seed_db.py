@@ -64,7 +64,7 @@ def generate_valid_nickname(name: str, existing_nicknames: set, max_len: int = 2
         if suffix_counter > 100 : # Limite de tentativas com sufixos
             # Fallback mais agressivo para garantir unicidade e formato
             nickname_candidate = fake.unique.user_name().lower()
-            nickname_candidate = re.sub(r'[^a-z0-9]', '', nickname_candidate)
+            nickname_candidate = re.sub(r'[^a-z0-9]', '', nickname_candidate) # Ensure alphanumeric
             if len(nickname_candidate) < min_len : nickname_candidate += fake.lexify(text='?'*(min_len - len(nickname_candidate)))
             nickname_candidate = nickname_candidate[:max_len]
             # Se ainda colidir após este fallback, a constraint do DB pegará (muito raro)
@@ -233,25 +233,9 @@ def create_synthetic_data(db: Session):
     for i in range(NUM_LAWYERS):
         lawyer_name = fake.name()
 
-        # Gerar Nickname
-        base_nickname = "".join(lawyer_name.lower().split()) # Nome minúsculo sem espaços
-        if len(base_nickname) > 18: # Limitar tamanho base para dar espaço a sufixos
-            base_nickname = base_nickname[:18]
-
-        nickname_candidate = base_nickname
-        suffix_counter = 1
-        while nickname_candidate in used_nicknames_in_batch or len(nickname_candidate) < 3:
-            if len(base_nickname) > 18 - len(str(suffix_counter)): # Evitar que fique muito longo
-                 base_nickname = base_nickname[:18 - len(str(suffix_counter))]
-            nickname_candidate = f"{base_nickname}{suffix_counter}"
-            suffix_counter += 1
-            if suffix_counter > 100: # Evitar loop infinito em caso extremo
-                nickname_candidate = fake.unique.user_name()[:20] # Fallback para user_name do Faker
-                if len(nickname_candidate) < 3: nickname_candidate = nickname_candidate + "123" # garantir tamanho minimo
-                nickname_candidate = nickname_candidate[:20] # Truncar novamente
-                break
-
-        used_nicknames_in_batch.add(nickname_candidate)
+        # Gerar Nickname usando a função generate_valid_nickname
+        nickname_candidate = generate_valid_nickname(lawyer_name, used_nicknames_in_batch)
+        # A lógica anterior de geração de nickname foi substituída pela chamada acima.
 
         # Gerar OAB única (que não seja do admin ou do test_user)
         generated_oab = ""
