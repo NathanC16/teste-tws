@@ -311,4 +311,4 @@ async function handleUpdatePassword(event) {
 }
 
 
-document.addEventListener('DOMContentLoaded', initializeAdminSettingsPage);
+document.addEventListener('DOMContentLoaded', initializeUserSettingsPage);
