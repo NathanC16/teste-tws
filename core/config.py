@@ -1,22 +1,22 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Secret key for signing JWTs.
-# IMPORTANT: This is a default key for development ONLY.
-# In a production environment, this MUST be replaced with a strong, unique secret key,
-# preferably set via an environment variable and not hardcoded.
-# Keep this key secret and secure!
+# Chave secreta para assinar JWTs.
+# IMPORTANTE: Esta é uma chave padrão APENAS para desenvolvimento.
+# Em um ambiente de produção, ISTO DEVE ser substituído por uma chave secreta forte e única,
+# preferencialmente definida através de uma variável de ambiente e não hardcoded.
+# Mantenha esta chave secreta e segura!
 SECRET_KEY: str = os.getenv("SECRET_KEY", "your-default-secret-key-for-dev-only-change-this")
 
-# Algorithm used for JWT encoding
+# Algoritmo usado para codificação JWT
 ALGORITHM: str = "HS256"
 
-# Access token expiration time in minutes
+# Tempo de expiração do token de acesso em minutos
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 if SECRET_KEY == "your-default-secret-key-for-dev-only-change-this":
-    print("WARNING: Using default SECRET_KEY. This is insecure and should only be used for development.")
-    print("Please set a strong SECRET_KEY in your .env file for production.")
+    print("AVISO: Usando SECRET_KEY padrão. Isso não é seguro e deve ser usado apenas para desenvolvimento.")
+    print("Por favor, defina uma SECRET_KEY forte em seu arquivo .env para produção.")

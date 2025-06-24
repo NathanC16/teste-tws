@@ -2,11 +2,11 @@ from sqlalchemy import Column, Integer, String, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 import enum
-# logging and field_validator removed as they are no longer used
+# logging e field_validator removidos pois não são mais usados
 
-from database import Base # Import Base from database.py
+from database import Base # Importa Base de database.py
 
-# Define Enum for Area of Expertise
+# Define Enum para Área de Especialização
 class AreaOfExpertiseEnum(str, enum.Enum):
     REGULATORIO = "Regulatório"
     CONTRATOS = "Contratos"
@@ -14,17 +14,17 @@ class AreaOfExpertiseEnum(str, enum.Enum):
     TRIBUTARIO = "Tributário"
     LITIGIOS = "Litígios"
 
-# SQLAlchemy model
+# Modelo SQLAlchemy
 class ClientDB(Base):
     __tablename__ = "clients"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(150), index=True)  # Comprimento 150
-    area_of_expertise = Column(SQLAlchemyEnum(AreaOfExpertiseEnum)) # Comprimento 100
+    area_of_expertise = Column(SQLAlchemyEnum(AreaOfExpertiseEnum)) # Comprimento 100 (Nota: Enum não tem comprimento, o comentário pode ser resquício)
 
     processes = relationship("LegalProcessDB", back_populates="client")
 
-# Pydantic models for request/response validation
+# Modelos Pydantic para validação de requisição/resposta
 class ClientBase(BaseModel):
     name: str
     area_of_expertise: AreaOfExpertiseEnum
@@ -36,4 +36,4 @@ class Client(ClientBase):
     id: int
 
     class Config:
-        from_attributes = True # Changed from orm_mode = True for Pydantic v2
+        from_attributes = True # Alterado de orm_mode = True para Pydantic v2

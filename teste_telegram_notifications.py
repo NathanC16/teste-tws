@@ -16,7 +16,7 @@ from models.legal_process import LegalProcessDB
 from core.security import get_password_hash # Para hashear senhas de teste
 # Importar as versões async das funções de notificação
 from core.notifications import check_and_notify_daily_deadlines_async, check_and_notify_upcoming_fatal_deadlines_async
-from telegram_bot import TELEGRAM_BOT_TOKEN # Importar SOMENTE TELEGRAM_BOT_TOKEN
+from telegram_bot import TELEGRAM_BOT_TOKEN, create_telegram_application # Importar create_telegram_application
 
 # Configuração básica de logging para o script de teste
 logging.basicConfig(
@@ -187,16 +187,39 @@ def setup_test_data(db: Session):
     logger.info("Configuração de dados de teste concluída.")
 
 
-async def run_notification_checks_async(): # Renomeada para async e chamadas atualizadas
-    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) ==\n" + "="*60)
-    await check_and_notify_daily_deadlines_async()
-    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) CONCLUÍDA ==\n" + "="*60)
+async def run_notification_checks_async():
+    logger.info("Tentando criar e inicializar a aplicação Telegram para o teste...")
+    application = create_telegram_application()
 
-    logger.info("\n\n") # Espaçamento
+    if not application:
+        logger.error("Falha ao criar a aplicação Telegram. As verificações de notificação que dependem do bot serão ignoradas.")
+        return
 
-    logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) ==\n" + "="*60)
-    await check_and_notify_upcoming_fatal_deadlines_async()
-    logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) CONCLUÍDA ==\n" + "="*60)
+    try:
+        await application.initialize()
+        bot = application.bot
+        if not bot: # Adicionalmente checar se bot foi criado, embora initialize() deva garantir isso.
+            logger.error("Instância do bot não encontrada após inicialização da aplicação. Notificações não podem ser enviadas.")
+            return
+
+        logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) ==\n" + "="*60)
+        await check_and_notify_daily_deadlines_async(bot) # Passa o bot
+        logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS DO DIA (ASYNC) CONCLUÍDA ==\n" + "="*60)
+
+        logger.info("\n\n") # Espaçamento
+
+        logger.info("\n" + "="*60 + "\n== EXECUTANDO VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) ==\n" + "="*60)
+        await check_and_notify_upcoming_fatal_deadlines_async(bot) # Passa o bot
+        logger.info("\n" + "="*60 + "\n== VERIFICAÇÃO DE PRAZOS FATAIS FUTUROS (ASYNC) CONCLUÍDA ==\n" + "="*60)
+
+    except Exception as e:
+        logger.error(f"Erro durante a execução das verificações de notificação: {e}", exc_info=True)
+    finally:
+        if application: # Garante que application existe antes de tentar shutdown
+            logger.info("Desligando a aplicação Telegram do teste...")
+            await application.shutdown() # Desliga a aplicação para limpar recursos
+            logger.info("Aplicação Telegram do teste desligada.")
+
 
 if __name__ == "__main__":
     logger.info("Iniciando script de teste de notificações do Telegram...")

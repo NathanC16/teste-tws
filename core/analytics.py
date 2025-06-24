@@ -13,7 +13,7 @@ def calculate_lawyer_delay_statistics(db: Session) -> Dict[int, Dict[str, any]]:
 
     Retorna um dicionário mapeando lawyer_id para outro dicionário com:
     {
-        'delay_rate': float (0.0 a 1.0),
+        'delay_rate': float (0.0 a 1.0),  # Taxa de atraso
         'completed_with_info': int (número de processos concluídos com dados suficientes para cálculo)
     }
     """
@@ -35,25 +35,25 @@ def calculate_lawyer_delay_statistics(db: Session) -> Dict[int, Dict[str, any]]:
 
         if total_completed_with_info > 0:
             for process in completed_processes_with_info:
-                # Assegurar que delivery_deadline e data_conclusao_real são objetos date
+                # Garante que delivery_deadline e data_conclusao_real são objetos date
                 # SQLAlchemy geralmente retorna objetos date/datetime corretos do banco.
-                # Se vierem como string, precisariam ser convertidos com datetime.strptime.
-                # Para este exemplo, vamos assumir que são objetos date.
+                # Se viessem como string, precisariam ser convertidos com datetime.strptime.
+                # Para este exemplo, assume-se que são objetos date.
                 if isinstance(process.delivery_deadline, date) and isinstance(process.data_conclusao_real, date):
                     if process.data_conclusao_real > process.delivery_deadline:
                         total_delayed += 1
                 else:
-                    # Log ou tratamento se as datas não forem do tipo esperado (improvável com SQLAlchemy)
-                    # Para simplificar, vamos apenas decrementar o total_completed_with_info se uma data for inválida
+                    # Log ou tratamento se as datas não forem do tipo esperado (improvável com SQLAlchemy).
+                    # Para simplificar, apenas decrementaria total_completed_with_info se uma data fosse inválida
                     # para não distorcer a taxa de atraso com dados incompletos.
-                    # Ou podemos simplesmente ignorar este processo na contagem.
-                    # Aqui, vamos considerar que o filtro do SQLAlchemy já garante que não são None.
+                    # Ou pode-se simplesmente ignorar este processo na contagem.
+                    # Aqui, considera-se que o filtro do SQLAlchemy já garante que não são None.
                     # A checagem de tipo é uma segurança adicional.
-                    pass # Processos com datas inválidas não serão contados como 'com informação' se essa lógica for mais rígida
+                    pass # Processos com datas inválidas não seriam contados como 'com informação' se essa lógica for mais rígida.
 
             delay_rate = (total_delayed / total_completed_with_info) if total_completed_with_info > 0 else 0.0
         else:
-            delay_rate = 0.0 # Sem processos concluídos com informação, sem taxa de atraso
+            delay_rate = 0.0 # Sem processos concluídos com informação, sem taxa de atraso.
 
         lawyer_stats[lawyer.id] = {
             'delay_rate': delay_rate,
@@ -69,20 +69,20 @@ def get_process_delay_risk(lawyer_id: int, lawyer_delay_stats: Dict[int, Dict[st
     stats = lawyer_delay_stats.get(lawyer_id)
 
     if not stats or stats['completed_with_info'] < MIN_COMPLETED_PROCESSES_THRESHOLD:
-        return "N/A" # Não há dados suficientes ou advogado não encontrado nas estatísticas
+        return "N/A" # Não há dados suficientes ou advogado não encontrado nas estatísticas.
 
     delay_rate = stats['delay_rate']
 
     if delay_rate > 0.5:
         return "Alto"
-    elif delay_rate > 0.2: # (0.2 < delay_rate <= 0.5)
+    elif delay_rate > 0.2: # (0.2 < taxa de atraso <= 0.5)
         return "Médio"
-    else: # (delay_rate <= 0.2)
+    else: # (taxa de atraso <= 0.2)
         return "Baixo"
 
-# Exemplo de como poderia ser usado (apenas para fins de ilustração, não faz parte do módulo em si)
+# Exemplo de como poderia ser usado (apenas para fins de ilustração, não faz parte do módulo em si):
 # if __name__ == '__main__':
-#     # Isso exigiria uma sessão de DB configurada e modelos carregados
+#     # Isso exigiria uma sessão de BD configurada e modelos carregados
 #     # from database import SessionLocal
 #     # db = SessionLocal()
 #     # try:

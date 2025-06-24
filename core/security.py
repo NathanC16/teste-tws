@@ -28,30 +28,30 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verifica uma senha simples contra uma senha hasheada.
+    Verifica uma senha simples contra uma senha "hasheada" (codificada de forma segura).
 
     Args:
         plain_password: A senha em texto plano.
-        hashed_password: The hashed version of the password.
+        hashed_password: A versão "hasheada" da senha.
 
     Returns:
-        True if the password matches, False otherwise.
+        True se a senha corresponder, False caso contrário.
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
-    Hasheia uma senha simples usando bcrypt.
+    Gera o hash de uma senha simples usando bcrypt.
 
     Args:
         password: A senha em texto plano.
 
     Returns:
-        The hashed version of the password.
+        A versão "hasheada" da senha.
     """
     return pwd_context.hash(password)
 
-# JWT Token Creation
+# Criação de Token JWT
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Cria um novo token de acesso JWT.
@@ -62,7 +62,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
                        Se None, a expiração padrão da configuração é usada.
 
     Returns:
-        The encoded JWT access token as a string.
+        O token de acesso JWT codificado como uma string.
     """
     to_encode = data.copy()
     if expires_delta:
@@ -87,12 +87,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         O usuário autenticado (instância do modelo SQLAlchemy LawyerDB).
 
     Raises:
-        HTTPException (401 Unauthorized): Se o token for inválido, expirado,
-                                          ou o usuário não puder ser encontrado.
+        HTTPException (401 Não Autorizado): Se o token for inválido, expirado,
+                                           ou o usuário não puder ser encontrado.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Não foi possível validar as credenciais", # Mensagem traduzida
+        detail="Não foi possível validar as credenciais", # Mensagem já estava traduzida.
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -100,7 +100,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         oab: str = payload.get("sub")
         if oab is None:
             raise credentials_exception
-        token_data = TokenData(oab=oab) # Valida se 'sub' (oab) está presente no payload
+        token_data = TokenData(oab=oab) # Valida se 'sub' (oab) está presente no payload.
     except JWTError:
         raise credentials_exception
 
@@ -111,3 +111,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 # A função get_current_admin_user foi removida para simplificação.
 # Todos os usuários autenticados terão o mesmo nível de acesso a rotas protegidas.
+# (Comentário original já estava parcialmente em português ou referenciando código em português)

@@ -1,8 +1,8 @@
 import logging
-import asyncio # Import asyncio
+import asyncio # Importa asyncio
 from datetime import date, timedelta
 from sqlalchemy.orm import Session, joinedload
-import telegram # Added import for type hint
+import telegram # Adicionado import para type hint
 from models.legal_process import LegalProcessDB
 from models.lawyer import LawyerDB
 from telegram_bot import send_telegram_message, TELEGRAM_ADVANCE_NOTIFICATION_DAYS
@@ -11,16 +11,16 @@ from database import SessionLocal
 logger = logging.getLogger(__name__)
 
 def get_db_session():
-    """Dependency to get a DB session."""
+    """Dependência para obter uma sessão de BD."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-def check_and_notify_daily_deadlines():
+def check_and_notify_daily_deadlines(): # NOTE: This function seems unused after async versions were introduced. Consider removal or refactor if still needed.
     """
-    Checks for processes with deadlines today and notifies the responsible lawyer.
+    Verifica processos com prazos para hoje e notifica o advogado responsável.
     """
     db_gen = get_db_session()
     db: Session = next(db_gen)
@@ -63,7 +63,7 @@ def check_and_notify_daily_deadlines():
                 )
 
                 logger.info(f"Preparando para enviar notificação para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                send_telegram_message(lawyer.telegram_id, message)
+                send_telegram_message(lawyer.telegram_id, message) # Esta função send_telegram_message precisaria ser a versão síncrona ou adaptada.
                 # logger.info(f"SIMULAÇÃO DE NOTIFICAÇÃO: Para {lawyer.name} ({lawyer.telegram_id}) - Processo {process.process_number} - Prazo {deadline_type_str} para HOJE.")
 
             elif not lawyer:
@@ -74,18 +74,18 @@ def check_and_notify_daily_deadlines():
     except Exception as e:
         logger.error(f"Erro ao verificar prazos do dia: {e}", exc_info=True)
     finally:
-        next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado
+        next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado.
 
 
 async def check_and_notify_daily_deadlines_async(bot: telegram.Bot):
     """
-    Checks for processes with deadlines today and notifies the responsible lawyer. (Async version)
+    Verifica processos com prazos para hoje e notifica o advogado responsável. (Versão Async)
 
     Args:
-        bot (telegram.Bot): The Telegram bot instance.
+        bot (telegram.Bot): A instância do bot do Telegram.
     """
     if not bot:
-        logger.error("[ASYNC] Telegram bot instance not provided to check_and_notify_daily_deadlines_async. Skipping.")
+        logger.error("[ASYNC] Instância do bot do Telegram não fornecida para check_and_notify_daily_deadlines_async. Ignorando.")
         return
 
     db_gen = get_db_session()
@@ -129,7 +129,7 @@ async def check_and_notify_daily_deadlines_async(bot: telegram.Bot):
                 )
 
                 logger.info(f"[ASYNC] Preparando para enviar notificação para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                await send_telegram_message(bot, lawyer.telegram_id, message) # Pass bot instance
+                await send_telegram_message(bot, lawyer.telegram_id, message) # Passa a instância do bot
 
             elif not lawyer:
                 logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) não possui advogado responsável cadastrado.")
@@ -139,18 +139,18 @@ async def check_and_notify_daily_deadlines_async(bot: telegram.Bot):
     except Exception as e:
         logger.error(f"[ASYNC] Erro ao verificar prazos do dia: {e}", exc_info=True)
     finally:
-        next(db_gen, None)
+        next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado.
 
 
 async def check_and_notify_upcoming_fatal_deadlines_async(bot: telegram.Bot):
     """
-    Checks for processes with fatal deadlines approaching and notifies the responsible lawyer. (Async version)
+    Verifica processos com prazos fatais se aproximando e notifica o advogado responsável. (Versão Async)
 
     Args:
-        bot (telegram.Bot): The Telegram bot instance.
+        bot (telegram.Bot): A instância do bot do Telegram.
     """
     if not bot:
-        logger.error("[ASYNC] Telegram bot instance not provided to check_and_notify_upcoming_fatal_deadlines_async. Skipping.")
+        logger.error("[ASYNC] Instância do bot do Telegram não fornecida para check_and_notify_upcoming_fatal_deadlines_async. Ignorando.")
         return
 
     db_gen = get_db_session()
@@ -188,7 +188,7 @@ async def check_and_notify_upcoming_fatal_deadlines_async(bot: telegram.Bot):
                 )
 
                 logger.info(f"[ASYNC] Preparando para enviar notificação de prazo fatal futuro para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                await send_telegram_message(bot, lawyer.telegram_id, message) # Pass bot instance
+                await send_telegram_message(bot, lawyer.telegram_id, message) # Passa a instância do bot
 
             elif not lawyer:
                 logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) com prazo fatal futuro não possui advogado responsável.")
@@ -198,24 +198,24 @@ async def check_and_notify_upcoming_fatal_deadlines_async(bot: telegram.Bot):
     except Exception as e:
         logger.error(f"Erro ao verificar prazos fatais futuros: {e}", exc_info=True)
     finally:
-        next(db_gen, None)
+        next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado.
 
-# Exemplo de como poderia ser chamado para teste (requer setup de DB):
+# Exemplo de como poderia ser chamado para teste (requer configuração de BD):
 if __name__ == '__main__':
     # Este bloco é apenas para ilustração e pode não funcionar diretamente
     # sem um contexto de aplicação ou configuração de banco de dados apropriada.
-    print("Testando manualmente as funções de notificação (requer DB configurado e populado):")
+    print("Testando manualmente as funções de notificação (requer BD configurado e populado):")
 
     # Para um teste real, você precisaria garantir que o TELEGRAM_BOT_TOKEN e
     # um TELEGRAM_TEST_CHAT_ID (para o advogado) estejam no .env,
-    # e que o advogado no DB tenha esse TELEGRAM_TEST_CHAT_ID.
-    # Além disso, as chamadas send_telegram_message() nas funções acima precisariam ser descomentadas.
+    # e que o advogado no BD tenha esse TELEGRAM_TEST_CHAT_ID.
+    # Além disso, as chamadas send_telegram_message() nas funções acima precisariam ser descomentadas (se a versão síncrona fosse usada).
 
     # logger.info("--- Testando Prazos do Dia ---")
-    # check_and_notify_daily_deadlines()
+    # check_and_notify_daily_deadlines() # Lembre-se que esta é a versão síncrona e pode precisar de um bot síncrono.
     # logger.info("--- Teste de Prazos do Dia Concluído ---")
 
     # logger.info("--- Testando Prazos Futuros ---")
-    # check_and_notify_upcoming_fatal_deadlines()
+    # # check_and_notify_upcoming_fatal_deadlines() # Versão síncrona não existe mais com este nome exato.
     # logger.info("--- Teste de Prazos Futuros Concluído ---")
     print("Simulação de teste manual concluída. Verifique os logs.")
