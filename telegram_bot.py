@@ -1,7 +1,11 @@
 import os
 import logging
-import asyncio # Import asyncio
+import asyncio
+from typing import Optional
+
 import telegram # type: ignore
+from telegram import Update
+from telegram.ext import Application, ApplicationBuilder, ContextTypes, CommandHandler
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -23,114 +27,137 @@ except ValueError:
     logger.error(f"Invalid TELEGRAM_ADVANCE_NOTIFICATION_DAYS: '{TELEGRAM_ADVANCE_NOTIFICATION_DAYS_STR}'. Must be an integer. Using default 5.")
     TELEGRAM_ADVANCE_NOTIFICATION_DAYS = 5
 
-# Store bot instance globally to avoid reinitialization if not necessary,
-# or manage its lifecycle if you prefer reinitialization per call.
-_bot_instance: telegram.Bot | None = None
-_bot_initialized_successfully = False # Flag to track successful initialization
+def create_telegram_application() -> Optional[Application]:
+    """
+    Creates and initializes the Telegram Application using ApplicationBuilder.
+    Returns the Application instance or None if the token is missing or invalid.
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        logger.critical("TELEGRAM_BOT_TOKEN not found in environment variables. Cannot create Telegram application.")
+        return None
 
-async def initialize_bot_instance() -> None:
-    """
-    Initializes the global _bot_instance if not already done or if previous init failed.
-    This function is async.
-    """
-    global _bot_instance, _bot_initialized_successfully
-    # Attempt initialization only if token exists and not already successfully initialized
-    if TELEGRAM_BOT_TOKEN and not _bot_initialized_successfully:
-        try:
-            logger.debug("Attempting to initialize Telegram bot instance...")
-            temp_bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
-            bot_info = await temp_bot.get_me() # Must be awaited
-            _bot_instance = temp_bot # Assign to global instance only after successful get_me
-            _bot_initialized_successfully = True # Mark as successfully initialized
-            logger.info(f"Telegram bot initialized successfully: {bot_info.username}")
-        except telegram.error.InvalidToken:
-            _bot_instance = None
-            _bot_initialized_successfully = False # Mark as failed
-            logger.critical("Invalid TELEGRAM_BOT_TOKEN. Please check your .env file.")
-        except Exception as e:
-            _bot_instance = None
-            _bot_initialized_successfully = False # Mark as failed
-            logger.critical(f"An unexpected error occurred while initializing the Telegram bot: {e}", exc_info=True)
-    elif not TELEGRAM_BOT_TOKEN:
-        logger.critical("TELEGRAM_BOT_TOKEN not found in environment variables. Bot not initialized.")
-        _bot_instance = None # Ensure it's None if no token
-        _bot_initialized_successfully = False
-    elif _bot_initialized_successfully:
-        logger.debug("Telegram bot already initialized successfully.")
+    try:
+        logger.info("Attempting to create Telegram application...")
+        application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+        # We don't call get_me() here as ApplicationBuilder does basic validation.
+        # The bot's username will be available via application.bot.username after build()
+        # and application.initialize() (which is called by run_polling/run_webhook)
+        logger.info("Telegram application created successfully (token seems valid).")
+        return application
+    except telegram.error.InvalidToken:
+        logger.critical("Invalid TELEGRAM_BOT_TOKEN. Please check your .env file. Application not created.")
+        return None
+    except Exception as e:
+        logger.critical(f"An unexpected error occurred while creating the Telegram application: {e}", exc_info=True)
+        return None
 
 
-async def get_telegram_bot() -> telegram.Bot | None:
+async def send_telegram_message(bot: telegram.Bot, chat_id: str, text: str) -> bool:
     """
-    Returns the initialized telegram.Bot instance.
-    Ensures bot is initialized before returning. This function is async.
-    """
-    if not _bot_initialized_successfully: # If not successfully initialized yet
-        await initialize_bot_instance() # Attempt to initialize it
-    return _bot_instance
-
-
-async def send_telegram_message(chat_id: str, text: str) -> bool:
-    """
-    Sends a message to a specified Telegram chat. This function is async.
+    Sends a message to a specified Telegram chat using the provided bot instance.
 
     Args:
+        bot (telegram.Bot): The bot instance to use for sending the message.
         chat_id (str): The chat_id to send the message to.
         text (str): The message text.
 
     Returns:
         bool: True if the message was sent successfully, False otherwise.
     """
-    bot = await get_telegram_bot()
     if not bot:
-        logger.error("Telegram bot not available (failed to initialize or no token). Cannot send message.")
+        logger.error("Bot instance not provided to send_telegram_message. Cannot send message.")
         return False
 
     try:
-        await bot.send_message(chat_id=chat_id, text=text) # Must be awaited
+        await bot.send_message(chat_id=chat_id, text=text)
         logger.info(f"Message sent successfully to chat_id: {chat_id}")
         return True
     except telegram.error.TelegramError as e:
         logger.error(f"Failed to send message to chat_id {chat_id}: {e}")
         if isinstance(e, telegram.error.BadRequest) and "chat not found" in e.message.lower():
             logger.error(f"Chat ID {chat_id} not found or bot is not a member.")
-        elif isinstance(e, telegram.error.Forbidden) and ("bot was blocked by the user" in e.message.lower() or "user is deactivated" in e.message.lower()):
-            logger.error(f"Bot was blocked by user or user is deactivated for chat_id {chat_id}.")
+        elif isinstance(e, telegram.error.Forbidden) and ("bot was blocked by the user" in e.message.lower() or "user is deactivated" in e.message.lower() or "bot can't initiate conversation" in e.message.lower()): # Added new check
+            logger.error(f"Bot was blocked, user deactivated, or bot can't initiate conversation for chat_id {chat_id}.")
         return False
     except Exception as e:
         logger.error(f"An unexpected error occurred while sending message to chat_id {chat_id}: {e}", exc_info=True)
         return False
 
-async def main_test():
-    """Async main function for testing."""
-    logger.info("Testing Telegram bot functions (async)...")
-
-    # Initialize first (or get_telegram_bot will do it)
-    await initialize_bot_instance()
-
-    test_bot_instance = await get_telegram_bot()
-
-    if test_bot_instance:
-        logger.info("get_telegram_bot() test: PASSED (bot instance retrieved, token likely valid if no critical errors above)")
-
-        test_chat_id = os.getenv("TELEGRAM_TEST_CHAT_ID")
-        if test_chat_id:
-            logger.info(f"Attempting to send test message to TELEGRAM_TEST_CHAT_ID: {test_chat_id}")
-            if await send_telegram_message(test_chat_id, "Hello from the bot! This is an async test message."):
-                logger.info(f"send_telegram_message() test: PASSED (message sent to {test_chat_id})")
-            else:
-                logger.error(f"send_telegram_message() test: FAILED (message not sent to {test_chat_id})")
-        else:
-            logger.warning("TELEGRAM_TEST_CHAT_ID not set in .env. Skipping send_telegram_message() test.")
+# Placeholder for the start command handler - will be implemented in a later step
+async def start_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /start command."""
+    if update.effective_chat:
+        await update.effective_chat.send_message(
+            "Olá! Eu sou seu bot de assistência jurídica. Aqui estão os comandos que você pode usar:\n"
+            "/help - Mostra esta mensagem de ajuda.\n"
+            "/my_deadlines - (Em breve) Mostra seus próximos prazos."
+        )
+        logger.info(f"/start command received from chat_id {update.effective_chat.id}")
     else:
-        logger.error("get_telegram_bot() test: FAILED (bot instance is None after initialization attempt)")
+        logger.warning("/start command received but no effective_chat found in update.")
 
-    logger.info(f"TELEGRAM_ADVANCE_NOTIFICATION_DAYS is set to: {TELEGRAM_ADVANCE_NOTIFICATION_DAYS}")
-    logger.info("Telegram bot async script testing finished.")
+async def help_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /help command."""
+    if update.effective_chat:
+        await update.effective_chat.send_message(
+            "Olá! Eu sou seu bot de assistência jurídica. Aqui estão os comandos que você pode usar:\n"
+            "/start - Inicia a conversa com o bot e mostra esta mensagem.\n"
+            "/help - Mostra esta mensagem de ajuda.\n"
+            "/my_deadlines - (Em breve) Mostra seus próximos prazos."
+        )
+        logger.info(f"/help command received from chat_id {update.effective_chat.id}")
+    else:
+        logger.warning("/help command received but no effective_chat found in update.")
+
+
+# The main_test function is removed as its previous logic for initializing and
+# testing the bot instance directly is no longer applicable with ApplicationBuilder.
+# Testing will now involve running the full application with handlers.
+
+# Example of how the application might be run (typically from main.py or a dedicated run script)
+async def main_bot_runner(): # Renamed from main_test and repurposed
+    """
+    Example function to set up and run the bot with handlers.
+    This would typically be integrated into your main application (e.g., main.py).
+    """
+    application = create_telegram_application()
+
+    if application:
+        # Add command handlers
+        application.add_handler(CommandHandler("start", start_command_handler))
+        # Add other handlers (MessageHandler, etc.) here as needed
+
+        logger.info("Starting bot polling...")
+        # In a real application, especially with FastAPI, you'd run this in a way
+        # that doesn't block the main thread, e.g., using asyncio.create_task
+        # or by structuring it within the FastAPI startup/shutdown events.
+        try:
+            await application.initialize() # Initialize handlers, bot, etc.
+            await application.updater.start_polling() # Start polling for updates
+            await application.start() # Start the application (dispatcher, job queue if any)
+            logger.info("Bot is running. Press Ctrl-C to stop.")
+            # Keep the application running (e.g., while True: await asyncio.sleep(1))
+            # or manage its lifecycle as part of a larger application.
+            # For this example, we'll just let it run until manually stopped.
+            while True:
+                await asyncio.sleep(3600) # Keep alive, or use application.run_polling() if it's the main entry point
+        except KeyboardInterrupt:
+            logger.info("Bot polling stopped by user (Ctrl-C).")
+        except Exception as e:
+            logger.error(f"An error occurred while running the bot: {e}", exc_info=True)
+        finally:
+            if application.updater and application.updater.running: # type: ignore
+                await application.updater.stop() # type: ignore
+            await application.stop()
+            await application.shutdown()
+            logger.info("Bot has been shut down.")
+    else:
+        logger.error("Failed to create Telegram application. Bot will not run.")
 
 if __name__ == '__main__':
-    # To run the async test function
-    if TELEGRAM_BOT_TOKEN: # Only run if token is present
-        asyncio.run(main_test())
+    # This is primarily for testing telegram_bot.py directly.
+    # In the actual application, main.py will manage the lifecycle.
+    if TELEGRAM_BOT_TOKEN:
+        asyncio.run(main_bot_runner())
     else:
-        logger.error("Cannot run main_test as TELEGRAM_BOT_TOKEN is not set.")
-        logger.info("Telegram bot script finished testing (with errors).")
+        logger.error("Cannot run Telegram bot example as TELEGRAM_BOT_TOKEN is not set.")
