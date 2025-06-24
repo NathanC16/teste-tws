@@ -9,12 +9,16 @@ from core.security import get_current_user, get_password_hash
 router = APIRouter(
     prefix="/admin",
     tags=["Admin"],
-    # Adicionar dependência de autenticação e verificação de admin para todas as rotas neste router
-    # dependencies=[Depends(get_current_admin_user)] # Criaremos essa dependência
+    # Adicionar dependência de autenticação e verificação de admin para todas as rotas neste router.
+    # dependencies=[Depends(get_current_admin_user)] # Criaremos essa dependência.
 )
 
 # --- Dependência para verificar se o usuário é o admin principal ---
 async def get_current_admin_user(current_user: lawyer_models.LawyerDB = Depends(get_current_user)):
+    """
+    Verifica se o usuário logado é o administrador principal.
+    Levanta HTTPException 403 se não for.
+    """
     if not (current_user.oab == "00001SP" or current_user.username == "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -24,17 +28,17 @@ async def get_current_admin_user(current_user: lawyer_models.LawyerDB = Depends(
 
 # --- Modelo Pydantic para o payload de reset de senha ---
 class PasswordResetPayload(BaseModel):
-    new_password: constr(min_length=6) # Senha com no mínimo 6 caracteres
+    new_password: constr(min_length=6) # Senha com no mínimo 6 caracteres.
 
 
 @router.post("/lawyers/{lawyer_id}/reset-password",
-             dependencies=[Depends(get_current_admin_user)],
+             dependencies=[Depends(get_current_admin_user)], # Garante que apenas o admin principal acesse.
              summary="Admin redefine a senha de um advogado")
 async def admin_reset_lawyer_password(
     lawyer_id: int,
     payload: PasswordResetPayload,
     db: Session = Depends(get_db),
-    # current_admin: lawyer_models.LawyerDB = Depends(get_current_admin_user) # current_admin já injetado pela dependência do router
+    # current_admin: lawyer_models.LawyerDB = Depends(get_current_admin_user) # current_admin já é garantido pela dependência do router/endpoint.
 ):
     """
     Permite que o administrador principal redefina a senha de qualquer advogado.
@@ -47,10 +51,10 @@ async def admin_reset_lawyer_password(
             detail=f"Advogado com ID {lawyer_id} não encontrado."
         )
 
-    # O admin não pode redefinir a própria senha por este endpoint, deve usar a página de configurações dele
-    # Embora a dependência já restrinja ao admin, adicionamos um log ou aviso se for o caso.
+    # O admin não pode redefinir a própria senha por este endpoint; deve usar a página de configurações dele.
+    # Embora a dependência já restrinja ao admin, um log ou aviso pode ser adicionado se necessário.
     # A lógica na página de configurações do usuário/admin já lida com a mudança da própria senha.
-    # Se quisermos proibir explicitamente aqui:
+    # Se quisermos proibir explicitamente aqui (embora redundante com a lógica de auto-alteração):
     # if target_lawyer.oab == "00001SP" or target_lawyer.username == "admin":
     #     raise HTTPException(
     #         status_code=status.HTTP_400_BAD_REQUEST,

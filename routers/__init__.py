@@ -1,1 +1,1 @@
-# This file makes the 'routers' directory a Python package.
+# Este arquivo torna o diretório 'routers' um pacote Python.
