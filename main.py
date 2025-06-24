@@ -116,19 +116,76 @@ async def startup_event():
 
     # Initialize Telegram bot
     # Import here to avoid circular imports if telegram_bot itself imports something from main at module level
-    from telegram_bot import initialize_bot_instance
-    await initialize_bot_instance()
-    app_logger.info("Telegram bot initialization attempted on startup.")
+    from telegram_bot import create_telegram_application, start_command_handler, help_command_handler # Updated import
+    from telegram.ext import CommandHandler # Added import
+
+    telegram_app = create_telegram_application()
+    if telegram_app:
+        app.state.telegram_app = telegram_app # Store the application instance
+        app.state.telegram_bot = telegram_app.bot # Store the bot instance for convenience
+
+        # Add command handlers
+        telegram_app.add_handler(CommandHandler("start", start_command_handler))
+        telegram_app.add_handler(CommandHandler("help", help_command_handler))
+        # Add other handlers here if needed in the future
+
+        # Initialize and start polling in the background
+        # Wrap run_polling in a way that it can be managed by FastAPI's lifecycle
+        async def run_telegram_polling():
+            try:
+                await telegram_app.initialize()
+                await telegram_app.updater.start_polling() # type: ignore
+                await telegram_app.start()
+                app_logger.info("Telegram bot polling started successfully.")
+                # Keep it running in the background.
+                # The application itself (FastAPI) will keep the event loop alive.
+                # We just need this task to continue running.
+                # A common pattern is to await a future that never completes,
+                # or simply let it run until shutdown.
+                # For PTB, start_polling itself will run until stopped.
+            except Exception as e:
+                app_logger.error(f"Error starting Telegram bot polling: {e}", exc_info=True)
+
+        # Schedule the polling task to run in the background
+        app.state.telegram_polling_task = asyncio.create_task(run_telegram_polling())
+        app_logger.info("Telegram bot application created and polling task scheduled.")
+    else:
+        app.state.telegram_app = None
+        app.state.telegram_bot = None
+        app_logger.error("Failed to create Telegram application. Bot will not run.")
+        # Optionally, raise an error or prevent FastAPI startup if bot is critical
+        # raise RuntimeError("Failed to initialize Telegram Bot, application cannot start.")
+
 
     # Schedule jobs
     # For daily deadlines, run once a day, e.g., at 8:00 AM
-    scheduler.add_job(check_and_notify_daily_deadlines_async, 'cron', hour=8, minute=0, misfire_grace_time=600)
+    if app.state.telegram_bot:
+        scheduler.add_job(
+            check_and_notify_daily_deadlines_async,
+            'cron',
+            hour=8,
+            minute=0,
+            misfire_grace_time=600,
+            args=[app.state.telegram_bot] # Pass the bot instance
+        )
+        app_logger.info("Scheduled daily deadline notifications job with bot instance.")
 
-    # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
-    scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'cron', hour=8, minute=30, misfire_grace_time=600)
+        # For upcoming fatal deadlines, run once a day, e.g., at 8:30 AM
+        scheduler.add_job(
+            check_and_notify_upcoming_fatal_deadlines_async,
+            'cron',
+            hour=8,
+            minute=30,
+            misfire_grace_time=600,
+            args=[app.state.telegram_bot] # Pass the bot instance
+        )
+        app_logger.info("Scheduled upcoming fatal deadline notifications job with bot instance.")
+    else:
+        app_logger.warning("Telegram bot instance not available. Notification jobs not scheduled.")
 
     # Example for testing (run more frequently):
-    # scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=2, id="daily_deadline_test")
+    # if app.state.telegram_bot:
+    #     scheduler.add_job(check_and_notify_daily_deadlines_async, 'interval', minutes=2, id="daily_deadline_test", args=[app.state.telegram_bot])
     # scheduler.add_job(check_and_notify_upcoming_fatal_deadlines_async, 'interval', minutes=3, id="upcoming_deadline_test")
 
     if not scheduler.running:
@@ -140,7 +197,7 @@ async def startup_event():
         print("Scheduler already running.")
 
 @app.on_event("shutdown")
-def shutdown_event():
+async def shutdown_event(): # Changed to async
     app_logger = logging.getLogger(__name__)
     if scheduler.running:
        scheduler.shutdown()
@@ -149,6 +206,43 @@ def shutdown_event():
     else:
        app_logger.info("Scheduler was not running or already shut down.")
        print("Scheduler was not running or already shut down.")
+
+    # Shutdown Telegram bot application
+    if hasattr(app.state, 'telegram_polling_task') and app.state.telegram_polling_task:
+        app_logger.info("Attempting to stop Telegram bot polling task...")
+        # How to properly stop depends on how run_telegram_polling is structured.
+        # If telegram_app.updater.stop() is sufficient and start_polling() respects it:
+        telegram_app_instance = getattr(app.state, 'telegram_app', None)
+        if telegram_app_instance and telegram_app_instance.updater and telegram_app_instance.updater.running: # type: ignore
+            await telegram_app_instance.updater.stop() # type: ignore
+            app_logger.info("Telegram updater.stop() called.")
+
+        # Cancel the task if it's still running and wait for it
+        # This might be redundant if updater.stop() causes the task to exit cleanly
+        if not app.state.telegram_polling_task.done():
+            app.state.telegram_polling_task.cancel()
+            try:
+                await app.state.telegram_polling_task
+                app_logger.info("Telegram polling task cancelled and awaited.")
+            except asyncio.CancelledError:
+                app_logger.info("Telegram polling task successfully cancelled (as expected).")
+            except Exception as e:
+                app_logger.error(f"Error during Telegram polling task cancellation: {e}", exc_info=True)
+        else:
+            app_logger.info("Telegram polling task was already done.")
+
+    if hasattr(app.state, 'telegram_app') and app.state.telegram_app:
+        app_logger.info("Attempting to shut down Telegram application...")
+        telegram_app_instance = app.state.telegram_app
+        try:
+            if telegram_app_instance.running: # Check if it's running before stopping
+                await telegram_app_instance.stop()
+            await telegram_app_instance.shutdown()
+            app_logger.info("Telegram application shut down successfully.")
+        except Exception as e:
+            app_logger.error(f"Error during Telegram application shutdown: {e}", exc_info=True)
+    else:
+        app_logger.info("No Telegram application instance found in app.state to shut down.")
 
 # Include routers
 app.include_router(auth_router.router)

@@ -2,9 +2,10 @@ import logging
 import asyncio # Import asyncio
 from datetime import date, timedelta
 from sqlalchemy.orm import Session, joinedload
+import telegram # Added import for type hint
 from models.legal_process import LegalProcessDB
 from models.lawyer import LawyerDB
-from telegram_bot import send_telegram_message, TELEGRAM_ADVANCE_NOTIFICATION_DAYS # send_telegram_message é agora async
+from telegram_bot import send_telegram_message, TELEGRAM_ADVANCE_NOTIFICATION_DAYS
 from database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -76,10 +77,17 @@ def check_and_notify_daily_deadlines():
         next(db_gen, None) # Garante que o finally do gerador de sessão seja chamado
 
 
-async def check_and_notify_daily_deadlines_async(): # Renomeada para async
+async def check_and_notify_daily_deadlines_async(bot: telegram.Bot):
     """
     Checks for processes with deadlines today and notifies the responsible lawyer. (Async version)
+
+    Args:
+        bot (telegram.Bot): The Telegram bot instance.
     """
+    if not bot:
+        logger.error("[ASYNC] Telegram bot instance not provided to check_and_notify_daily_deadlines_async. Skipping.")
+        return
+
     db_gen = get_db_session()
     db: Session = next(db_gen)
     today = date.today()
@@ -121,7 +129,7 @@ async def check_and_notify_daily_deadlines_async(): # Renomeada para async
                 )
 
                 logger.info(f"[ASYNC] Preparando para enviar notificação para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                await send_telegram_message(lawyer.telegram_id, message) # Await a chamada async
+                await send_telegram_message(bot, lawyer.telegram_id, message) # Pass bot instance
 
             elif not lawyer:
                 logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) não possui advogado responsável cadastrado.")
@@ -134,10 +142,17 @@ async def check_and_notify_daily_deadlines_async(): # Renomeada para async
         next(db_gen, None)
 
 
-async def check_and_notify_upcoming_fatal_deadlines_async(): # Renomeada para async
+async def check_and_notify_upcoming_fatal_deadlines_async(bot: telegram.Bot):
     """
     Checks for processes with fatal deadlines approaching and notifies the responsible lawyer. (Async version)
+
+    Args:
+        bot (telegram.Bot): The Telegram bot instance.
     """
+    if not bot:
+        logger.error("[ASYNC] Telegram bot instance not provided to check_and_notify_upcoming_fatal_deadlines_async. Skipping.")
+        return
+
     db_gen = get_db_session()
     db: Session = next(db_gen)
     today = date.today()
@@ -173,7 +188,7 @@ async def check_and_notify_upcoming_fatal_deadlines_async(): # Renomeada para as
                 )
 
                 logger.info(f"[ASYNC] Preparando para enviar notificação de prazo fatal futuro para Adv. {lawyer.name} (TG ID: {lawyer.telegram_id}) sobre processo {process.process_number}")
-                await send_telegram_message(lawyer.telegram_id, message) # Await a chamada async
+                await send_telegram_message(bot, lawyer.telegram_id, message) # Pass bot instance
 
             elif not lawyer:
                 logger.warning(f"[ASYNC] Processo {process.process_number} (ID: {process.id}) com prazo fatal futuro não possui advogado responsável.")
