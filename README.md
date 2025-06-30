@@ -299,11 +299,12 @@ Estes valores podem ser ajustados editando as constantes no topo do arquivo `see
 
 ## Acessando a Aplicação
 
+*   **Página Inicial / Login:**
+    Acessar a raiz da aplicação (`http://127.0.0.1:8000/`) redirecionará automaticamente para a página de login.
+    Link direto para login: `http://127.0.0.1:8000/frontend/login.html`
+
 *   **Documentação Interativa da API (Swagger UI):**
     Após iniciar o servidor, acesse: `http://127.0.0.1:8000/docs`
-
-*   **Página de Login:**
-    `http://127.0.0.1:8000/frontend/login.html`
 
 *   **Gerenciamento de Dados (CRUD):**
     (Requer login) `http://127.0.0.1:8000/frontend/index.html`
