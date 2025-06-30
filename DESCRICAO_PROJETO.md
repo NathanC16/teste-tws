@@ -123,10 +123,11 @@ Esta versão visa entregar um sistema funcional e confiável com as funcionalida
     *   **Opção A: Previsão de Atrasos:** Modelo simples para prever probabilidade de atraso. Nota: A preparação de dados para esta funcionalidade foi iniciada com a inclusão do campo `data_conclusao_real` no modelo de processos.
     *   **Opção B: Classificação/Resumo Automático:** Ferramenta para gerar resumo curto ou classificar tipo de ação com base no nome/descrição do processo.
 *   **Implementação (Foco MVP):**
-    *   A Opção A (Previsão de Atrasos) será o foco inicial para o MVP.
-    *   Será desenvolvido um modelo estatístico simples para analisar o histórico de conclusão de processos (considerando `delivery_deadline` vs `data_conclusao_real`).
-    *   Este modelo atribuirá um indicador de risco de atraso a processos ativos, auxiliando na priorização e gestão proativa.
-*   **Status Atual:** Em planejamento e desenvolvimento inicial.
+    *   A Opção A (Previsão de Atrasos) foi implementada como MVP.
+    *   Foi desenvolvido um modelo estatístico simples que analisa o histórico de conclusão de processos de cada advogado (comparando `delivery_deadline` com `data_conclusao_real` de seus processos anteriores).
+    *   Este modelo atribui um indicador de risco de atraso ("Baixo", "Médio", "Alto") aos processos ativos do advogado.
+    *   O risco de atraso é exibido em uma nova coluna na tabela de processos no Dashboard (`dashboard.html`), ajudando na priorização e gestão proativa.
+*   **Status Atual:** ✅ Implementado (MVP). O modelo estatístico está em `core/analytics.py` e integrado à API de processos e ao frontend do dashboard.
 
 ### 9. Requisitos Técnicos da Versão Estável
 
