@@ -27,8 +27,8 @@ O sistema oferece um conjunto robusto de funcionalidades para a gestão jurídic
 *   **Notificações Automáticas via Telegram:** Alertas sobre prazos do dia e prazos fatais futuros são enviados automaticamente aos advogados responsáveis, utilizando seus IDs do Telegram cadastrados. A frequência e antecedência são configuráveis.
 *   **Proteção de Dados:** Regras de negócio para impedir a exclusão de entidades vinculadas (e.g., advogado com processos, cliente com processos) e proteção especial para o usuário administrador.
 *   **Preparação para Análise de IA:** Adição do campo `data_conclusao_real` nos processos, que é populado com dados sintéticos, visando futuras análises e previsões.
+*   **Previsão de Atrasos com IA (MVP):** Implementação de um modelo estatístico simples (baseado no histórico de `delivery_deadline` vs `data_conclusao_real` do advogado) para analisar o histórico de processos e prever possíveis riscos de atraso (Baixo, Médio, Alto) em processos ativos. Este risco é exibido no dashboard.
 *   **Criação Automática de Usuários Iniciais:** O usuário `admin` (OAB `00001SP`) e um usuário de teste `advogado` (OAB `12345SP`) são criados automaticamente no primeiro startup da aplicação se não existirem, facilitando a configuração inicial.
-    *   **Previsão de Atrasos com IA (MVP):** Implementação de um modelo estatístico simples para analisar o histórico de processos e prever possíveis riscos de atraso em processos ativos.
 
 Para uma lista detalhada de todas as funcionalidades e seu status de implementação, consulte o arquivo `FUNCIONALIDADES_PROJETO.md`.
 
@@ -299,11 +299,12 @@ Estes valores podem ser ajustados editando as constantes no topo do arquivo `see
 
 ## Acessando a Aplicação
 
+*   **Página Inicial / Login:**
+    Acessar a raiz da aplicação (`http://127.0.0.1:8000/`) redirecionará automaticamente para a página de login.
+    Link direto para login: `http://127.0.0.1:8000/frontend/login.html`
+
 *   **Documentação Interativa da API (Swagger UI):**
     Após iniciar o servidor, acesse: `http://127.0.0.1:8000/docs`
-
-*   **Página de Login:**
-    `http://127.0.0.1:8000/frontend/login.html`
 
 *   **Gerenciamento de Dados (CRUD):**
     (Requer login) `http://127.0.0.1:8000/frontend/index.html`

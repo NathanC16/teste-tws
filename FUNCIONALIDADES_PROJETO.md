@@ -109,12 +109,12 @@ O objetivo desta versão é fornecer um sistema central robusto e confiável com
 
 ### 9. Automação com IA (mínimo viável)
 
-*   ⏳ **Previsão de Possíveis Atrasos (MVP):**
-    *   Analisar histórico de processos concluídos (considerando `delivery_deadline` vs `data_conclusao_real`).
-    *   Desenvolver um modelo estatístico simples para calcular um "índice de risco de atraso" para advogados ou tipos de ação.
-    *   Aplicar este índice a processos ativos para fornecer um indicador de risco (e.g., Baixo, Médio, Alto).
-    *   Exibir esta informação de risco na interface (local a ser definido, e.g., dashboard).
-    *   Status: Em planejamento e desenvolvimento inicial.
+*   ✅ **Previsão de Possíveis Atrasos (MVP):**
+    *   Analisa o histórico de processos concluídos do advogado (comparando `delivery_deadline` vs `data_conclusao_real`).
+    *   Um modelo estatístico simples em `core/analytics.py` calcula um "índice de risco de atraso" baseado na taxa de atraso histórica do advogado.
+    *   Este índice é usado para classificar processos ativos do advogado com um risco de "Baixo", "Médio" ou "Alto".
+    *   Esta informação de risco é exibida em uma nova coluna na tabela de processos do Dashboard (`dashboard.html`), com cores indicativas.
+    *   Status: Implementado.
 *   📝 **Geração de Resumo Automático do Tipo de Ação:**
     *   Classificação ou agrupamento com base no nome do tipo de ação.
     *   Status: Planejado (Extra), a ser considerado após o MVP de previsão de atrasos.

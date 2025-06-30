@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session # Adicionado Session
 from sqlalchemy.exc import IntegrityError # <-- Adicionar esta linha
 
 # Model imports
+from fastapi.responses import RedirectResponse # Adicionado para redirecionamento
 from models.lawyer import Lawyer, LawyerCreate, Lawyer as LawyerResponse # Pydantic models, LawyerResponse for type hint
 from models.client import Client, ClientCreate, AreaOfExpertiseEnum # Pydantic models
 from models.legal_process import LegalProcess, LegalProcessCreate, LegalProcessBase # Pydantic models
@@ -260,6 +261,11 @@ process_model.Base.metadata.create_all(bind=engine)
 # As funções auxiliares get_lawyer_by_id e get_client_by_id foram removidas.
 # A lógica de verificação de existência de advogado/cliente
 # já está integrada nos endpoints de LegalProcess.
+
+# Rota de redirecionamento para a página de login
+@app.get("/", include_in_schema=False)
+async def root_redirect():
+    return RedirectResponse(url="/frontend/login.html")
 
 @app.get("/areas-of-expertise/", response_model=List[str])
 def get_areas_of_expertise():
